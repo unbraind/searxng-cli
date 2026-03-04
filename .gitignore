@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Coverage
+coverage/
+coverage.txt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+*.tgz
+gitleaks.sarif
+gitleaks-report.json
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test
+.vitest/
+test-command.js
+
+# Cache
+.searxng-cli/
+
+# Local backups
+backup/

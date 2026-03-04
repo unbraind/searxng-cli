@@ -1,0 +1,44 @@
+# Source files
+src/
+tests/
+
+# Development files
+*.test.ts
+*.spec.ts
+vitest.config.ts
+tsconfig.json
+
+# Build artifacts
+*.tsbuildinfo
+*.map
+
+# Documentation (keep README.md and LICENSE)
+docs/
+AGENTS.md
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Cache
+.npm/
+.cache/
+
+# Test coverage
+coverage/

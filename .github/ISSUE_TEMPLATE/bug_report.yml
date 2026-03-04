@@ -1,0 +1,40 @@
+name: Bug report
+description: Report a reproducible bug in searxng-cli
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Provide exact commands and input.
+      placeholder: |
+        1. bunx searxng "query"
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Runtime, OS, and package version.
+      placeholder: |
+        - searxng-cli version:
+        - Node version:
+        - Bun version:
+        - OS:
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output
+      description: Paste output/errors (redact secrets).
