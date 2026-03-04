@@ -74,7 +74,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Compute version
         id: version
-        run: echo "version=v$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+        run: |
+          VERSION="$(node -e "console.log(require('./package.json').version)")"
+          echo "version=v${VERSION}" >> "$GITHUB_OUTPUT"
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.version }}
