@@ -73,13 +73,13 @@ fi
 days="$(printf '%s\n' "${!DAY_ORDINALS[@]}" | cut -d: -f1 | sort -u || true)"
 while IFS= read -r day; do
   [[ -z "$day" ]] && continue
-  ordinals="$(printf '%s\n' "${!DAY_ORDINALS[@]}" | rg "^${day}:" | cut -d: -f2 | sort -n)"
+  ordinals="$(printf '%s\n' "${!DAY_ORDINALS[@]}" | awk -F: -v day="$day" '$1 == day { print $2 }' | sort -n)"
   max="$(printf '%s\n' "$ordinals" | tail -n 1)"
   if [[ -z "$max" ]]; then
     continue
   fi
   for n in $(seq 1 "$max"); do
-    if ! printf '%s\n' "$ordinals" | rg -q "^${n}$"; then
+    if ! printf '%s\n' "$ordinals" | awk -v n="$n" '$1 == n { found = 1 } END { exit(found ? 0 : 1) }'; then
       echo "Missing release ordinal for ${day}: ${n}"
       errors=1
     fi
