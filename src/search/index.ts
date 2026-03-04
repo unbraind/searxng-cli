@@ -98,13 +98,18 @@ export function applyAdvancedFilters(
   filters: AdvancedFilters
 ): SearchResult[] {
   let filtered = results;
+  const hostMatchesDomain = (hostname: string, domain: string): boolean => {
+    const normalizedHost = hostname.toLowerCase();
+    const normalizedDomain = domain.toLowerCase();
+    return normalizedHost === normalizedDomain || normalizedHost.endsWith(`.${normalizedDomain}`);
+  };
 
   if (filters.domain) {
     const domains = filters.domain.split(',').map((d) => d.trim().toLowerCase());
     filtered = filtered.filter((r) => {
       try {
         const url = new URL(r.url ?? '');
-        return domains.some((d) => url.hostname.includes(d));
+        return domains.some((d) => hostMatchesDomain(url.hostname, d));
       } catch {
         return false;
       }
@@ -116,7 +121,7 @@ export function applyAdvancedFilters(
     filtered = filtered.filter((r) => {
       try {
         const url = new URL(r.url ?? '');
-        return !excludeDomains.some((d) => url.hostname.includes(d));
+        return !excludeDomains.some((d) => hostMatchesDomain(url.hostname, d));
       } catch {
         return true;
       }
@@ -420,12 +425,7 @@ export async function fetchWebpageContent(results: SearchResult[]): Promise<Sear
       });
       if (!response.ok) return result;
       const html = await response.text();
-      // Extract rough text content using basic string manipulation
-      const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      let content = bodyMatch ? bodyMatch[1] : html;
-      content = content.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-      content = content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-      content = stripHtml(content).replace(/\s+/g, ' ').trim();
+      const content = stripHtml(html);
 
       return {
         ...result,

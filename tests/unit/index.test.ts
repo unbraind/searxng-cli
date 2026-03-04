@@ -359,7 +359,13 @@ describe('Index Module - formatAndOutput', () => {
     });
     const options = createMockOptions({ excludeDomain: 'spam.com', dedup: false });
     const result = await formatAndOutput(data, options);
-    expect(result.results?.every((r) => !r.url?.includes('spam.com'))).toBe(true);
+    expect(
+      result.results?.every((r) => {
+        if (!r.url) return true;
+        const hostname = new URL(r.url).hostname.toLowerCase();
+        return hostname !== 'spam.com' && !hostname.endsWith('.spam.com');
+      })
+    ).toBe(true);
   });
 
   it('should save output to file when output path is set', async () => {

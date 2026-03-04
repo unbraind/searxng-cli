@@ -1,6 +1,6 @@
 {
   "name": "searxng-cli",
-  "version": "2026.3.4",
+  "version": "2026.3.4-2",
   "description": "SearXNG CLI - Enhanced TypeScript search client for SearXNG instances with TOON format support, persistent caching, and AI agent mode",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -91,6 +91,7 @@
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@toon-format/toon": "^2.1.0",
     "cac": "^7.0.0",
-    "commander": "^14.0.3"
+    "commander": "^14.0.3",
+    "node-html-parser": "^7.1.0"
   }
 }

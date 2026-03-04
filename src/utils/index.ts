@@ -1,4 +1,5 @@
 import { COLORS, getThemeColor } from '../config';
+import { parse } from 'node-html-parser';
 import type { ColorConfig } from '../types';
 
 type ColorName = keyof ColorConfig;
@@ -20,10 +21,9 @@ export function truncate(str: string, maxLen = 100): string {
 
 export function stripHtml(html: string): string {
   if (!html) return '';
-  return html
-    .replace(/<[^>]*>?/gm, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const root = parse(html, { comment: false });
+  root.querySelectorAll('script,style,noscript,template').forEach((node) => node.remove());
+  return root.textContent.replace(/\s+/g, ' ').trim();
 }
 
 export function unescapeHtml(text: string): string {
