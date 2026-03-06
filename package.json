@@ -85,7 +85,7 @@
     "esbuild": "^0.27.3",
     "prettier": "^3.4.0",
     "typescript": "^5.9.0",
-    "vitest": "3.2.0"
+    "vitest": "4.0.18"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
