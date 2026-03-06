@@ -97,6 +97,25 @@ describe('Main function', () => {
     expect(exitSpy).toHaveBeenCalledWith(0);
   });
 
+  it('should fail on unknown command-like tokens', async () => {
+    process.argv = ['node', 'index.js', 'invalid-command'];
+    await expect(main()).rejects.toThrow('process.exit');
+    expect(errorSpy).toHaveBeenCalled();
+    const output = errorSpy.mock.calls.map((call: unknown[]) => String(call[0] ?? '')).join('\n');
+    expect(output).toContain('unknown command "invalid-command"');
+    expect(output).toContain('searxng -- invalid-command');
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
+  it('should suggest nearest command for typos', async () => {
+    process.argv = ['node', 'index.js', 'instnace'];
+    await expect(main()).rejects.toThrow('process.exit');
+    const output = errorSpy.mock.calls.map((call: unknown[]) => String(call[0] ?? '')).join('\n');
+    expect(output).toContain('unknown command "instnace"');
+    expect(output).toContain('Did you mean "instance"?');
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+
   it('should run setup wizard', async () => {
     process.argv = ['node', 'index.js', '--setup'];
     await expect(main()).rejects.toThrow('process.exit');

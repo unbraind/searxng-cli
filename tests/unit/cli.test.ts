@@ -150,12 +150,31 @@ describe('CLI Module', () => {
         const options = parseArgs([]);
         expect(options.query).toBe('');
       });
+
+      it('should stop option parsing after --', () => {
+        const options = parseArgs(['--', '--nonexistent-flag']);
+        expect(options.query).toBe('--nonexistent-flag');
+      });
+    });
+
+    describe('unknown option handling', () => {
+      it('should fail on unknown option', () => {
+        expect(() => parseArgs(['--nonexistent-flag'])).toThrow(/process\.exit/);
+      });
     });
 
     describe('format option', () => {
       it('should parse --format option', () => {
         const options = parseArgs(['--format', 'json', 'query']);
         expect(options.format).toBe('json');
+      });
+
+      it('should fail when --format value is missing', () => {
+        expect(() => parseArgs(['--format', '--json', 'query'])).toThrow(/process\.exit/);
+      });
+
+      it('should fail when --format= value is empty', () => {
+        expect(() => parseArgs(['--format=', 'query'])).toThrow(/process\.exit/);
       });
 
       it('should parse -f short option', () => {
@@ -557,6 +576,11 @@ describe('CLI Module', () => {
         expect(options.systemPrompt).toBe('Return concise answers');
         expect(options.query).toBe('query');
       });
+
+      it('should preserve additional equals signs in --system-prompt=value', () => {
+        const options = parseArgs(['--system-prompt=Return a=b=c', 'query']);
+        expect(options.systemPrompt).toBe('Return a=b=c');
+      });
     });
 
     describe('output options', () => {
@@ -568,6 +592,22 @@ describe('CLI Module', () => {
       it('should parse -o short option', () => {
         const options = parseArgs(['-o', 'output.txt', 'query']);
         expect(options.output).toBe('output.txt');
+      });
+
+      it('should preserve additional equals signs in --proxy=value', () => {
+        const options = parseArgs(['--proxy=http://127.0.0.1:8080/proxy?token=a=b=c', 'query']);
+        expect(options.proxy).toBe('http://127.0.0.1:8080/proxy?token=a=b=c');
+      });
+    });
+
+    describe('value handling', () => {
+      it('should treat bare --open as --open 1', () => {
+        const options = parseArgs(['--open', 'query']);
+        expect(options.open).toBe(1);
+      });
+
+      it('should fail when --max-tokens value is missing', () => {
+        expect(() => parseArgs(['--max-tokens', '--json', 'query'])).toThrow(/process\.exit/);
       });
     });
 

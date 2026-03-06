@@ -359,6 +359,51 @@ describe('E2E CLI Tests', () => {
   );
 
   it(
+    'should fail on unknown command-like token',
+    async () => {
+      const result = await runCLIWithCode(['invalid-command']);
+      expect(result.code).toBe(1);
+      const combined = `${result.stdout}\n${result.stderr}`;
+      expect(combined).toContain('unknown command "invalid-command"');
+    },
+    E2E_TIMEOUT
+  );
+
+  it(
+    'should fail on unknown option',
+    async () => {
+      const result = await runCLIWithCode(['--nonexistent-flag']);
+      expect(result.code).toBe(1);
+      const combined = `${result.stdout}\n${result.stderr}`;
+      expect(combined).toContain('Unknown option "--nonexistent-flag"');
+    },
+    E2E_TIMEOUT
+  );
+
+  it(
+    'should suggest nearest command for typos',
+    async () => {
+      const result = await runCLIWithCode(['instnace']);
+      expect(result.code).toBe(1);
+      const combined = `${result.stdout}\n${result.stderr}`;
+      expect(combined).toContain('unknown command "instnace"');
+      expect(combined).toContain('Did you mean "instance"?');
+    },
+    E2E_TIMEOUT
+  );
+
+  it(
+    'should fail with explicit error when value flag is missing its value',
+    async () => {
+      const result = await runCLIWithCode(['--format']);
+      expect(result.code).toBe(1);
+      const combined = `${result.stdout}\n${result.stderr}`;
+      expect(combined).toContain('Missing value for --format');
+    },
+    E2E_TIMEOUT
+  );
+
+  it(
     'should expose configured local URL and TOON default in settings output',
     async () => {
       const output = await runCLI(parseArgs('--settings'));

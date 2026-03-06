@@ -213,19 +213,50 @@ export function parseArgs(args: string[]): SearchOptions {
 
   let i = 0;
   const queryParts: string[] = [];
+  let stopOptionParsing = false;
 
-  const parseValue = <T>(arg: string, argName: string, setter: (value: string) => void): void => {
+  const parseValue = (
+    arg: string,
+    argName: string,
+    setter: (value: string) => void,
+    config: { required?: boolean; defaultValue?: string } = { required: true }
+  ): void => {
     let value: string | undefined;
     if (arg.includes('=')) {
-      value = arg.split('=')[1];
+      value = arg.slice(arg.indexOf('=') + 1);
     } else if (i + 1 < args.length && !args[i + 1].startsWith('-')) {
       value = args[++i];
     }
-    if (value !== undefined) setter(value);
+
+    if (value === undefined || value.trim().length === 0) {
+      if (config.defaultValue !== undefined) {
+        setter(config.defaultValue);
+        return;
+      }
+      if (config.required !== false) {
+        console.error(colorize(`Error: Missing value for ${argName}`, 'red'));
+        process.exit(1);
+      }
+      return;
+    }
+
+    setter(value);
   };
 
   while (i < args.length) {
     const arg = args[i];
+
+    if (arg === '--') {
+      stopOptionParsing = true;
+      i++;
+      continue;
+    }
+
+    if (stopOptionParsing) {
+      queryParts.push(arg);
+      i++;
+      continue;
+    }
 
     if (arg === '--help' || arg === '-h') {
       showHelp();
@@ -916,7 +947,15 @@ export function parseArgs(args: string[]): SearchOptions {
       continue;
     }
     if (arg === '--open' || arg === '-O') {
-      parseValue(arg, '--open', (v) => (options.open = v ? parseInt(v, 10) : 1));
+      parseValue(
+        arg,
+        '--open',
+        (v) => {
+          const parsed = parseInt(v, 10);
+          options.open = Number.isFinite(parsed) ? parsed : 1;
+        },
+        { required: false, defaultValue: '1' }
+      );
       i++;
       continue;
     }
@@ -1012,6 +1051,11 @@ export function parseArgs(args: string[]): SearchOptions {
       continue;
     }
 
+    if (arg.startsWith('-')) {
+      console.error(colorize(`Error: Unknown option "${arg}"`, 'red'));
+      process.exit(1);
+    }
+
     queryParts.push(arg);
     i++;
   }
@@ -1057,6 +1101,7 @@ export function showHelp(): void {
   console.log(`  --settings-json      Machine-readable effective settings`);
   console.log(`  --paths-json         Machine-readable ~/.searxng-cli paths`);
   console.log(`  --no-cache           Disable cache for current command`);
+  console.log(`  --                   Stop option parsing; treat remaining args as query text`);
   console.log();
   console.log(`Search:`);
   console.log(`  -f, --format <fmt>   Output format: toon, json, csv, md, yaml, table, xml`);

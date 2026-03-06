@@ -270,10 +270,90 @@ function showCommandHelp(command: string): void {
   showHelp();
 }
 
+const KNOWN_COMMANDS = new Set([
+  'search',
+  's',
+  'setup',
+  'settings',
+  'set',
+  'cache',
+  'formats',
+  'instance',
+  'doctor',
+  'health',
+  'history',
+  'bookmarks',
+  'suggestions',
+  'presets',
+  'config',
+  'paths',
+  'version',
+  'test',
+]);
+
+const COMMAND_LIKE_PATTERN = /^[a-z][a-z0-9-]*$/;
+
+function damerauLevenshteinDistance(a: string, b: string): number {
+  const rows = a.length + 1;
+  const cols = b.length + 1;
+  const matrix: number[][] = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+  for (let i = 0; i < rows; i++) matrix[i][0] = i;
+  for (let j = 0; j < cols; j++) matrix[0][j] = j;
+
+  for (let i = 1; i < rows; i++) {
+    for (let j = 1; j < cols; j++) {
+      const substitutionCost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + substitutionCost
+      );
+
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        matrix[i][j] = Math.min(matrix[i][j], matrix[i - 2][j - 2] + 1);
+      }
+    }
+  }
+
+  return matrix[a.length][b.length] ?? Number.MAX_SAFE_INTEGER;
+}
+
+function suggestCommand(input: string): string | null {
+  const normalized = input.trim().toLowerCase();
+  if (!normalized || normalized.length < 3) return null;
+
+  let best: { command: string; distance: number } | null = null;
+  for (const command of KNOWN_COMMANDS) {
+    if (command.length <= 1) continue;
+    const distance = damerauLevenshteinDistance(normalized, command);
+    if (!best || distance < best.distance) {
+      best = { command, distance };
+    }
+  }
+
+  if (!best) return null;
+  const threshold = normalized.length <= 7 ? 1 : 2;
+  return best.distance <= threshold ? best.command : null;
+}
+
 function normalizeCommandArgs(rawArgs: string[]): string[] {
   if (rawArgs.length === 0) return rawArgs;
   const command = (rawArgs[0] ?? '').toLowerCase();
   if (!command || command.startsWith('-')) return rawArgs;
+  if (!KNOWN_COMMANDS.has(command)) {
+    const suggestion = suggestCommand(command);
+    if (COMMAND_LIKE_PATTERN.test(command) && (command.includes('-') || suggestion !== null)) {
+      console.error(colorize(`Error: unknown command "${rawArgs[0]}"`, 'red'));
+      if (suggestion) {
+        console.error(colorize(`Did you mean "${suggestion}"?`, 'yellow'));
+      }
+      console.error(colorize('Run "searxng --help" for usage.', 'yellow'));
+      console.error(colorize(`To search this literal text, use: searxng -- ${rawArgs[0]}`, 'dim'));
+      process.exit(1);
+    }
+    return rawArgs;
+  }
 
   const args = rawArgs.slice(1);
   const sub = (args[0] ?? '').toLowerCase();
