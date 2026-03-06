@@ -19,7 +19,7 @@ The SearXNG CLI is highly optimized for integration into AI agents, Language Mod
 5. **Local Instance Routing Safety**
    Agent mode forces searches through the local SearXNG instance `http://localhost:8080`, even if a different URL was previously configured. This protects autonomous agents from silently drifting to remote endpoints. This guard is controlled by persistent setting `forceLocalAgentRouting` (default `true`), and can be managed with:
    `searxng --set-force-local-agent-routing on|off`.
-   For stricter policies, enable `forceLocalRouting` to pin all searches (not just `--agent`) to the local URL:
+   For stricter policies, enable `forceLocalRouting` to pin all searches (not just `--agent`) to the configured `searxngUrl`:
    `searxng --set-force-local-routing on|off`.
 
 6. **Automatic Output Contract Validation**

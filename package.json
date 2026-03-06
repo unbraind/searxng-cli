@@ -1,6 +1,6 @@
 {
   "name": "searxng-cli",
-  "version": "2026.3.4-2",
+  "version": "2026.3.6",
   "description": "SearXNG CLI - Enhanced TypeScript search client for SearXNG instances with TOON format support, persistent caching, and AI agent mode",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

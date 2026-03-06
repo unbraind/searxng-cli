@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn, spawnSync } from 'child_process';
+import { createServer } from 'http';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -13,6 +14,70 @@ let cliBinDir = '';
 let cliConfigDir = '';
 const E2E_SEARXNG_URL = process.env.E2E_SEARXNG_URL ?? '';
 const EXPECTED_LOCAL_URL = E2E_SEARXNG_URL || 'http://localhost:8080';
+
+const startMockSearxngServer = async (): Promise<{ url: string; close: () => Promise<void> }> => {
+  const server = createServer((req, res) => {
+    const reqUrl = new URL(req.url ?? '/', 'http://127.0.0.1');
+
+    if (reqUrl.pathname === '/config') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          instance: { version: '1.0.0', server: 'mock' },
+          brand: { name: 'Mock SearXNG' },
+        })
+      );
+      return;
+    }
+
+    if (reqUrl.pathname === '/search') {
+      const query = reqUrl.searchParams.get('q') ?? '';
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          query,
+          results: [
+            {
+              title: `Mock result for ${query}`,
+              url: 'https://example.com/mock-result',
+              content: 'Mock content',
+              engine: 'mock',
+              score: 1,
+            },
+          ],
+          suggestions: [],
+          answers: [],
+          corrections: [],
+          infoboxes: [],
+          number_of_results: 1,
+        })
+      );
+      return;
+    }
+
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not Found');
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    server.listen(0, '127.0.0.1', () => resolve());
+    server.once('error', reject);
+  });
+
+  const address = server.address();
+  if (!address || typeof address === 'string') {
+    throw new Error('Failed to resolve mock SearXNG server address');
+  }
+
+  return {
+    url: `http://127.0.0.1:${address.port}`,
+    close: async () => {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+    },
+  };
+};
 
 const runCLI = async (args: string[], timeoutMs = COMMAND_TIMEOUT): Promise<string> => {
   return await new Promise((resolve, reject) => {
@@ -363,6 +428,48 @@ describe('E2E CLI Tests', () => {
       await runCLI(['--set-force-local-routing', 'on']);
       const settingsOn = await runAndParseJson(parseArgs('--settings-json'));
       expect((settingsOn.settings as Record<string, unknown>).forceLocalRouting).toBe(true);
+    },
+    E2E_TIMEOUT
+  );
+
+  it(
+    'should keep non-agent routing on configured URL when force-local-routing is enabled',
+    async () => {
+      await runCLI(['--set-url', 'https://example.com']);
+      await runCLI(['--set-force-local-routing', 'on']);
+      try {
+        const data = await runAndParseJson(
+          parseArgs('"force route configured url" --request-json --limit 1')
+        );
+        const request = data.request as Record<string, unknown>;
+        expect((request.url as string).startsWith('https://example.com/search?')).toBe(true);
+      } finally {
+        await runCLI(['--set-url', EXPECTED_LOCAL_URL]);
+      }
+    },
+    E2E_TIMEOUT
+  );
+
+  it(
+    'should use configured non-default URL for health and live search when force-local-routing is enabled',
+    async () => {
+      const mock = await startMockSearxngServer();
+      await runCLI(['--set-url', mock.url]);
+      await runCLI(['--set-force-local-routing', 'on']);
+      try {
+        const healthOutput = await runCLI(parseArgs('--health'));
+        expect(healthOutput).toContain(`Server: ${mock.url}`);
+
+        const searchData = await runAndParseJson(
+          parseArgs('"force local routing e2e" --json --limit 1 --no-cache')
+        );
+        expect(searchData.source).toBe(mock.url);
+        expect(Array.isArray(searchData.results)).toBe(true);
+        expect((searchData.results as unknown[]).length).toBeGreaterThan(0);
+      } finally {
+        await runCLI(['--set-url', EXPECTED_LOCAL_URL]);
+        await mock.close();
+      }
     },
     E2E_TIMEOUT
   );

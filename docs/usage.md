@@ -254,7 +254,7 @@ searxng-cli --settings              # Show active settings from ~/.searxng-cli/s
 searxng-cli --settings-json         # Same settings in machine-readable JSON
 searxng-cli --paths-json            # Managed ~/.searxng-cli file paths in JSON
 searxng-cli --set-param k=v         # Persist default passthrough param in settings.json
-searxng-cli --set-force-local-routing on  # Keep all searches pinned to local SearXNG
+searxng-cli --set-force-local-routing on  # Keep all searches pinned to configured SearXNG URL
 searxng-cli --set-force-local-agent-routing on  # Keep agent mode pinned to local SearXNG
 searxng-cli --set-params-json '{"theme":"simple","image_proxy":true}'  # Replace defaults from JSON
 searxng-cli --set-params-query 'enabled_plugins=Hash_plugin&theme=contrast' # Replace defaults from query

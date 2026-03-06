@@ -1153,7 +1153,7 @@ export function showHelp(): void {
   console.log(`  --set-limit <n>      Set default limit`);
   console.log(`  --set-format <fmt>   Set default format`);
   console.log(`  --set-theme <name>   Set theme (default/ocean/forest/sunset/mono)`);
-  console.log(`  --set-force-local-routing <on|off> Force all searches to local URL`);
+  console.log(`  --set-force-local-routing <on|off> Force all searches to configured URL`);
   console.log(`  --set-force-local-agent-routing <on|off> Force --agent routing to local URL`);
   console.log(`  --set-param <k=v>    Set default SearXNG passthrough param`);
   console.log(`  --set-params-json <obj> Replace default SearXNG params from JSON object`);

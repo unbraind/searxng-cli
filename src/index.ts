@@ -19,6 +19,7 @@ import {
   ENGINES_CACHE_FILE,
   SETUP_COMPLETE_FILE,
   DEFAULT_SEARXNG_URL,
+  normalizeSearxngUrl,
   LRU_CACHE_SIZE,
   PERSISTENT_CACHE_ENABLED,
   CACHE_COMPRESSION,
@@ -402,13 +403,6 @@ function toPlainParams(searchParams: URLSearchParams): Record<string, string> {
 
 function enforceLocalRouting(options: Pick<SearchOptions, 'agent' | 'verbose' | 'silent'>): void {
   const settings = loadSettings();
-  if (settings.forceLocalRouting !== false && getSearxngUrl() !== DEFAULT_SEARXNG_URL) {
-    setSearxngUrl(DEFAULT_SEARXNG_URL);
-    if (options.verbose && !options.silent) {
-      console.error(colorize(`Routing forced to local SearXNG: ${DEFAULT_SEARXNG_URL}`, 'yellow'));
-    }
-    return;
-  }
   if (
     options.agent &&
     settings.forceLocalAgentRouting !== false &&
@@ -419,6 +413,17 @@ function enforceLocalRouting(options: Pick<SearchOptions, 'agent' | 'verbose' | 
       console.error(
         colorize(`Agent mode routing forced to local SearXNG: ${DEFAULT_SEARXNG_URL}`, 'yellow')
       );
+    }
+    return;
+  }
+
+  if (settings.forceLocalRouting !== false) {
+    const configuredUrl = normalizeSearxngUrl(settings.searxngUrl) ?? DEFAULT_SEARXNG_URL;
+    if (getSearxngUrl() !== configuredUrl) {
+      setSearxngUrl(configuredUrl);
+      if (options.verbose && !options.silent) {
+        console.error(colorize(`Routing forced to configured SearXNG: ${configuredUrl}`, 'yellow'));
+      }
     }
   }
 }
