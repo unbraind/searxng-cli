@@ -1081,8 +1081,8 @@ async function runDoctor(asJson = false): Promise<number> {
   );
   addCheck(
     'Default Local URL',
-    currentUrl === DEFAULT_SEARXNG_URL,
-    `runtime=${currentUrl} default=${DEFAULT_SEARXNG_URL}`
+    currentUrl === DEFAULT_SEARXNG_URL || currentUrl === settings.searxngUrl,
+    `runtime=${currentUrl} default=${DEFAULT_SEARXNG_URL} settings=${settings.searxngUrl}`
   );
   addCheck(
     'Config Directory',

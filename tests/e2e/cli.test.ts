@@ -9,11 +9,12 @@ import { decode as decodeToon } from '@toon-format/toon';
 const CLI_PATH = path.resolve(__dirname, '../../dist/searxng-cli.js');
 const E2E_TIMEOUT = 120000;
 const COMMAND_TIMEOUT = 30000;
+const DEFAULT_LOCAL_URL = 'http://localhost:8080';
 
 let cliBinDir = '';
 let cliConfigDir = '';
 const E2E_SEARXNG_URL = process.env.E2E_SEARXNG_URL ?? '';
-const EXPECTED_LOCAL_URL = E2E_SEARXNG_URL || 'http://localhost:8080';
+const EXPECTED_LOCAL_URL = E2E_SEARXNG_URL || DEFAULT_LOCAL_URL;
 
 const startMockSearxngServer = async (): Promise<{ url: string; close: () => Promise<void> }> => {
   const server = createServer((req, res) => {
@@ -86,7 +87,7 @@ const runCLI = async (args: string[], timeoutMs = COMMAND_TIMEOUT): Promise<stri
         ...process.env,
         PATH: cliBinDir ? `${cliBinDir}:${process.env.PATH ?? ''}` : process.env.PATH,
         SEARXNG_CLI_CONFIG_DIR: cliConfigDir,
-        SEARXNG_URL: E2E_SEARXNG_URL,
+        SEARXNG_URL: '',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -138,7 +139,7 @@ const runCLIStdout = async (args: string[], timeoutMs = COMMAND_TIMEOUT): Promis
         ...process.env,
         PATH: cliBinDir ? `${cliBinDir}:${process.env.PATH ?? ''}` : process.env.PATH,
         SEARXNG_CLI_CONFIG_DIR: cliConfigDir,
-        SEARXNG_URL: E2E_SEARXNG_URL,
+        SEARXNG_URL: '',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -193,7 +194,7 @@ const runCLIWithCode = async (
         ...process.env,
         PATH: cliBinDir ? `${cliBinDir}:${process.env.PATH ?? ''}` : process.env.PATH,
         SEARXNG_CLI_CONFIG_DIR: cliConfigDir,
-        SEARXNG_URL: E2E_SEARXNG_URL,
+        SEARXNG_URL: '',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -411,9 +412,10 @@ describe('E2E CLI Tests', () => {
       expect(setupOutput).toContain('Force local routing: true');
 
       const output = await runCLI(parseArgs('--settings'));
-      expect(output).toContain(`SearXNG URL: ${EXPECTED_LOCAL_URL}`);
+      expect(output).toContain(`SearXNG URL: ${DEFAULT_LOCAL_URL}`);
       expect(output).toContain('Default format: toon');
       expect(output).toContain('Default limit: 10');
+      await runCLI(['--set-url', EXPECTED_LOCAL_URL]);
     },
     E2E_TIMEOUT
   );
@@ -715,10 +717,11 @@ describe('E2E CLI Tests', () => {
     async () => {
       await runCLI(['--set-url', 'https://example.com']);
       try {
-        const output = await runCLI(
+        const output = await runCLIWithCode(
           parseArgs('"agent local route test" --agent --verbose --limit 1')
         );
-        expect(output).toContain(`URL: ${EXPECTED_LOCAL_URL}/search?`);
+        const combined = `${output.stdout}\n${output.stderr}`;
+        expect(combined).toContain(`URL: ${DEFAULT_LOCAL_URL}/search?`);
       } finally {
         await runCLI(['--set-url', EXPECTED_LOCAL_URL]);
       }
@@ -731,7 +734,7 @@ describe('E2E CLI Tests', () => {
     async () => {
       await runCLI(['--set-url', 'https://example.com']);
       try {
-        const output = await runCLI([
+        const output = await runCLIWithCode([
           '--multi',
           'agent local route one;;agent local route two',
           '--agent',
@@ -740,7 +743,8 @@ describe('E2E CLI Tests', () => {
           '1',
           '--no-cache',
         ]);
-        expect(output).toContain(`URL: ${EXPECTED_LOCAL_URL}/search?`);
+        const combined = `${output.stdout}\n${output.stderr}`;
+        expect(combined).toContain(`URL: ${DEFAULT_LOCAL_URL}/search?`);
       } finally {
         await runCLI(['--set-url', EXPECTED_LOCAL_URL]);
       }
