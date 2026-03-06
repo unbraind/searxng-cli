@@ -153,36 +153,48 @@ describe('Main function', () => {
   });
 
   it('should prompt for star on first CLI run before setup completion', async () => {
-    vi.mocked(storage.isSetupComplete).mockReturnValue(false);
+    const previousCi = process.env.CI;
+    delete process.env.CI;
+    try {
+      vi.mocked(storage.isSetupComplete).mockReturnValue(false);
 
-    process.argv = ['node', 'index.js', 'query'];
-    vi.mocked(cli.parseArgs).mockReturnValue({
-      query: 'query',
-      interactive: false,
-      format: 'toon',
-      verbose: false,
-      silent: false,
-      refreshEngines: false,
-    } as any);
-    const search = await import('@/search/index');
-    vi.mocked(search.expandQuery).mockReturnValue({
-      query: 'query',
-      engines: null,
-      category: null,
-    });
-    const http = await import('@/http/index');
-    vi.mocked(http.fetchWithRetry).mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ results: [] }),
-    } as any);
+      process.argv = ['node', 'index.js', 'query'];
+      vi.mocked(cli.parseArgs).mockReturnValue({
+        query: 'query',
+        interactive: false,
+        format: 'toon',
+        verbose: false,
+        silent: false,
+        refreshEngines: false,
+      } as any);
+      const search = await import('@/search/index');
+      vi.mocked(search.expandQuery).mockReturnValue({
+        query: 'query',
+        engines: null,
+        category: null,
+      });
+      const http = await import('@/http/index');
+      vi.mocked(http.fetchWithRetry).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ results: [] }),
+      } as any);
 
-    await main();
+      await main();
 
-    expect(storage.promptForStar).toHaveBeenCalledWith(undefined, 'first-run');
+      expect(storage.promptForStar).toHaveBeenCalledWith(undefined, 'first-run');
+    } finally {
+      if (previousCi !== undefined) {
+        process.env.CI = previousCi;
+      } else {
+        delete process.env.CI;
+      }
+    }
   });
 
   it('should run setup wizard automatically on first interactive CLI run', async () => {
+    const previousCi = process.env.CI;
+    delete process.env.CI;
     const stdinDescriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
     const stdoutDescriptor = Object.getOwnPropertyDescriptor(process.stdout, 'isTTY');
 
@@ -227,6 +239,11 @@ describe('Main function', () => {
         Object.defineProperty(process.stdout, 'isTTY', stdoutDescriptor);
       } else {
         delete (process.stdout as { isTTY?: boolean }).isTTY;
+      }
+      if (previousCi !== undefined) {
+        process.env.CI = previousCi;
+      } else {
+        delete process.env.CI;
       }
     }
   });
