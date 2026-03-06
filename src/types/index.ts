@@ -154,6 +154,21 @@ export type TimeRange = 'day' | 'week' | 'month' | 'year';
 
 export type ColorTheme = 'default' | 'ocean' | 'forest' | 'sunset' | 'mono';
 
+export type GithubStarPromptStatus =
+  | 'starred'
+  | 'declined'
+  | 'already-starred'
+  | 'manual-link-shown'
+  | 'star-failed';
+
+export type GithubStarPromptSource = 'first-run' | 'setup' | 'setup-local';
+
+export interface GithubStarPromptState {
+  status: GithubStarPromptStatus;
+  source: GithubStarPromptSource;
+  completedAt: string;
+}
+
 export interface CacheEntry {
   timestamp: number;
   data: SearchResponse;
@@ -223,6 +238,7 @@ export interface Settings extends AppConfig {
   forceLocalAgentRouting: boolean;
   lastSetupVersion: string;
   setupCompletedAt: string;
+  githubStarPrompt?: GithubStarPromptState | null;
 }
 
 export interface HistoryEntry {

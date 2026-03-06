@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 
-const REPO = 'unbraind/searxng-cli';
+export const REPO = 'unbraind/searxng-cli';
+export const REPO_URL = `https://github.com/${REPO}`;
 
 /**
  * Checks if GitHub CLI is installed and authenticated.
@@ -35,7 +36,7 @@ export function hasStarredRepo(): boolean {
  */
 export function starRepo(): boolean {
   try {
-    execSync(`gh repo star ${REPO}`, { stdio: 'ignore' });
+    execSync(`gh repo star ${REPO} --yes`, { stdio: 'ignore' });
     return true;
   } catch {
     return false;

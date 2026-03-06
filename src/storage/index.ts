@@ -28,7 +28,7 @@ import {
   COLOR_THEMES,
 } from '../config';
 import { colorize, truncate } from '../utils';
-import { isGhAuthenticated, hasStarredRepo, starRepo } from '../utils/github';
+import { isGhAuthenticated, hasStarredRepo, starRepo, REPO_URL } from '../utils/github';
 import { rateLimitedFetch } from '../http';
 import type {
   AppConfig,
@@ -39,6 +39,8 @@ import type {
   SearchResult,
   OutputFormat,
   Settings,
+  GithubStarPromptStatus,
+  GithubStarPromptSource,
 } from '../types';
 
 export function ensureConfigDir(): void {
@@ -541,6 +543,49 @@ function normalizeSearxngParams(value: unknown): Record<string, string> {
   return normalized;
 }
 
+const GITHUB_STAR_PROMPT_STATUSES: GithubStarPromptStatus[] = [
+  'starred',
+  'declined',
+  'already-starred',
+  'manual-link-shown',
+  'star-failed',
+];
+const GITHUB_STAR_PROMPT_SOURCES: GithubStarPromptSource[] = ['first-run', 'setup', 'setup-local'];
+
+function normalizeGithubStarPrompt(value: unknown): Settings['githubStarPrompt'] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  const candidate = value as {
+    status?: unknown;
+    source?: unknown;
+    completedAt?: unknown;
+  };
+  if (
+    !candidate.status ||
+    !candidate.source ||
+    !candidate.completedAt ||
+    typeof candidate.status !== 'string' ||
+    typeof candidate.source !== 'string' ||
+    typeof candidate.completedAt !== 'string'
+  ) {
+    return null;
+  }
+  if (!GITHUB_STAR_PROMPT_STATUSES.includes(candidate.status as GithubStarPromptStatus)) {
+    return null;
+  }
+  if (!GITHUB_STAR_PROMPT_SOURCES.includes(candidate.source as GithubStarPromptSource)) {
+    return null;
+  }
+
+  return {
+    status: candidate.status as GithubStarPromptStatus,
+    source: candidate.source as GithubStarPromptSource,
+    completedAt: candidate.completedAt,
+  };
+}
+
 function parseSearxngParamsJson(raw: string): Record<string, string> | null {
   try {
     const parsed = JSON.parse(raw) as unknown;
@@ -600,6 +645,7 @@ export function getDefaultSettings(): Settings {
     theme: 'default',
     lastSetupVersion: VERSION,
     setupCompletedAt: new Date().toISOString(),
+    githubStarPrompt: null,
   };
 }
 
@@ -637,6 +683,7 @@ export function loadSettings(): Settings {
       merged.defaultSearxngParams = normalizeSearxngParams(merged.defaultSearxngParams);
       merged.forceLocalRouting = merged.forceLocalRouting !== false;
       merged.forceLocalAgentRouting = merged.forceLocalAgentRouting !== false;
+      merged.githubStarPrompt = normalizeGithubStarPrompt(merged.githubStarPrompt);
       return merged;
     }
     if (fs.existsSync(CONFIG_FILE)) {
@@ -662,11 +709,55 @@ export function loadSettings(): Settings {
   return getDefaultSettings();
 }
 
-export async function promptForStar(existingRl?: readline.Interface): Promise<void> {
-  if (process.env.CI || process.env.NO_GH_STAR_PROMPT === '1' || !process.stdout.isTTY) {
+export async function promptForStar(
+  existingRl?: readline.Interface,
+  source: GithubStarPromptSource = 'setup'
+): Promise<void> {
+  if (process.env.CI || process.env.NO_GH_STAR_PROMPT === '1') {
     return;
   }
-  if (!isGhAuthenticated() || hasStarredRepo()) {
+
+  const settings = loadSettings();
+  if (settings.githubStarPrompt?.status) {
+    return;
+  }
+
+  const markPromptHandled = (status: GithubStarPromptStatus): void => {
+    const updated: Settings = {
+      ...settings,
+      githubStarPrompt: {
+        status,
+        source,
+        completedAt: new Date().toISOString(),
+      },
+    };
+    saveSettings(updated);
+  };
+
+  const showManualLink = (): void => {
+    console.log();
+    console.log(colorize('⭐ Like this tool? Support us on GitHub!', 'yellow,bold'));
+    console.log(colorize(REPO_URL, 'dim'));
+  };
+
+  if (!isGhAuthenticated()) {
+    showManualLink();
+    console.log(
+      colorize(
+        '  Install/authenticate gh CLI to star from terminal, or open the URL above to star manually.',
+        'dim'
+      )
+    );
+    markPromptHandled('manual-link-shown');
+    return;
+  }
+
+  if (hasStarredRepo()) {
+    markPromptHandled('already-starred');
+    return;
+  }
+
+  if (!process.stdout.isTTY || !process.stdin.isTTY) {
     return;
   }
 
@@ -684,23 +775,28 @@ export async function promptForStar(existingRl?: readline.Interface): Promise<vo
   };
 
   try {
-    console.log();
-    console.log(colorize('⭐ Like this tool? Support us on GitHub!', 'yellow,bold'));
-    console.log(colorize('https://github.com/unbraind/searxng-cli', 'dim'));
+    showManualLink();
     const answer = await question(colorize('Would you like to star the repo? [Y/n]: ', 'cyan'));
+    const normalized = answer.trim().toLowerCase();
 
-    if (answer.toLowerCase() !== 'n') {
-      if (starRepo()) {
-        console.log(colorize('  ✓ Thank you for your support! ⭐', 'green'));
-      } else {
-        console.log(
-          colorize(
-            '  ✗ Failed to star via gh CLI. You can star it manually at the URL above!',
-            'yellow'
-          )
-        );
-      }
+    if (normalized === 'n') {
+      markPromptHandled('declined');
+      return;
     }
+
+    if (starRepo()) {
+      console.log(colorize('  ✓ Thank you for your support! ⭐', 'green'));
+      markPromptHandled('starred');
+      return;
+    }
+
+    console.log(
+      colorize(
+        '  ✗ Failed to star via gh CLI. You can star it manually at the URL above!',
+        'yellow'
+      )
+    );
+    markPromptHandled('star-failed');
   } finally {
     if (!existingRl) {
       rl.close();
@@ -716,6 +812,7 @@ export function saveSettings(settings: Settings): void {
       searxngUrl: normalizeSearxngUrl(settings.searxngUrl) ?? DEFAULT_SEARXNG_URL,
       defaultFormat: normalizeOutputFormat(settings.defaultFormat),
       defaultSearxngParams: normalizeSearxngParams(settings.defaultSearxngParams),
+      githubStarPrompt: normalizeGithubStarPrompt(settings.githubStarPrompt),
     };
     fs.writeFileSync(SETTINGS_FILE, JSON.stringify(normalizedSettings, null, 2));
     if (normalizedSettings.searxngUrl) {
@@ -765,7 +862,7 @@ export async function testConnection(
   }
 }
 
-export async function runSetupWizard(): Promise<Settings> {
+export async function runSetupWizard(source: GithubStarPromptSource = 'setup'): Promise<Settings> {
   const existingSettings = fs.existsSync(SETTINGS_FILE) ? loadSettings() : null;
 
   console.log(colorize('\n╔════════════════════════════════════════════════════════════╗', 'cyan'));
@@ -1025,7 +1122,7 @@ export async function runSetupWizard(): Promise<Settings> {
     saveSettings(settings);
     markSetupComplete();
 
-    await promptForStar(rl);
+    await promptForStar(rl, source);
 
     console.log();
     console.log(
@@ -1122,8 +1219,6 @@ export async function showSettings(): Promise<void> {
   console.log('  searxng --unset-param <key>     Remove default SearXNG passthrough param');
   console.log('  searxng --clear-params          Clear all default passthrough params');
   console.log('  searxng --setup                  Run full setup wizard');
-
-  await promptForStar();
 }
 
 export function updateSetting(key: string, value: string): boolean {

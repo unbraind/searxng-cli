@@ -13,6 +13,7 @@ describe('GitHub Utilities', () => {
     it('should return true if gh auth status succeeds', () => {
       vi.mocked(execSync).mockReturnValue(Buffer.from(''));
       expect(isGhAuthenticated()).toBe(true);
+      expect(execSync).toHaveBeenCalledWith('gh auth status', { stdio: 'ignore' });
     });
 
     it('should return false if gh auth status fails', () => {
@@ -27,6 +28,13 @@ describe('GitHub Utilities', () => {
     it('should return true if viewerHasStarred is true', () => {
       vi.mocked(execSync).mockReturnValue(JSON.stringify({ viewerHasStarred: true }));
       expect(hasStarredRepo()).toBe(true);
+      expect(execSync).toHaveBeenCalledWith(
+        'gh repo view unbraind/searxng-cli --json viewerHasStarred',
+        {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        }
+      );
     });
 
     it('should return false if viewerHasStarred is false', () => {
@@ -46,6 +54,9 @@ describe('GitHub Utilities', () => {
     it('should return true if star command succeeds', () => {
       vi.mocked(execSync).mockReturnValue(Buffer.from(''));
       expect(starRepo()).toBe(true);
+      expect(execSync).toHaveBeenCalledWith('gh repo star unbraind/searxng-cli --yes', {
+        stdio: 'ignore',
+      });
     });
 
     it('should return false if star command fails', () => {

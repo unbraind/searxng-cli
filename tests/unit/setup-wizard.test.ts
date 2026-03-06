@@ -10,6 +10,7 @@ describe('Setup Wizard', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(fs.existsSync).mockReturnValue(false);
+    delete process.env.NO_GH_STAR_PROMPT;
   });
 
   it('should complete setup wizard successfully', async () => {
@@ -58,6 +59,7 @@ describe('Setup Wizard', () => {
   });
 
   it('should handle invalid format and theme during setup', async () => {
+    process.env.NO_GH_STAR_PROMPT = '1';
     const mockInterface = {
       question: vi.fn(),
       close: vi.fn(),
@@ -82,6 +84,7 @@ describe('Setup Wizard', () => {
   });
 
   it('should allow cancelling setup at the end', async () => {
+    process.env.NO_GH_STAR_PROMPT = '1';
     const mockInterface = {
       question: vi.fn(),
       close: vi.fn(),

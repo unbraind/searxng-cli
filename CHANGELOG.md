@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 No unreleased changes yet.
 
+## [2026.3.6-3] - 2026-03-06
+
+### Added
+
+- Expanded unit coverage for setup lifecycle behavior and GitHub CLI command execution paths.
+- Added dedicated onboarding-state tests to verify prompt persistence across repeated runs.
+
+### Fixed
+
+- Fixed setup/onboarding state persistence so completed prompt decisions are saved and respected on subsequent runs.
+
+### Changed
+
+- Improved setup-local onboarding parity with first-run/setup flows and refined fallback messaging when GitHub CLI automation is unavailable.
+
 ## [2026.3.6-2] - 2026-03-06
 
 ### Added

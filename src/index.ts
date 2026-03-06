@@ -102,6 +102,7 @@ import {
   updateSetting,
   fetchInstanceCapabilities,
   applyLocalAgentDefaults,
+  promptForStar,
 } from './storage';
 import type { SearchResponse, SearchOptions, AdvancedFilters, OutputFormat } from './types';
 
@@ -1541,7 +1542,7 @@ export async function main(): Promise<void> {
   }
 
   if (args[0] === '--setup') {
-    await runSetupWizard();
+    await runSetupWizard('setup');
     process.exit(0);
   }
 
@@ -1572,6 +1573,7 @@ export async function main(): Promise<void> {
       console.log(`  Connection check: ${connectionReady ? 'ready' : 'failed'}`);
     }
     console.log(`  Instance discovery cache: ${discoveryReady ? 'primed' : 'skipped'}`);
+    await promptForStar(undefined, 'setup-local');
     process.exit(0);
   }
 
@@ -2090,8 +2092,11 @@ export async function main(): Promise<void> {
     process.exit(health ? 0 : 1);
   }
 
-  if (!isSetupComplete() && process.stdout.isTTY && process.stdin.isTTY && !process.env.CI) {
-    await runSetupWizard();
+  if (!isSetupComplete() && !process.env.CI) {
+    await promptForStar(undefined, 'first-run');
+    if (process.stdout.isTTY && process.stdin.isTTY) {
+      await runSetupWizard('first-run');
+    }
   }
 
   if (args[0] === '--test') {

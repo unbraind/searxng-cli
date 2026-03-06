@@ -119,7 +119,7 @@ describe('Main function', () => {
   it('should run setup wizard', async () => {
     process.argv = ['node', 'index.js', '--setup'];
     await expect(main()).rejects.toThrow('process.exit');
-    expect(storage.runSetupWizard).toHaveBeenCalled();
+    expect(storage.runSetupWizard).toHaveBeenCalledWith('setup');
     expect(exitSpy).toHaveBeenCalledWith(0);
   });
 
@@ -148,7 +148,87 @@ describe('Main function', () => {
     expect(storage.applyLocalAgentDefaults).toHaveBeenCalled();
     expect(http.checkConnectionHealth).toHaveBeenCalled();
     expect(storage.discoverInstance).toHaveBeenCalledWith(true);
+    expect(storage.promptForStar).toHaveBeenCalledWith(undefined, 'setup-local');
     expect(exitSpy).toHaveBeenCalledWith(0);
+  });
+
+  it('should prompt for star on first CLI run before setup completion', async () => {
+    vi.mocked(storage.isSetupComplete).mockReturnValue(false);
+
+    process.argv = ['node', 'index.js', 'query'];
+    vi.mocked(cli.parseArgs).mockReturnValue({
+      query: 'query',
+      interactive: false,
+      format: 'toon',
+      verbose: false,
+      silent: false,
+      refreshEngines: false,
+    } as any);
+    const search = await import('@/search/index');
+    vi.mocked(search.expandQuery).mockReturnValue({
+      query: 'query',
+      engines: null,
+      category: null,
+    });
+    const http = await import('@/http/index');
+    vi.mocked(http.fetchWithRetry).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ results: [] }),
+    } as any);
+
+    await main();
+
+    expect(storage.promptForStar).toHaveBeenCalledWith(undefined, 'first-run');
+  });
+
+  it('should run setup wizard automatically on first interactive CLI run', async () => {
+    const stdinDescriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
+    const stdoutDescriptor = Object.getOwnPropertyDescriptor(process.stdout, 'isTTY');
+
+    Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+    Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true });
+
+    try {
+      vi.mocked(storage.isSetupComplete).mockReturnValue(false);
+
+      process.argv = ['node', 'index.js', 'query'];
+      vi.mocked(cli.parseArgs).mockReturnValue({
+        query: 'query',
+        interactive: false,
+        format: 'toon',
+        verbose: false,
+        silent: false,
+        refreshEngines: false,
+      } as any);
+      const search = await import('@/search/index');
+      vi.mocked(search.expandQuery).mockReturnValue({
+        query: 'query',
+        engines: null,
+        category: null,
+      });
+      const http = await import('@/http/index');
+      vi.mocked(http.fetchWithRetry).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ results: [] }),
+      } as any);
+
+      await main();
+
+      expect(storage.runSetupWizard).toHaveBeenCalledWith('first-run');
+    } finally {
+      if (stdinDescriptor) {
+        Object.defineProperty(process.stdin, 'isTTY', stdinDescriptor);
+      } else {
+        delete (process.stdin as { isTTY?: boolean }).isTTY;
+      }
+      if (stdoutDescriptor) {
+        Object.defineProperty(process.stdout, 'isTTY', stdoutDescriptor);
+      } else {
+        delete (process.stdout as { isTTY?: boolean }).isTTY;
+      }
+    }
   });
 
   it('should show settings', async () => {
