@@ -91,7 +91,7 @@
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@toon-format/toon": "^2.1.0",
     "cac": "^7.0.0",
-    "commander": "^14.0.3",
+    "commander": "^15.0.0",
     "node-html-parser": "^7.1.0"
   }
 }
