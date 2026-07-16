@@ -1,0 +1,26 @@
+id: searx-repo-health-2026
+title: "Make searxng-cli secure, current, and sustainably maintainable"
+description: "Eliminate known vulnerabilities and dependency drift, restore dependable CI, establish comprehensive project tracking, and leave a documented modernization roadmap."
+type: Goal
+status: open
+priority: 0
+tags[5]: dependencies,github,goal,maintenance,security
+created_at: "2026-07-16T16:55:39.716Z"
+updated_at: "2026-07-16T16:55:39.716Z"
+assignee: codex-root
+author: codex-root
+estimated_minutes: 720
+acceptance_criteria: "bun audit reports zero vulnerabilities; unit, e2e, coverage, build, formatting, typecheck, and package smoke checks pass; GitHub required checks pass on the consolidated pull request; pm health and validation pass with both .toon items and .jsonl histories committed"
+definition_of_ready: Canonical repository cloned; authenticated gh and pm 2026.7.16 available; GitHub and baseline inventories collected.
+goal: repository-health
+objective: secure-current-maintainable
+value: Protect users and contributors while reducing maintenance overhead.
+impact: Removes exploitable development/runtime dependency paths and makes updates reliably shippable.
+outcome: "A green, vulnerability-free, documented repository with governed project context."
+why_now: "Two GitHub alerts and 11 stale dependency PRs have accumulated, while local audit finds 41 advisories and runner deprecation warnings."
+reviewer: repository-owner
+risk: high
+confidence: 95
+sprint: 2026-07-recovery
+release: next
+body: "## Scope\\n\\nRecover the repository from accumulated dependency and automation drift while preserving CLI behavior and release quality. The goal covers GitHub advisory triage, runtime and development dependency upgrades, Actions modernization, source/security review, package verification, and durable pm governance.\\n\\n## Success measures\\n\\n- Zero known dependency vulnerabilities in the resolved lockfile.\\n- All required local and GitHub checks pass on one coherent upgrade head.\\n- Existing Dependabot backlog is superseded without losing issue lineage.\\n- Repository-local pm state captures goals, plans, findings, evidence, and future improvements."

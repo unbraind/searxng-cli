@@ -3,7 +3,7 @@
 ## Development Environment
 
 - Bun: `>=1.0.0`
-- Node.js: `>=18`
+- Node.js: `>=22.12`
 
 ```bash
 bun install
@@ -43,8 +43,13 @@ bun run lint
 bun run secrets:history
 bun run build
 bun run test:unit
+bun run test:coverage
 bun run smoke:package
 ```
+
+Coverage is enforced globally at 70% statements, 58% branches, 82% functions, and 72% lines.
+These floors are intentionally below the current baseline and should be ratcheted upward as the
+large command and storage modules are decomposed and tested.
 
 ## Versioning
 

@@ -1,0 +1,50 @@
+id: searx-hermetic-e2e
+title: Make the E2E suite self-contained by default
+description: "Start the existing mock SearXNG server automatically when E2E_SEARXNG_URL is not supplied so test:e2e does not depend on a developer daemon."
+type: Issue
+status: closed
+priority: 1
+tags[4]: developer-experience,e2e,reliability,testing
+created_at: "2026-07-16T17:16:53.271Z"
+updated_at: "2026-07-16T17:18:02.700Z"
+deadline: "2026-07-18T17:16:53.271Z"
+closed_at: "2026-07-16T17:18:02.208Z"
+author: codex-root
+estimated_minutes: 45
+acceptance_criteria: "bun run test:e2e passes on a host without SearXNG listening on port 8080; an explicit E2E_SEARXNG_URL still overrides the mock; teardown releases all temporary server and filesystem resources"
+definition_of_ready: The failing clean-host command and existing mock server helper are confirmed.
+parent: searx-repository-audit
+risk: medium
+confidence: 98
+sprint: 2026-07-recovery
+release: next
+reporter: codex-root
+severity: medium
+environment: "Clean developer or CI host without SearXNG at localhost:8080"
+repro_steps: "Ensure port 8080 has no SearXNG service and run bun run test:e2e."
+resolution: "Automatic mock lifecycle removes the implicit localhost:8080 dependency."
+expected_result: The E2E suite provisions its own deterministic backend unless an explicit endpoint is provided.
+actual_result: "The suite configures localhost:8080 and multiple search/format tests fail with fetch failed."
+affected_version: 2026.3.6-3
+fixed_version: next
+component: tests/e2e
+regression: false
+customer_impact: Contributors cannot reliably run the documented E2E quality gate on clean machines.
+dependencies[1]{id,kind,created_at,author,source_kind}:
+  searx-repository-audit,discovered_from,"2026-07-16T17:16:53.271Z",null,null
+comments[2]{created_at,author,text}:
+  "2026-07-16T17:16:53.271Z",codex-root,Discovered during the comprehensive recovery verification matrix.
+  "2026-07-16T17:18:01.672Z",codex-root,"Clean-host bun run test:e2e passed: 1 file and 60 tests in 23.61 seconds."
+notes[1]{created_at,author,text}:
+  "2026-07-16T17:16:53.271Z",codex-root,Keep live-instance testing opt-in through E2E_SEARXNG_URL.
+learnings[2]{created_at,author,text}:
+  "2026-07-16T17:16:53.271Z",codex-root,A mock helper provides no hermeticity unless suite setup owns its lifecycle.
+  "2026-07-16T17:18:01.672Z",codex-root,Keeping the explicit environment override while defaulting to an owned mock supports both deterministic CI and intentional live-instance tests.
+files[1]{path,scope,note}:
+  tests/e2e/cli.test.ts,project,E2E server lifecycle
+tests[1]{command,scope,timeout_seconds}:
+  "bun run test:e2e",project,180
+docs[1]{path,scope,note}:
+  CONTRIBUTING.md,project,Documented E2E gate
+close_reason: "The E2E suite is self-contained by default, preserves the live override, tears down its server, and all 60 tests pass."
+body: "tests/e2e/cli.test.ts defines a complete mock SearXNG server but the suite-level setup still configures http://localhost:8080 by default. Search cases therefore fail with fetch errors on clean hosts. Start the mock during beforeAll when no explicit external endpoint is requested, route the CLI config to its ephemeral port, and close it during teardown. Preserve E2E_SEARXNG_URL as the explicit live-instance override."

@@ -1,0 +1,47 @@
+id: searx-verification
+title: Run comprehensive local and isolated package verification
+description: "Prove the upgraded repository through every maintained quality, test, release, and packed-consumer surface."
+type: Task
+status: closed
+priority: 1
+tags[4]: package,release,tests,verification
+created_at: "2026-07-16T16:58:06.353Z"
+updated_at: "2026-07-16T17:24:08.415Z"
+deadline: "2026-07-21T16:58:06.353Z"
+closed_at: "2026-07-16T17:22:15.881Z"
+author: codex-root
+estimated_minutes: 90
+acceptance_criteria: All documented verification commands pass on the final local head; Packed package works from an isolated temporary consumer
+definition_of_ready: "Dependency, CI, and audit changes are complete."
+parent: searx-recovery-plan
+risk: medium
+confidence: 95
+sprint: 2026-07-recovery
+release: next
+resolution: "Verified the complete recovery surface with 679 automated tests plus audit, release, workflow, shell, secret, and installed-package checks."
+expected_result: All documented verification commands pass and the packed package works outside the source checkout.
+actual_result: All gates pass; package smoke verified npm/npx and bunx consumers for both published binary names.
+comments[6]{created_at,author,text}:
+  "2026-07-16T16:58:06.353Z",codex-root,Baseline has 614 passing unit tests plus a green e2e suite.
+  "2026-07-16T17:18:34.876Z",codex-root,Release dry-run found stale calendar version 2026.3.6-3; version policy requires 2026.7.16 for the next release.
+  "2026-07-16T17:22:15.180Z",codex-root,"Final local proof: frozen Bun install and npm install pass; bun audit reports no vulnerabilities; lint/build pass; 619 unit and 60 hermetic E2E tests pass; enforced coverage is above all floors."
+  "2026-07-16T17:22:15.180Z",codex-root,Release dry-run passes for synchronized version 2026.7.16 and package smoke installs the tarball in an isolated temporary consumer through npm/npx and bunx under both bin names.
+  "2026-07-16T17:22:15.180Z",codex-root,"Workflow and security proof: actionlint 1.7.12 passes, shellcheck passes, current-tree Gitleaks scans 12.12 MB with no leaks, and full-history secret scan passes."
+  "2026-07-16T17:24:08.308Z",codex-root,"After final response-cancellation and IPv6-mapped-address hardening, release:dry-run passed again and the hermetic E2E suite passed all 60 tests."
+notes[1]{created_at,author,text}:
+  "2026-07-16T16:58:06.353Z",codex-root,Verification must run after the final tracker-relevant source mutation.
+learnings[3]{created_at,author,text}:
+  "2026-07-16T16:58:06.353Z",codex-root,Both Bun frozen-lock and npm peer-resolution paths are required because CI exercises both package managers.
+  "2026-07-16T17:18:34.876Z",codex-root,"The release gate deliberately makes package metadata date-sensitive, so a comprehensive recovery must synchronize the calendar version before final proof."
+  "2026-07-16T17:22:15.180Z",codex-root,"Bun 1.3.11 restores package.json after a version-sync script mutation; running the repository script directly synchronized the file, while the declared packageManager and hosted setup target Bun 1.3.14."
+files[1]{path,scope,note}:
+  package.json,project,Canonical verification scripts
+tests[4]{command,scope,timeout_seconds}:
+  "bun run smoke:package",project,180
+  "bun run test:coverage",project,300
+  "bun run test:e2e",project,180
+  "bun run test:unit",project,180
+docs[1]{path,scope,note}:
+  docs/development.md,project,Developer verification contract
+close_reason: "All local, coverage, E2E, workflow, secret, release, and isolated packed-consumer gates pass on the final local tree."
+body: "Run frozen Bun and npm installs, typecheck, formatting, build, unit/e2e/coverage suites, version checks, release checks, secret scan, audit, and package smoke in clean environments."

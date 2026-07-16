@@ -469,7 +469,7 @@ bun run lint
 ## Requirements
 
 - **Bun 1.0.0+** (recommended) - [Install Bun](https://bun.sh/docs/installation)
-- Node.js 18.0.0+ (alternative)
+- Node.js 22.12.0+ (alternative)
 - Access to a SearXNG instance
 
 ## License

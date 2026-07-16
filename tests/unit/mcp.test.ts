@@ -8,10 +8,13 @@ const { mockSetRequestHandler } = vi.hoisted(() => {
 });
 
 vi.mock('@modelcontextprotocol/sdk/server/index.js', () => {
-  const ServerMock = vi.fn().mockImplementation(() => ({
-    setRequestHandler: mockSetRequestHandler,
-    connect: vi.fn().mockResolvedValue(undefined),
-  }));
+  const ServerMock = vi.fn(function (this: {
+    setRequestHandler: typeof mockSetRequestHandler;
+    connect: ReturnType<typeof vi.fn>;
+  }) {
+    this.setRequestHandler = mockSetRequestHandler;
+    this.connect = vi.fn().mockResolvedValue(undefined);
+  });
   return { Server: ServerMock };
 });
 

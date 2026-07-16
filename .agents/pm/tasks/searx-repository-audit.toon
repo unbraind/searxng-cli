@@ -1,0 +1,44 @@
+id: searx-repository-audit
+title: "Audit and harden source, packaging, documentation, and repository security"
+description: "Inspect the full codebase and release surface for actionable defects, security gaps, stale guidance, and maintainability improvements."
+type: Task
+status: closed
+priority: 1
+tags[5]: audit,docs,packaging,quality,security
+created_at: "2026-07-16T16:58:05.702Z"
+updated_at: "2026-07-16T17:19:01.135Z"
+deadline: "2026-07-20T16:58:05.702Z"
+closed_at: "2026-07-16T17:19:00.621Z"
+author: codex-root
+estimated_minutes: 180
+acceptance_criteria: Actionable source/security/documentation findings are fixed or explicitly tracked; Secret history scan and package content inspection pass
+definition_of_ready: Repository file inventory and high-risk pattern scan collected.
+parent: searx-recovery-plan
+risk: high
+confidence: 80
+sprint: 2026-07-recovery
+release: next
+resolution: "Completed source, packaging, workflow, documentation, and live repository-security audit with immediate remediations and a measured architecture backlog."
+expected_result: "Actionable findings are fixed or governed with detailed follow-up, and security/package inspection surfaces are clean."
+actual_result: Immediate findings are implemented; secret/security controls are enabled; the remaining large modularization is tracked under searx-modular-command-architecture.
+comments[5]{created_at,author,text}:
+  "2026-07-16T16:58:05.702Z",codex-root,Native GitHub secret scanning is disabled; gitleaks workflow currently provides the repository scan.
+  "2026-07-16T17:12:24.645Z",codex-root,Enabled and verified native GitHub secret scanning plus push protection; non-provider and validity-check add-ons are unavailable for this repository tier and remained disabled.
+  "2026-07-16T17:12:24.645Z",codex-root,Pinned all workflow actions to current full commit SHAs and enabled repository-level SHA pin enforcement.
+  "2026-07-16T17:19:00.118Z",codex-root,"Audit fixed URL trust and bounded-fetch security, Windows browser spawning, hermetic E2E lifecycle, native GitHub security controls, workflow SHA pinning, documentation, and coverage enforcement."
+  "2026-07-16T17:19:00.118Z",codex-root,"Future architectural decomposition is tracked as searx-modular-command-architecture with source measurements, sequencing guidance, tests, and acceptance criteria."
+notes[1]{created_at,author,text}:
+  "2026-07-16T16:58:05.702Z",codex-root,Distinguish immediate fixes from larger roadmap improvements while retaining detailed evidence.
+learnings[3]{created_at,author,text}:
+  "2026-07-16T16:58:05.702Z",codex-root,Baseline behavior is green so changes should be justified by concrete risk or maintenance evidence.
+  "2026-07-16T17:12:24.645Z",codex-root,Repository security controls were materially weaker than the Gitleaks workflow alone suggested; live settings inspection is required.
+  "2026-07-16T17:19:00.118Z",codex-root,"Verification should be treated as an audit feedback loop: the first clean-host E2E run exposed a hidden daemon dependency that the unit suite could not reveal."
+files[2]{path,scope,note}:
+  src,project,Product implementation
+  scripts,project,Build release and security automation
+tests[1]{command,scope,timeout_seconds}:
+  "bun run secrets:history",project,180
+docs[1]{path,scope,note}:
+  SECURITY.md,project,Vulnerability reporting and support policy
+close_reason: All actionable audit findings were fixed and tested; the larger architecture improvement is explicitly governed as a future Feature.
+body: "Review source trust boundaries, shell execution, URL/file handling, package contents, documentation, release scripts, workflow permissions, and GitHub security controls. Fix actionable issues and create detailed future items for larger improvements."

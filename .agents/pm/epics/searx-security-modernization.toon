@@ -1,0 +1,42 @@
+id: searx-security-modernization
+title: "Security, dependency, CI, and governance modernization"
+description: "Consolidate advisory remediation, dependency and Actions upgrades, repository review, and complete pm governance into one verified delivery lane."
+type: Epic
+status: open
+priority: 0
+tags[5]: ci,deps,epic,pm-governance,security
+created_at: "2026-07-16T16:55:57.898Z"
+updated_at: "2026-07-16T16:55:57.898Z"
+deadline: "2026-07-23T16:55:57.898Z"
+assignee: codex-root
+author: codex-root
+estimated_minutes: 600
+acceptance_criteria: All active recovery children close with evidence; No unresolved critical/high security advisories remain; Current-head CI and CodeQL are green
+definition_of_ready: Baseline tests green and all GitHub advisory/dependency surfaces inventoried.
+goal: repository-health
+objective: execute-recovery
+value: One coherent verification surface for tightly coupled repository maintenance.
+impact: Supersedes fragmented update PRs and prevents recurring lockfile/peer dependency failures.
+outcome: Modernized dependencies and automation with traceable evidence.
+why_now: Existing automated updates cannot merge independently and leave current security alerts unresolved.
+parent: searx-repo-health-2026
+reviewer: repository-owner
+risk: high
+confidence: 90
+sprint: 2026-07-recovery
+release: next
+dependencies[1]{id,kind,created_at,author,source_kind}:
+  searx-repo-health-2026,related,"2026-07-16T16:55:57.898Z",codex-root,null
+comments[1]{created_at,author,text}:
+  "2026-07-16T16:55:57.898Z",codex-root,Live GitHub inventory found 11 open Dependabot PRs and two open native dependency alerts.
+notes[1]{created_at,author,text}:
+  "2026-07-16T16:55:57.898Z",codex-root,Consolidate coupled upgrades into one branch so lockfile and peer dependencies remain coherent.
+learnings[1]{created_at,author,text}:
+  "2026-07-16T16:55:57.898Z",codex-root,Single-package Dependabot majors fail because Vitest and coverage-v8 must be upgraded together and bun.lock must be regenerated.
+files[1]{path,scope,note}:
+  package.json,project,Dependency manifest and scripts
+tests[1]{command,scope,timeout_seconds}:
+  "bun run test:unit",project,120
+docs[1]{path,scope,note}:
+  README.md,project,Primary product and usage documentation
+body: "## Baseline evidence\\n\\nGitHub reports 11 open Dependabot PRs, a critical Vitest advisory, a low esbuild advisory, no open CodeQL findings, and disabled native secret scanning. bun audit on the release head reports 41 advisories: 1 critical, 7 high, 31 moderate, and 2 low. Existing bot PRs split coupled upgrades and fail frozen-lockfile or peer-resolution checks.\\n\\n## Delivery strategy\\n\\nReplace fragmented bot updates with one coherent, lockfile-consistent upgrade; test breaking majors together; modernize CI runtimes/actions; audit source and packaging; preserve all findings as linked issues and future backlog."
