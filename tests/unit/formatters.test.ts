@@ -407,7 +407,7 @@ describe('Advanced Formatters Module', () => {
       const options = createMockOptions();
       const output = formatToonOutput(data, options);
       expect(output).toContain('n: 0');
-      expect(output).toContain('results[0]');
+      expect(output).toContain('results: []');
     });
 
     it('should include result URLs', () => {

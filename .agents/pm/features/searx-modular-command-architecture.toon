@@ -1,0 +1,36 @@
+id: searx-modular-command-architecture
+title: Decompose command and storage monoliths behind tested module boundaries
+description: "Reduce change risk in the 2,660-line command dispatcher and 1,368-line storage module through incremental extraction and contract tests."
+type: Feature
+status: open
+priority: 2
+tags[4]: architecture,coverage,maintainability,testing
+created_at: "2026-07-16T17:12:24.079Z"
+updated_at: "2026-07-16T17:12:24.079Z"
+deadline: "2027-01-16T17:12:24.079Z"
+assignee: codex-root
+author: codex-root
+estimated_minutes: 720
+acceptance_criteria: Command families have explicit module ownership; storage concerns are split by responsibility; public CLI and SDK behavior remains compatible; per-file coverage improves without disabling global gates
+definition_of_ready: A dependency map and prioritized extraction sequence are reviewed.
+parent: searx-security-modernization
+risk: high
+confidence: 70
+sprint: backlog
+release: future
+dependencies[1]{id,kind,created_at,author,source_kind}:
+  searx-repository-audit,discovered_from,"2026-07-16T17:12:24.079Z",null,null
+comments[1]{created_at,author,text}:
+  "2026-07-16T17:12:24.079Z",codex-root,"Source inventory: src/index.ts is 2,660 lines and src/storage/index.ts is 1,368 lines."
+notes[1]{created_at,author,text}:
+  "2026-07-16T17:12:24.079Z",codex-root,"Avoid a flag-day rewrite; each extraction must preserve CLI snapshots, exit codes, and configuration compatibility."
+learnings[1]{created_at,author,text}:
+  "2026-07-16T17:12:24.079Z",codex-root,The lowest-covered and most frequently edited orchestration modules are the best initial extraction candidates.
+files[2]{path,scope,note}:
+  src/index.ts,project,Command orchestration monolith
+  src/storage/index.ts,project,Persistence monolith
+tests[1]{command,scope,timeout_seconds}:
+  "bun run test:unit",project,180
+docs[1]{path,scope,note}:
+  CONTRIBUTING.md,project,Future architecture guidance
+body: "The full audit found src/index.ts and src/storage/index.ts concentrating parsing, routing, IO, formatting, and lifecycle behavior. Plan incremental extractions rather than a rewrite: define stable seams, move one coherent command family at a time, add contract tests before movement, and ratchet per-file coverage as ownership becomes clearer."

@@ -1,0 +1,39 @@
+id: searx-coverage-governance
+title: Establish non-regressing coverage policy
+description: Turn the existing coverage report into an enforceable quality gate at a realistic baseline.
+type: Task
+status: closed
+priority: 1
+tags[4]: ci,coverage,quality,tests
+created_at: "2026-07-16T17:12:22.553Z"
+updated_at: "2026-07-16T17:14:14.277Z"
+deadline: "2026-07-19T17:12:22.553Z"
+closed_at: "2026-07-16T17:14:13.666Z"
+author: codex-root
+estimated_minutes: 45
+acceptance_criteria: Coverage execution fails below documented global branch/function/line/statement floors and passes at the current repository baseline
+definition_of_ready: Current full-unit coverage report is available.
+parent: searx-repository-audit
+risk: medium
+confidence: 95
+sprint: 2026-07-recovery
+release: next
+resolution: "Configured 70% statements, 58% branches, 82% functions, and 72% lines as global Vitest coverage floors."
+expected_result: The coverage command fails on material regression while current tests remain green.
+actual_result: All 619 unit tests pass with observed coverage above every configured floor.
+comments[2]{created_at,author,text}:
+  "2026-07-16T17:12:22.553Z",codex-root,The audit found coverage reporters configured without thresholds.
+  "2026-07-16T17:13:44.023Z",codex-root,"Current enforced baseline passes at 72.45% statements, 60.77% branches, 84.47% functions, and 74.45% lines."
+notes[1]{created_at,author,text}:
+  "2026-07-16T17:12:22.553Z",codex-root,"Use deliberately conservative floors so this recovery does not pretend the current 2,660-line command module is already well covered."
+learnings[2]{created_at,author,text}:
+  "2026-07-16T17:12:22.553Z",codex-root,"A generated coverage report is observability, not a regression gate, until thresholds are configured."
+  "2026-07-16T17:13:44.023Z",codex-root,A two-point margin below observed coverage avoids flaky rounding while still preventing material regression.
+files[1]{path,scope,note}:
+  vitest.config.ts,project,Coverage policy
+tests[1]{command,scope,timeout_seconds}:
+  "bun run test:coverage",project,180
+docs[1]{path,scope,note}:
+  CONTRIBUTING.md,project,Contributor verification guidance
+close_reason: "Global coverage floors are configured, documented, and pass against all 619 unit tests."
+body: "The repository collects V8 coverage but configures no minimum thresholds, so meaningful regressions can remain green. Capture the post-upgrade baseline, establish conservative global floors below current results, and keep the richer HTML/LCOV artifacts available for future ratchets."

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   buildUrl,
   calculateRelevanceScore,
@@ -11,6 +11,8 @@ import {
   clusterByDomain,
   clusterByEngine,
   analyzeResults,
+  fetchWebpageContent,
+  validateRemoteContentUrl,
 } from '@/search/index';
 import type { SearchResult, SearchOptions } from '@/types/index';
 
@@ -432,6 +434,66 @@ describe('Search Module', () => {
       expect(clusters.length).toBe(2);
       const googleCluster = clusters.find((c) => c.engine === 'google');
       expect(googleCluster?.count).toBe(2);
+    });
+  });
+
+  describe('remote content security', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('only applies trusted bonuses to parsed hostname boundaries', () => {
+      const trusted = createMockResult({ url: 'https://docs.github.com/actions' });
+      const deceptive = createMockResult({ url: 'https://evil.example/github.com/actions' });
+      expect(calculateRelevanceScore(trusted, 'unrelated')).toBe(10);
+      expect(calculateRelevanceScore(deceptive, 'unrelated')).toBe(5);
+    });
+
+    it('rejects non-web, credential-bearing, and private literal targets', () => {
+      expect(validateRemoteContentUrl('file:///etc/passwd')).toBeNull();
+      expect(validateRemoteContentUrl('https://user:pass@example.com')).toBeNull();
+      expect(validateRemoteContentUrl('http://localhost:8080')).toBeNull();
+      expect(validateRemoteContentUrl('http://127.0.0.1')).toBeNull();
+      expect(validateRemoteContentUrl('http://192.168.1.10')).toBeNull();
+      expect(validateRemoteContentUrl('http://[::ffff:7f00:1]')).toBeNull();
+      expect(validateRemoteContentUrl('https://example.com/page')?.hostname).toBe('example.com');
+    });
+
+    it('does not fetch rejected targets', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+      const original = createMockResult({ url: 'http://127.0.0.1/private', content: 'snippet' });
+      await expect(fetchWebpageContent([original])).resolves.toEqual([original]);
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('rejects unsafe redirects and oversized responses', async () => {
+      const original = createMockResult({ url: 'https://example.com/page', content: 'snippet' });
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(
+          new Response(null, { status: 302, headers: { location: 'http://127.0.0.1/private' } })
+        )
+        .mockResolvedValueOnce(
+          new Response('ignored', {
+            status: 200,
+            headers: { 'content-type': 'text/html', 'content-length': '1048577' },
+          })
+        );
+      await expect(fetchWebpageContent([original])).resolves.toEqual([original]);
+      await expect(fetchWebpageContent([original])).resolves.toEqual([original]);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('extracts bounded text content from valid HTML', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response('<html><body><h1>Useful result</h1></body></html>', {
+          status: 200,
+          headers: { 'content-type': 'text/html; charset=utf-8' },
+        })
+      );
+      const result = createMockResult({ url: 'https://example.com/page', content: 'snippet' });
+      const [enriched] = await fetchWebpageContent([result]);
+      expect(enriched?.content).toContain('Useful result');
     });
   });
 

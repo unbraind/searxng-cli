@@ -1236,7 +1236,7 @@ export function openInBrowser(url: string): void {
   const platform = process.platform;
   let cmd: string;
   if (platform === 'darwin') cmd = 'open';
-  else if (platform === 'win32') cmd = 'start';
+  else if (platform === 'win32') cmd = 'explorer.exe';
   else cmd = 'xdg-open';
   spawn(cmd, [url], { detached: true, stdio: 'ignore' }).unref();
 }

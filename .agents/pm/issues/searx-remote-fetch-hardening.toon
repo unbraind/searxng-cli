@@ -1,0 +1,53 @@
+id: searx-remote-fetch-hardening
+title: Harden remote content fetching and URL trust scoring
+description: Prevent attacker-controlled URLs from receiving trusted-domain relevance bonuses and bound remote content retrieval to safe web schemes and finite response sizes.
+type: Issue
+status: closed
+priority: 0
+tags[5]: mcp,relevance,security,ssrf,url-validation
+created_at: "2026-07-16T17:07:19.466Z"
+updated_at: "2026-07-16T17:24:07.500Z"
+deadline: "2026-07-18T17:07:19.466Z"
+closed_at: "2026-07-16T17:13:42.636Z"
+author: codex-root
+estimated_minutes: 120
+acceptance_criteria: A URL containing github.com outside its hostname receives no trust bonus; only HTTP(S) remote targets are fetched; loopback/private literal targets and credential-bearing URLs are rejected; redirect targets are revalidated; unsupported content types and oversized responses are not buffered; regression tests cover each boundary
+definition_of_ready: Concrete vulnerable call sites and existing unit-test locations are identified.
+parent: searx-repository-audit
+risk: critical
+confidence: 90
+sprint: 2026-07-recovery
+release: next
+reporter: codex-root
+severity: high
+environment: CLI search enrichment and MCP search tool when fetchContent/fetch_content is enabled
+repro_steps: "Score https://evil.example/path/github.com with an unrelated title; or return a file/private/very-large URL from the configured SearXNG instance and request fetched content."
+resolution: Remote content enrichment and trust scoring are bounded and hostname-aware.
+expected_result: Trust bonuses depend on parsed hostname boundaries and content enrichment only performs bounded fetches to acceptable public web targets.
+actual_result: "Raw URL substring matches grant trust and fetch() buffers response.text() without validating scheme, target class, redirect destination, content type, or response size."
+affected_version: 2026.3.6-3
+fixed_version: next
+component: "search,mcp"
+regression: false
+customer_impact: A malicious or compromised search backend can distort ranking and induce resource-heavy or local-target fetch attempts from the CLI host.
+dependencies[1]{id,kind,created_at,author,source_kind}:
+  searx-repository-audit,related_to,"2026-07-16T17:07:19.466Z",null,null
+comments[3]{created_at,author,text}:
+  "2026-07-16T17:07:19.466Z",codex-root,Discovered during full repository recovery after dependency and CI remediation.
+  "2026-07-16T17:13:41.857Z",codex-root,"Focused Vitest verification passed: 2 files and 131 tests."
+  "2026-07-16T17:24:07.473Z",codex-root,Final hardening also cancels rejected response bodies and rejects all IPv4-mapped IPv6 literals; final release gate passed 619 unit tests and package smoke.
+notes[1]{created_at,author,text}:
+  "2026-07-16T17:07:19.466Z",codex-root,Preserve ordinary public HTTP(S) content extraction while failing closed to the original search result on rejected or failed fetches.
+learnings[3]{created_at,author,text}:
+  "2026-07-16T17:07:19.466Z",codex-root,Truncating parsed text after response.text() does not bound network or heap consumption.
+  "2026-07-16T17:13:41.857Z",codex-root,Manual redirect handling is necessary because automatic redirects bypass application-level target validation.
+  "2026-07-16T17:24:07.473Z",codex-root,Explicit body cancellation preserves connection and memory hygiene even when a response is rejected before parsing.
+files[2]{path,scope,note}:
+  src/search/index.ts,project,Remote content enrichment and trusted-domain scoring
+  src/cli/index.ts,project,Windows browser launcher portability fix
+tests[1]{command,scope,timeout_seconds}:
+  bunx vitest run tests/unit/search.test.ts tests/unit/cli.test.ts,project,120
+docs[1]{path,scope,note}:
+  SECURITY.md,project,Security boundary documentation
+close_reason: All security acceptance criteria are implemented and the focused 131-test suite passes.
+body: "The search and MCP content-enrichment paths consume URLs returned by a configured SearXNG instance. Trusted-domain scoring currently uses raw substring matching, so an unrelated hostname can embed a trusted token. Remote content fetching accepts arbitrary URL schemes and buffers the entire response before truncating extracted text. Implement hostname-aware trust rules, reject unsupported or local URL targets, validate redirects, restrict content types, and cap downloaded bytes before parsing."

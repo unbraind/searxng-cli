@@ -14,20 +14,18 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: ['src/searxng-cli.ts', 'src/types/**'],
       all: true,
+      thresholds: {
+        statements: 70,
+        branches: 58,
+        functions: 82,
+        lines: 72,
+      },
     },
     testTimeout: 30000,
     hookTimeout: 10000,
     fileParallelism: true,
     deps: {
       interopDefault: true,
-    },
-  },
-  esbuild: {
-    tsconfigRaw: {
-      compilerOptions: {
-        module: 'ESNext',
-        moduleResolution: 'node',
-      },
     },
   },
   resolve: {

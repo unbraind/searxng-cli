@@ -6,7 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-No unreleased changes yet.
+### Security
+
+- Eliminated all known dependency audit findings, including the critical Vitest and low-severity
+  esbuild advisories reported by GitHub Dependabot.
+- Hardened remote result-content enrichment with URL, redirect, content-type, response-size, and
+  concurrency boundaries.
+- Changed trusted-source ranking to use parsed hostname boundaries instead of attacker-controlled
+  URL substring matches.
+- Enabled native GitHub secret scanning and push protection alongside the existing Gitleaks checks.
+- Pinned every GitHub Action to a full commit SHA and enabled repository enforcement for SHA pins.
+
+### Changed
+
+- Updated the supported runtime to Node.js 22.12 or newer and modernized GitHub Actions to current
+  Node-compatible major versions.
+- Updated production and development dependencies, including MCP SDK 1.29, TOON 2.3, Commander 15,
+  node-html-parser 9, Vitest 4, TypeScript 7, Prettier 3.9, and esbuild 0.28.1.
+- Updated Windows browser launching to use the directly spawnable `explorer.exe` executable.
+- Added conservative global coverage thresholds so test-coverage regressions fail the quality gate.
+
+### Fixed
+
+- Updated TOON and MCP tests for their current dependency contracts while preserving runtime
+  behavior.
+- Made the 60-test E2E suite provision and clean up its own mock SearXNG backend by default while
+  preserving `E2E_SEARXNG_URL` for explicit live-instance runs.
 
 ## [2026.3.6-3] - 2026-03-06
 

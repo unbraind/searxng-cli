@@ -4,7 +4,7 @@
 
 ### Prerequisites
 
-- **Bun 1.0.0+** (recommended) or Node.js 18.0.0+
+- **Bun 1.0.0+** (recommended) or Node.js 22.12.0+
 - Access to a SearXNG instance
 
 ### Install Bun

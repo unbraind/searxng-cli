@@ -1,0 +1,35 @@
+id: searx-github-delivery
+title: Deliver consolidated PR and close superseded GitHub maintenance backlog
+description: "Commit and push code plus pm artifacts, open the consolidated PR, converge required checks/reviews, close stale dependency PRs, and record final-head proof."
+type: Task
+status: in_progress
+priority: 1
+tags[4]: closeout,delivery,github,pr
+created_at: "2026-07-16T16:58:06.908Z"
+updated_at: "2026-07-16T17:22:18.542Z"
+deadline: "2026-07-23T16:58:06.908Z"
+assignee: codex-root
+author: codex-root
+estimated_minutes: 90
+acceptance_criteria: Code and pm .toon/.jsonl history are committed and pushed; Required GitHub checks and review conversations are green/resolved; Superseded bot PRs are closed with explanation
+definition_of_ready: Comprehensive local verification passes.
+parent: searx-recovery-plan
+risk: medium
+confidence: 90
+sprint: 2026-07-recovery
+release: next
+dependencies[1]{id,kind,created_at,author,source_kind}:
+  searx-verification,blocked_by,"2026-07-16T16:58:06.908Z",codex-root,null
+comments[1]{created_at,author,text}:
+  "2026-07-16T16:58:06.908Z",codex-root,Eleven open Dependabot PRs will be evaluated against and superseded by the consolidated tested head.
+notes[1]{created_at,author,text}:
+  "2026-07-16T16:58:06.908Z",codex-root,Do not close bot PRs until the consolidated branch is pushed and demonstrably contains their upgrades.
+learnings[1]{created_at,author,text}:
+  "2026-07-16T16:58:06.908Z",codex-root,Branch protection requires stable quality-bun quality-node package-smoke gitleaks and CodeQL analyze checks.
+files[1]{path,scope,note}:
+  .github/PULL_REQUEST_TEMPLATE.md,project,Pull request evidence structure
+tests[1]{command,scope,timeout_seconds}:
+  gh pr checks --watch,project,1800
+docs[1]{path,scope,note}:
+  CONTRIBUTING.md,project,Contribution and PR expectations
+body: "Publish the complete recovery branch with linked pm context. Wait for required checks, fix current-head failures, respond to review feedback, close Dependabot PRs superseded by the consolidated upgrade, and verify merged or final requested state."

@@ -1,0 +1,129 @@
+id: searx-recovery-plan
+title: Execute repository security and modernization recovery
+description: "Ordered implementation plan for advisory remediation, dependency and Actions upgrades, source review, verification, GitHub closeout, and durable pm evidence."
+type: Plan
+status: in_progress
+priority: 0
+tags[6]: ci,deps,plan,quality,security,shipping
+created_at: "2026-07-16T16:56:40.070Z"
+updated_at: "2026-07-16T17:22:19.180Z"
+deadline: "2026-07-23T16:56:40.070Z"
+assignee: codex-root
+author: codex-root
+estimated_minutes: 600
+acceptance_criteria: All plan steps contain evidence and reach completed status; Consolidated PR passes required GitHub checks
+definition_of_ready: Baseline inventory and regression suite completed.
+parent: searx-security-modernization
+risk: high
+confidence: 90
+sprint: 2026-07-recovery
+release: next
+dependencies[6]{id,kind,created_at,author,source_kind}:
+  searx-security-modernization,related,"2026-07-16T16:56:40.070Z",codex-root,null
+  searx-dependency-remediation,implements,"2026-07-16T16:59:05.138Z",codex-root,null
+  searx-ci-modernization,implements,"2026-07-16T16:59:06.022Z",codex-root,null
+  searx-repository-audit,implements,"2026-07-16T16:59:07.132Z",codex-root,null
+  searx-verification,verifies,"2026-07-16T16:59:08.688Z",codex-root,null
+  searx-github-delivery,implements,"2026-07-16T16:59:10.507Z",codex-root,null
+comments[1]{created_at,author,text}:
+  "2026-07-16T16:56:40.070Z",codex-root,Created after all-status duplicate check confirmed an empty new tracker.
+notes[1]{created_at,author,text}:
+  "2026-07-16T16:56:40.070Z",codex-root,Use one coherent branch because dependency lockfile and CI upgrades share the same verification surface.
+learnings[1]{created_at,author,text}:
+  "2026-07-16T16:56:40.070Z",codex-root,The specialized plan create path currently conflicts with strict metadata requirements so the Plan item is created richly then managed with pm plan subcommands.
+files[1]{path,scope,note}:
+  package.json,project,Primary dependency and script surface
+tests[1]{command,scope,timeout_seconds}:
+  "bun run test:unit",project,180
+docs[1]{path,scope,note}:
+  docs/development.md,project,Development and verification workflow
+plan_mode: approved
+plan_validation[1]{text,command,expected}:
+  "Untouched release-head baseline passes lint, build, 614 unit tests, and e2e tests.","bun run lint && bun run build && bun run test:unit && bun run test:e2e",All baseline quality checks pass before dependency mutations.
+plan_decisions[1]{ts,author,decision,rationale,evidence}:
+  "2026-07-16T16:56:58.024Z",codex-root,Consolidate all compatible dependency and workflow upgrades into one recovery branch.,"The stale bot PRs split coupled packages, leave bun.lock inconsistent, and duplicate the same full verification surface.","PR 30 logs: frozen lockfile changes and Vitest/coverage peer conflict; local baseline tests pass but bun audit reports 41 advisories."
+plan_discoveries[1]{ts,author,text}:
+  "2026-07-16T16:56:58.684Z",codex-root,GitHub native secret scanning is disabled; gitleaks workflow is the only active secret detection surface.
+plan_steps[5]:
+  - id: plan-step-001
+    order: 1
+    title: Upgrade runtime and development dependencies as one compatible set
+    status: completed
+    created_at: "2026-07-16T16:56:41.689Z"
+    updated_at: "2026-07-16T17:02:54.015Z"
+    body: "Resolve all direct and transitive audit findings, coordinate coupled majors, and regenerate bun.lock."
+    owner: codex-root
+    evidence: "Upgraded MCP SDK 1.29.0, TOON 2.3.1, Commander 15, node-html-parser 9, Vitest/coverage 4.1.10, esbuild 0.28.1, Prettier 3.9.5, TypeScript 7.0.2; added patched transitive overrides. bun audit: no vulnerabilities. Frozen Bun and npm installs succeed; 614 unit tests pass."
+    completed_at: "2026-07-16T17:02:54.015Z"
+    linked_items[1]{id,kind,note}:
+      searx-dependency-remediation,implements,Task implements dependency remediation step
+    files[2]{path,note}:
+      package.json,Dependency declarations
+      bun.lock,Resolved dependency graph
+    tests[1]{command}:
+      bun audit
+  - id: plan-step-002
+    order: 2
+    title: Modernize GitHub Actions and CI runtime matrix
+    status: completed
+    created_at: "2026-07-16T16:56:42.258Z"
+    updated_at: "2026-07-16T17:04:16.413Z"
+    body: Adopt current action majors and supported Node runtimes while preserving Bun and npm verification.
+    owner: codex-root
+    evidence: All workflows use checkout v6; Node workflows use setup-node v6 and supported 22.12/24 runtimes; PR-title uses semantic v6; releases use action-gh-release v3. Required job names remain stable. Local lint/build/install/audit pass; hosted proof deferred to delivery step.
+    completed_at: "2026-07-16T17:04:16.413Z"
+    linked_items[1]{id,kind,note}:
+      searx-ci-modernization,implements,Task implements CI modernization step
+    files[2]{path,note}:
+      .github/workflows/ci.yml,Required CI gates
+      .github/workflows/codeql.yml,Code scanning build
+    tests[1]{command}:
+      bun run lint
+  - id: plan-step-003
+    order: 3
+    title: "Audit and fix source, packaging, documentation, and security settings"
+    status: completed
+    created_at: "2026-07-16T16:56:42.877Z"
+    updated_at: "2026-07-16T17:19:01.613Z"
+    body: "Review implementation risks, packaging contents, release scripts, documentation accuracy, and repository security controls."
+    owner: codex-root
+    evidence: "Completed full source/repository audit; fixed security, portability, E2E, coverage, docs, and repository controls; created architecture Feature for larger follow-up."
+    completed_at: "2026-07-16T17:19:01.613Z"
+    linked_items[1]{id,kind,note}:
+      searx-repository-audit,implements,Task implements repository audit step
+    files[1]{path,note}:
+      src,Product source tree
+    tests[1]{command}:
+      "bun run secrets:history"
+    docs[1]{path,note}:
+      SECURITY.md,Security policy
+  - id: plan-step-004
+    order: 4
+    title: Run complete local and isolated package verification
+    status: completed
+    created_at: "2026-07-16T16:56:43.450Z"
+    updated_at: "2026-07-16T17:22:17.367Z"
+    body: "Run unit, e2e, coverage, build, lint, version, release, and packed-package smoke surfaces."
+    owner: codex-root
+    evidence: "Passed frozen Bun/npm installs, zero-vulnerability audit, lint/build, 619 unit tests, 60 hermetic E2E tests, coverage floors, release dry-run, isolated npm/npx/bunx package smoke, actionlint, shellcheck, Gitleaks current-tree and history scans."
+    completed_at: "2026-07-16T17:22:17.367Z"
+    linked_items[1]{id,kind,note}:
+      searx-verification,verifies,Task verifies the full plan
+    tests[3]{command}:
+      "bun run test:unit"
+      "bun run test:e2e"
+      "bun run smoke:package"
+  - id: plan-step-005
+    order: 5
+    title: "Push PR, converge checks and reviews, supersede stale bot PRs, and verify final head"
+    status: in_progress
+    created_at: "2026-07-16T16:56:44.039Z"
+    updated_at: "2026-07-16T17:22:19.180Z"
+    body: "Publish the consolidated branch, wait for required checks, address reviews, close superseded dependency PRs, and record exact-head evidence."
+    owner: codex-root
+    evidence: "Preparing final tracker validation, commit, push, consolidated PR, required checks, review convergence, stale Dependabot closeout, merge, and merged-head proof."
+    linked_items[1]{id,kind,note}:
+      searx-github-delivery,implements,Task implements GitHub delivery step
+    docs[1]{path,note}:
+      .github/PULL_REQUEST_TEMPLATE.md,PR evidence format
+body: "## Scope\\n\\nOne coherent repository-health branch and pull request covering all currently actionable security, dependency, CI, and quality findings. Preserve behavior while upgrading coupled dependencies and automation, then record current-head proof and future roadmap items.\\n\\n## Resume context\\n\\nRepository cloned at release head 66aefca. Baseline unit and e2e tests pass. GitHub has 11 open Dependabot PRs and 2 alerts; local bun audit has 41 advisories. Continue on chore/repository-security-dependency-recovery using only pm CLI for tracker mutations."

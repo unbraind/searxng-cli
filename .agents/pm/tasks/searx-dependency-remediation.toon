@@ -1,0 +1,44 @@
+id: searx-dependency-remediation
+title: Upgrade dependencies and eliminate resolved-graph vulnerabilities
+description: "Upgrade direct runtime/dev dependencies as a compatible set, regenerate bun.lock, and remove every actionable advisory."
+type: Task
+status: closed
+priority: 0
+tags[4]: active,dependencies,lockfile,security
+created_at: "2026-07-16T16:58:04.452Z"
+updated_at: "2026-07-16T17:24:09.405Z"
+deadline: "2026-07-18T16:58:04.452Z"
+closed_at: "2026-07-16T17:02:54.648Z"
+author: codex-root
+estimated_minutes: 180
+acceptance_criteria: bun audit reports zero vulnerabilities; bun install --frozen-lockfile and npm install both succeed
+definition_of_ready: Baseline audit and coupled dependency failure logs captured.
+parent: searx-recovery-plan
+risk: high
+confidence: 85
+sprint: 2026-07-recovery
+release: next
+resolution: Resolved all 41 baseline advisories through direct upgrades and compatible transitive overrides.
+expected_result: Zero audit findings and successful Bun/npm dependency resolution.
+actual_result: bun audit reports no vulnerabilities; Bun frozen install and npm install succeed; 614 unit tests pass.
+dependencies[1]{id,kind,created_at,author,source_kind}:
+  searx-recovery-plan,related,"2026-07-16T16:58:04.452Z",codex-root,null
+comments[3]{created_at,author,text}:
+  "2026-07-16T16:58:04.452Z",codex-root,Baseline lock resolves 41 advisories including critical Vitest and multiple runtime transitive highs.
+  "2026-07-16T17:02:52.811Z",codex-root,"Zero-vulnerability result achieved with direct upgrades plus narrow compatible-major overrides for vulnerable MCP/Vitest transitive packages. Bun frozen install, npm resolution, TypeScript 7 check, Prettier 3.9, esbuild build, and all 614 unit tests pass."
+  "2026-07-16T17:24:09.357Z",codex-root,bun outdated reports only @types/node 26 as a latest-major option; the project intentionally retains @types/node 22.20.1 to type-check against its minimum supported Node 22.12 runtime.
+notes[1]{created_at,author,text}:
+  "2026-07-16T16:58:04.452Z",codex-root,Upgrade coupled packages together and validate majors through the full suite.
+learnings[3]{created_at,author,text}:
+  "2026-07-16T16:58:04.452Z",codex-root,Dependabot single-package updates fail frozen-lock and peer dependency checks.
+  "2026-07-16T17:02:53.425Z",codex-root,Bun retained vulnerable transitive versions allowed by dependency ranges after direct upgrades; explicit patched-version overrides were required to make the resolved graph audit-clean.
+  "2026-07-16T17:24:09.357Z",codex-root,"A higher @types/node major would silently permit APIs unavailable at the declared minimum runtime, so minimum-runtime alignment is intentional rather than stale dependency debt."
+files[2]{path,scope,note}:
+  package.json,project,Direct dependency declarations
+  bun.lock,project,Audited resolved graph
+tests[1]{command,scope,timeout_seconds}:
+  bun audit,project,120
+docs[1]{path,scope,note}:
+  CHANGELOG.md,project,Dependency and security release notes
+close_reason: "Dependency graph upgraded and audit-clean with compatible overrides; install, build, lint, typecheck, and unit verification pass."
+body: "Coordinate Vitest with coverage-v8, test runtime majors, update transitive security fixes through direct packages, and preserve CLI/API behavior."

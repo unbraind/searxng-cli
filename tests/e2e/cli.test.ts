@@ -13,8 +13,9 @@ const DEFAULT_LOCAL_URL = 'http://localhost:8080';
 
 let cliBinDir = '';
 let cliConfigDir = '';
+let suiteMockSearxng: { url: string; close: () => Promise<void> } | null = null;
 const E2E_SEARXNG_URL = process.env.E2E_SEARXNG_URL ?? '';
-const EXPECTED_LOCAL_URL = E2E_SEARXNG_URL || DEFAULT_LOCAL_URL;
+let expectedLocalUrl = E2E_SEARXNG_URL || DEFAULT_LOCAL_URL;
 
 const startMockSearxngServer = async (): Promise<{ url: string; close: () => Promise<void> }> => {
   const server = createServer((req, res) => {
@@ -327,11 +328,18 @@ describe('E2E CLI Tests', () => {
     fs.writeFileSync(wrapperPath, `#!/usr/bin/env bash\nnode "${CLI_PATH}" "$@"\n`);
     fs.chmodSync(wrapperPath, 0o755);
 
-    await runCLI(['--set-url', EXPECTED_LOCAL_URL]);
+    if (!E2E_SEARXNG_URL) {
+      suiteMockSearxng = await startMockSearxngServer();
+      expectedLocalUrl = suiteMockSearxng.url;
+    }
+
+    await runCLI(['--set-url', expectedLocalUrl]);
     await runCLI(['--set-format', 'toon']);
   }, 120000);
 
-  afterAll(() => {
+  afterAll(async () => {
+    await suiteMockSearxng?.close();
+    suiteMockSearxng = null;
     if (cliBinDir && fs.existsSync(cliBinDir)) {
       fs.rmSync(cliBinDir, { recursive: true, force: true });
     }
@@ -407,7 +415,7 @@ describe('E2E CLI Tests', () => {
     'should expose configured local URL and TOON default in settings output',
     async () => {
       const output = await runCLI(parseArgs('--settings'));
-      expect(output).toContain(`SearXNG URL: ${EXPECTED_LOCAL_URL}`);
+      expect(output).toContain(`SearXNG URL: ${expectedLocalUrl}`);
       expect(output).toContain('Default format: toon');
     },
     E2E_TIMEOUT
@@ -421,7 +429,7 @@ describe('E2E CLI Tests', () => {
       expect(data.format).toBe('settings');
       expect(typeof data.settingsFile).toBe('string');
       expect(typeof data.configDir).toBe('string');
-      expect((data.settings as Record<string, unknown>).searxngUrl).toBe(EXPECTED_LOCAL_URL);
+      expect((data.settings as Record<string, unknown>).searxngUrl).toBe(expectedLocalUrl);
       expect((data.settings as Record<string, unknown>).defaultFormat).toBe('toon');
       expect((data.settings as Record<string, unknown>).forceLocalRouting).toBe(true);
     },
@@ -460,7 +468,7 @@ describe('E2E CLI Tests', () => {
       expect(output).toContain(`SearXNG URL: ${DEFAULT_LOCAL_URL}`);
       expect(output).toContain('Default format: toon');
       expect(output).toContain('Default limit: 10');
-      await runCLI(['--set-url', EXPECTED_LOCAL_URL]);
+      await runCLI(['--set-url', expectedLocalUrl]);
     },
     E2E_TIMEOUT
   );
@@ -491,7 +499,7 @@ describe('E2E CLI Tests', () => {
         const request = data.request as Record<string, unknown>;
         expect((request.url as string).startsWith('https://example.com/search?')).toBe(true);
       } finally {
-        await runCLI(['--set-url', EXPECTED_LOCAL_URL]);
+        await runCLI(['--set-url', expectedLocalUrl]);
       }
     },
     E2E_TIMEOUT
@@ -514,7 +522,7 @@ describe('E2E CLI Tests', () => {
         expect(Array.isArray(searchData.results)).toBe(true);
         expect((searchData.results as unknown[]).length).toBeGreaterThan(0);
       } finally {
-        await runCLI(['--set-url', EXPECTED_LOCAL_URL]);
+        await runCLI(['--set-url', expectedLocalUrl]);
         await mock.close();
       }
     },
@@ -594,11 +602,11 @@ describe('E2E CLI Tests', () => {
       const data = await runAndParseJson(parseArgs('"request json test" --request-json --limit 1'));
       expect(data.schemaVersion).toBe('1.0');
       expect(data.format).toBe('request');
-      expect(data.source).toBe(EXPECTED_LOCAL_URL);
+      expect(data.source).toBe(expectedLocalUrl);
       const request = data.request as Record<string, unknown>;
       expect(request.method).toBe('GET');
       expect(typeof request.url).toBe('string');
-      expect((request.url as string).startsWith(`${EXPECTED_LOCAL_URL}/search?`)).toBe(true);
+      expect((request.url as string).startsWith(`${expectedLocalUrl}/search?`)).toBe(true);
       const params = request.params as Record<string, unknown>;
       expect(params.q).toBe('request json test');
       expect(params.format).toBe('json');
@@ -768,7 +776,7 @@ describe('E2E CLI Tests', () => {
         const combined = `${output.stdout}\n${output.stderr}`;
         expect(combined).toContain(`URL: ${DEFAULT_LOCAL_URL}/search?`);
       } finally {
-        await runCLI(['--set-url', EXPECTED_LOCAL_URL]);
+        await runCLI(['--set-url', expectedLocalUrl]);
       }
     },
     E2E_TIMEOUT
@@ -791,7 +799,7 @@ describe('E2E CLI Tests', () => {
         const combined = `${output.stdout}\n${output.stderr}`;
         expect(combined).toContain(`URL: ${DEFAULT_LOCAL_URL}/search?`);
       } finally {
-        await runCLI(['--set-url', EXPECTED_LOCAL_URL]);
+        await runCLI(['--set-url', expectedLocalUrl]);
       }
     },
     E2E_TIMEOUT
@@ -812,7 +820,7 @@ describe('E2E CLI Tests', () => {
       } finally {
         await runCLI(['--set-force-local-routing', 'on']);
         await runCLI(['--set-force-local-agent-routing', 'on']);
-        await runCLI(['--set-url', EXPECTED_LOCAL_URL]);
+        await runCLI(['--set-url', expectedLocalUrl]);
       }
     },
     E2E_TIMEOUT

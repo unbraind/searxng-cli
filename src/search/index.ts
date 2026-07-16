@@ -1,4 +1,5 @@
 import { URL } from 'url';
+import { isIP } from 'net';
 import { SEARXNG_URL, getSearxngUrl, SEARCH_ALIASES } from '../config';
 import { smartDeduplicator } from '../cache';
 import {
@@ -62,19 +63,17 @@ export function calculateRelevanceScore(result: SearchResult, query: string): nu
     score += result.score * 5;
   }
 
-  const trustedDomains = [
-    'github.com',
-    'stackoverflow.com',
-    'wikipedia.org',
-    'docs.',
-    'edu',
-    'gov',
-  ];
-  for (const domain of trustedDomains) {
-    if (url.includes(domain)) {
-      score += 5;
-      break;
-    }
+  try {
+    const hostname = new URL(result.url ?? '').hostname.toLowerCase().replace(/\.$/, '');
+    const trustedDomains = ['github.com', 'stackoverflow.com', 'wikipedia.org'];
+    const isTrustedDomain = trustedDomains.some(
+      (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
+    );
+    const isTrustedCategory =
+      hostname.startsWith('docs.') || hostname.endsWith('.edu') || hostname.endsWith('.gov');
+    if (isTrustedDomain || isTrustedCategory) score += 5;
+  } catch {
+    // Invalid URLs do not receive a trusted-domain bonus.
   }
 
   return Math.round(score * 10) / 10;
@@ -415,26 +414,145 @@ export function autoRefineQuery(query: string): string {
   return terms.join(' ');
 }
 
-export async function fetchWebpageContent(results: SearchResult[]): Promise<SearchResult[]> {
-  const fetchPromises = results.map(async (result) => {
-    if (!result.url) return result;
-    try {
-      const response = await fetch(result.url, {
-        signal: AbortSignal.timeout(5000), // 5 seconds timeout
+const MAX_FETCH_BYTES = 1024 * 1024;
+const MAX_FETCH_REDIRECTS = 3;
+const MAX_FETCH_CONCURRENCY = 5;
+
+function isPrivateIpv4(hostname: string): boolean {
+  const octets = hostname.split('.').map(Number);
+  if (octets.length !== 4 || octets.some((octet) => !Number.isInteger(octet))) return false;
+  const [first = 0, second = 0] = octets;
+  return (
+    first === 0 ||
+    first === 10 ||
+    first === 127 ||
+    (first === 169 && second === 254) ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168) ||
+    (first === 100 && second >= 64 && second <= 127) ||
+    first >= 224
+  );
+}
+
+function isPrivateHostname(hostname: string): boolean {
+  const normalized = hostname
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '')
+    .replace(/\.$/, '');
+  if (normalized === 'localhost' || normalized.endsWith('.localhost')) return true;
+  if (isIP(normalized) === 4) return isPrivateIpv4(normalized);
+  if (isIP(normalized) === 6) {
+    return (
+      normalized === '::' ||
+      normalized === '::1' ||
+      normalized.startsWith('fc') ||
+      normalized.startsWith('fd') ||
+      /^fe[89ab]/.test(normalized) ||
+      normalized.startsWith('::ffff:')
+    );
+  }
+  return false;
+}
+
+export function validateRemoteContentUrl(value: string, base?: URL): URL | null {
+  try {
+    const url = base ? new URL(value, base) : new URL(value);
+    if (!['http:', 'https:'].includes(url.protocol)) return null;
+    if (url.username || url.password || isPrivateHostname(url.hostname)) return null;
+    return url;
+  } catch {
+    return null;
+  }
+}
+
+async function readResponseBody(response: Response): Promise<string | null> {
+  const contentLength = Number(response.headers.get('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > MAX_FETCH_BYTES) {
+    await response.body?.cancel();
+    return null;
+  }
+  if (!response.body) return '';
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let bytesRead = 0;
+  let text = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    bytesRead += value.byteLength;
+    if (bytesRead > MAX_FETCH_BYTES) {
+      await reader.cancel();
+      return null;
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+  return text + decoder.decode();
+}
+
+async function fetchResultContent(result: SearchResult): Promise<SearchResult> {
+  if (!result.url) return result;
+  let url = validateRemoteContentUrl(result.url);
+  if (!url) return result;
+
+  try {
+    for (let redirectCount = 0; redirectCount <= MAX_FETCH_REDIRECTS; redirectCount++) {
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(5000),
+        redirect: 'manual',
         headers: { 'User-Agent': 'SearXNG-CLI/Bot' },
       });
-      if (!response.ok) return result;
-      const html = await response.text();
-      const content = stripHtml(html);
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location');
+        await response.body?.cancel();
+        if (!location || redirectCount === MAX_FETCH_REDIRECTS) return result;
+        const redirectUrl = validateRemoteContentUrl(location, url);
+        if (!redirectUrl) return result;
+        url = redirectUrl;
+        continue;
+      }
+      if (!response.ok) {
+        await response.body?.cancel();
+        return result;
+      }
 
+      const contentType = response.headers.get('content-type')?.toLowerCase();
+      if (
+        contentType &&
+        !contentType.startsWith('text/html') &&
+        !contentType.startsWith('text/plain') &&
+        !contentType.startsWith('application/xhtml+xml')
+      ) {
+        await response.body?.cancel();
+        return result;
+      }
+      const html = await readResponseBody(response);
+      if (html === null) return result;
+      const content = stripHtml(html);
       return {
         ...result,
-        content: content ? content.substring(0, 5000) : result.content, // limit to 5000 chars
+        content: content ? content.substring(0, 5000) : result.content,
       };
-    } catch (e) {
-      return result; // Fallback to original snippet on error
     }
-  });
+  } catch {
+    // Preserve the original search result when enrichment fails.
+  }
+  return result;
+}
 
-  return Promise.all(fetchPromises);
+export async function fetchWebpageContent(results: SearchResult[]): Promise<SearchResult[]> {
+  const enriched = [...results];
+  let nextIndex = 0;
+  const workers = Array.from(
+    { length: Math.min(MAX_FETCH_CONCURRENCY, results.length) },
+    async () => {
+      while (nextIndex < results.length) {
+        const index = nextIndex++;
+        const result = results[index];
+        if (result) enriched[index] = await fetchResultContent(result);
+      }
+    }
+  );
+  await Promise.all(workers);
+  return enriched;
 }

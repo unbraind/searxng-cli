@@ -155,11 +155,7 @@ export type TimeRange = 'day' | 'week' | 'month' | 'year';
 export type ColorTheme = 'default' | 'ocean' | 'forest' | 'sunset' | 'mono';
 
 export type GithubStarPromptStatus =
-  | 'starred'
-  | 'declined'
-  | 'already-starred'
-  | 'manual-link-shown'
-  | 'star-failed';
+  'starred' | 'declined' | 'already-starred' | 'manual-link-shown' | 'star-failed';
 
 export type GithubStarPromptSource = 'first-run' | 'setup' | 'setup-local';
 
