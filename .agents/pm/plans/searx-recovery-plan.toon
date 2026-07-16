@@ -2,13 +2,13 @@ id: searx-recovery-plan
 title: Execute repository security and modernization recovery
 description: "Ordered implementation plan for advisory remediation, dependency and Actions upgrades, source review, verification, GitHub closeout, and durable pm evidence."
 type: Plan
-status: in_progress
+status: closed
 priority: 0
 tags[6]: ci,deps,plan,quality,security,shipping
 created_at: "2026-07-16T16:56:40.070Z"
-updated_at: "2026-07-16T17:29:33.465Z"
+updated_at: "2026-07-16T17:32:04.521Z"
 deadline: "2026-07-23T16:56:40.070Z"
-assignee: codex-root
+closed_at: "2026-07-16T17:32:03.988Z"
 author: codex-root
 estimated_minutes: 600
 acceptance_criteria: All plan steps contain evidence and reach completed status; Consolidated PR passes required GitHub checks
@@ -18,6 +18,9 @@ risk: high
 confidence: 90
 sprint: 2026-07-recovery
 release: next
+resolution: "Executed dependency remediation, CI modernization, source/repository hardening, comprehensive verification, and GitHub delivery through merged-head proof."
+expected_result: Every plan step has evidence and the consolidated PR passes protection and merges.
+actual_result: Five of five steps completed; PR 31 merged as f859ca0 with required checks green and alerts cleared.
 dependencies[6]{id,kind,created_at,author,source_kind}:
   searx-security-modernization,related,"2026-07-16T16:56:40.070Z",codex-root,null
   searx-dependency-remediation,implements,"2026-07-16T16:59:05.138Z",codex-root,null
@@ -37,6 +40,7 @@ tests[1]{command,scope,timeout_seconds}:
   "bun run test:unit",project,180
 docs[1]{path,scope,note}:
   docs/development.md,project,Development and verification workflow
+close_reason: All five recovery steps completed with committed evidence; PR 31 is merged and default-branch security state is clean.
 plan_mode: approved
 plan_validation[1]{text,command,expected}:
   "Untouched release-head baseline passes lint, build, 614 unit tests, and e2e tests.","bun run lint && bun run build && bun run test:unit && bun run test:e2e",All baseline quality checks pass before dependency mutations.
@@ -116,12 +120,13 @@ plan_steps[5]:
   - id: plan-step-005
     order: 5
     title: "Push PR, converge checks and reviews, supersede stale bot PRs, and verify final head"
-    status: in_progress
+    status: completed
     created_at: "2026-07-16T16:56:44.039Z"
-    updated_at: "2026-07-16T17:29:33.464Z"
+    updated_at: "2026-07-16T17:32:03.464Z"
     body: "Publish the consolidated branch, wait for required checks, address reviews, close superseded dependency PRs, and record exact-head evidence."
     owner: codex-root
-    evidence: PR 31 exact head 095aa85 passed all required checks with no actionable review; all 11 stale Dependabot PRs closed with per-PR rationale. Final evidence commit and merge remain.
+    evidence: "PR 31 merged as f859ca0 after exact-head required checks passed; no actionable review threads; 11 stale Dependabot PRs closed; default branch has zero Dependabot/CodeQL alerts; SHA enforcement, secret scanning, and push protection verified enabled."
+    completed_at: "2026-07-16T17:32:03.464Z"
     linked_items[1]{id,kind,note}:
       searx-github-delivery,implements,Task implements GitHub delivery step
     docs[1]{path,note}:

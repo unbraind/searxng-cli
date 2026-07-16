@@ -2,13 +2,13 @@ id: searx-github-delivery
 title: Deliver consolidated PR and close superseded GitHub maintenance backlog
 description: "Commit and push code plus pm artifacts, open the consolidated PR, converge required checks/reviews, close stale dependency PRs, and record final-head proof."
 type: Task
-status: in_progress
+status: closed
 priority: 1
 tags[4]: closeout,delivery,github,pr
 created_at: "2026-07-16T16:58:06.908Z"
-updated_at: "2026-07-16T17:29:32.120Z"
+updated_at: "2026-07-16T17:32:02.966Z"
 deadline: "2026-07-23T16:58:06.908Z"
-assignee: codex-root
+closed_at: "2026-07-16T17:32:02.323Z"
 author: codex-root
 estimated_minutes: 90
 acceptance_criteria: Code and pm .toon/.jsonl history are committed and pushed; Required GitHub checks and review conversations are green/resolved; Superseded bot PRs are closed with explanation
@@ -18,23 +18,28 @@ risk: medium
 confidence: 90
 sprint: 2026-07-recovery
 release: next
-dependencies[1]{id,kind,created_at,author,source_kind}:
-  searx-verification,blocked_by,"2026-07-16T16:58:06.908Z",codex-root,null
-comments[4]{created_at,author,text}:
+resolution: "Delivered and merged the consolidated recovery through green required checks, closed eleven stale maintenance PRs with rationale, and verified the merged default branch."
+expected_result: "Code and PM artifacts are merged, checks and review state are clean, stale bot PRs are closed, and security controls are enabled."
+actual_result: PR 31 merged as f859ca0; all required checks passed; no actionable review threads remain; open Dependabot and CodeQL alerts are both zero.
+comments[6]{created_at,author,text}:
   "2026-07-16T16:58:06.908Z",codex-root,Eleven open Dependabot PRs will be evaluated against and superseded by the consolidated tested head.
   "2026-07-16T17:25:27.554Z",codex-root,"Published commit 3401010 on branch chore/repository-security-dependency-recovery and opened consolidated PR https://github.com/unbraind/searxng-cli/pull/31."
   "2026-07-16T17:29:32.077Z",codex-root,All required hosted checks passed on 095aa85. CodeRabbit and Sourcery had no actionable review because the PM initialization exceeded their plan size limits; there are no inline review comments.
   "2026-07-16T17:29:32.077Z",codex-root,"Closed Dependabot PRs 1,2,3,14,18,19,26,28,29,30 as superseded by PR 31; closed PR 27 with explicit minimum-Node type-alignment rationale."
+  "2026-07-16T17:32:01.663Z",codex-root,"PR 31 merged at 2026-07-16T17:31:12Z as f859ca0027c527eacfb2c36528f32b2b54817773. Default branch immediately reports zero open Dependabot alerts and zero open CodeQL alerts."
+  "2026-07-16T17:32:01.663Z",codex-root,"Repository controls verified after merge: SHA pin enforcement enabled, secret scanning enabled, push protection enabled; local master equals origin/master at f859ca0."
 notes[2]{created_at,author,text}:
   "2026-07-16T16:58:06.908Z",codex-root,Do not close bot PRs until the consolidated branch is pushed and demonstrably contains their upgrades.
   "2026-07-16T17:25:27.554Z",codex-root,Current-head hosted proof must be taken after committing this delivery evidence update.
-learnings[2]{created_at,author,text}:
+learnings[3]{created_at,author,text}:
   "2026-07-16T16:58:06.908Z",codex-root,Branch protection requires stable quality-bun quality-node package-smoke gitleaks and CodeQL analyze checks.
   "2026-07-16T17:29:32.077Z",codex-root,Enabling SHA enforcement before a pull_request_target workflow is pinned on the default branch blocks that base workflow; enforcement is temporarily disabled and will be restored immediately after merge.
+  "2026-07-16T17:32:01.663Z",codex-root,Tracker closeout belongs in a small post-merge PR so the durable PM state records the real merge SHA without falsifying pre-merge evidence.
 files[1]{path,scope,note}:
   .github/PULL_REQUEST_TEMPLATE.md,project,Pull request evidence structure
 tests[1]{command,scope,timeout_seconds}:
   gh pr checks --watch,project,1800
 docs[1]{path,scope,note}:
   CONTRIBUTING.md,project,Contribution and PR expectations
+close_reason: "PR 31 merged cleanly, all stale bot PRs are closed, security alerts are zero, and repository controls are restored."
 body: "Publish the complete recovery branch with linked pm context. Wait for required checks, fix current-head failures, respond to review feedback, close Dependabot PRs superseded by the consolidated upgrade, and verify merged or final requested state."

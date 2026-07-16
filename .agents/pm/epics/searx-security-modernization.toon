@@ -6,7 +6,7 @@ status: open
 priority: 0
 tags[5]: ci,deps,epic,pm-governance,security
 created_at: "2026-07-16T16:55:57.898Z"
-updated_at: "2026-07-16T16:55:57.898Z"
+updated_at: "2026-07-16T17:32:05.058Z"
 deadline: "2026-07-23T16:55:57.898Z"
 assignee: codex-root
 author: codex-root
@@ -27,8 +27,9 @@ sprint: 2026-07-recovery
 release: next
 dependencies[1]{id,kind,created_at,author,source_kind}:
   searx-repo-health-2026,related,"2026-07-16T16:55:57.898Z",codex-root,null
-comments[1]{created_at,author,text}:
+comments[2]{created_at,author,text}:
   "2026-07-16T16:55:57.898Z",codex-root,Live GitHub inventory found 11 open Dependabot PRs and two open native dependency alerts.
+  "2026-07-16T17:32:05.038Z",codex-root,Recovery plan completed and PR 31 merged as f859ca0. The epic remains open only for the governed future architecture Feature searx-modular-command-architecture.
 notes[1]{created_at,author,text}:
   "2026-07-16T16:55:57.898Z",codex-root,Consolidate coupled upgrades into one branch so lockfile and peer dependencies remain coherent.
 learnings[1]{created_at,author,text}:
