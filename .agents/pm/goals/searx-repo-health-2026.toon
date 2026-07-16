@@ -6,7 +6,7 @@ status: open
 priority: 0
 tags[5]: dependencies,github,goal,maintenance,security
 created_at: "2026-07-16T16:55:39.716Z"
-updated_at: "2026-07-16T16:55:39.716Z"
+updated_at: "2026-07-16T17:32:05.640Z"
 assignee: codex-root
 author: codex-root
 estimated_minutes: 720
@@ -23,4 +23,8 @@ risk: high
 confidence: 95
 sprint: 2026-07-recovery
 release: next
+comments[1]{created_at,author,text}:
+  "2026-07-16T17:32:05.620Z",codex-root,"Security modernization tranche merged: zero Dependabot/CodeQL alerts, current dependencies, pinned Actions, enabled secret controls, hermetic E2E, enforced coverage, and committed PM governance."
+notes[1]{created_at,author,text}:
+  "2026-07-16T17:32:05.620Z",codex-root,Keep the long-term Goal open while searx-modular-command-architecture remains an accepted future Feature.
 body: "## Scope\\n\\nRecover the repository from accumulated dependency and automation drift while preserving CLI behavior and release quality. The goal covers GitHub advisory triage, runtime and development dependency upgrades, Actions modernization, source/security review, package verification, and durable pm governance.\\n\\n## Success measures\\n\\n- Zero known dependency vulnerabilities in the resolved lockfile.\\n- All required local and GitHub checks pass on one coherent upgrade head.\\n- Existing Dependabot backlog is superseded without losing issue lineage.\\n- Repository-local pm state captures goals, plans, findings, evidence, and future improvements."
