@@ -6,7 +6,7 @@ status: in_progress
 priority: 0
 tags[6]: ci,deps,plan,quality,security,shipping
 created_at: "2026-07-16T16:56:40.070Z"
-updated_at: "2026-07-16T17:22:19.180Z"
+updated_at: "2026-07-16T17:25:29.940Z"
 deadline: "2026-07-23T16:56:40.070Z"
 assignee: codex-root
 author: codex-root
@@ -118,10 +118,10 @@ plan_steps[5]:
     title: "Push PR, converge checks and reviews, supersede stale bot PRs, and verify final head"
     status: in_progress
     created_at: "2026-07-16T16:56:44.039Z"
-    updated_at: "2026-07-16T17:22:19.180Z"
+    updated_at: "2026-07-16T17:25:29.939Z"
     body: "Publish the consolidated branch, wait for required checks, address reviews, close superseded dependency PRs, and record exact-head evidence."
     owner: codex-root
-    evidence: "Preparing final tracker validation, commit, push, consolidated PR, required checks, review convergence, stale Dependabot closeout, merge, and merged-head proof."
+    evidence: PR 31 opened from commit 3401010; recording delivery evidence before final exact-head hosted convergence.
     linked_items[1]{id,kind,note}:
       searx-github-delivery,implements,Task implements GitHub delivery step
     docs[1]{path,note}:

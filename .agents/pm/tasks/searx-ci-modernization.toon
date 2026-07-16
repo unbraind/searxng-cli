@@ -2,12 +2,13 @@ id: searx-ci-modernization
 title: Modernize GitHub Actions and supported CI runtimes
 description: "Upgrade action majors and Node test runtimes, preserve Bun/npm parity, and eliminate runner deprecation warnings."
 type: Task
-status: open
+status: in_progress
 priority: 1
 tags[4]: ci,dependencies,github-actions,node
 created_at: "2026-07-16T16:58:05.040Z"
-updated_at: "2026-07-16T17:04:17.008Z"
+updated_at: "2026-07-16T17:25:29.401Z"
 deadline: "2026-07-19T16:58:05.040Z"
+assignee: codex-root
 author: codex-root
 estimated_minutes: 120
 acceptance_criteria: All required workflow jobs pass without Node 20 action deprecation warnings; Bun and npm install/build/test/package surfaces remain green
@@ -20,9 +21,10 @@ release: next
 dependencies[2]{id,kind,created_at,author,source_kind}:
   searx-dependency-remediation,blocked_by,"2026-07-16T16:58:05.040Z",codex-root,null
   searx-recovery-plan,related,"2026-07-16T16:58:05.040Z",codex-root,null
-comments[2]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-07-16T16:58:05.040Z",codex-root,Current Actions logs warn checkout v4 and setup-node v4 use the retired Node 20 action runtime.
   "2026-07-16T17:04:15.804Z",codex-root,"Updated checkout v6 across workflows, setup-node v6 with Node 22.12 minimum and Node 24 current coverage, semantic-pull-request v6, and action-gh-release v3. Preserved required job names. Local lint/build/frozen Bun/npm install and audit checks pass; final closure awaits GitHub execution."
+  "2026-07-16T17:25:29.375Z",codex-root,Consolidated workflow modernization is published in PR 31; waiting for required hosted checks on the final evidence-bearing head.
 notes[1]{created_at,author,text}:
   "2026-07-16T16:58:05.040Z",codex-root,Keep branch-protection job names stable while modernizing internals.
 learnings[1]{created_at,author,text}:
