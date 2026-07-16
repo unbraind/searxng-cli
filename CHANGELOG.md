@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   URL substring matches.
 - Enabled native GitHub secret scanning and push protection alongside the existing Gitleaks checks.
 - Pinned every GitHub Action to a full commit SHA and enabled repository enforcement for SHA pins.
+- Upgraded Gitleaks Action to its Node 24-based v3 runtime.
 
 ### Changed
 
