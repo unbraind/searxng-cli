@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Verify published consumers outside the source checkout ([searx-published-consumer-isolation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-published-consumer-isolation.toon))
 - Validate tag releases without requiring the next version ([searx-tag-release-validation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-tag-release-validation.toon))
 - Keep Auto Release runner output outside the checkout ([searx-auto-release-clean-tree](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-auto-release-clean-tree.toon))
 - Made the 60-test E2E suite provision and clean up its own mock SearXNG backend by default while preserving `E2E_SEARXNG_URL` for explicit live-instance runs. ([searx-30a6](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-30a6.toon))
