@@ -90,8 +90,9 @@ existing tag. It:
 
 1. checks out full tag history and verifies tag/package version equality;
 2. installs with the frozen Bun lockfile;
-3. runs dependency audit, release dry run, generated changelog check, preservation check, and pack
-   inspection;
+3. runs dependency audit, tag audit, lint, secret-history scan, build, unit tests, package smoke,
+   generated changelog check, preservation check, and pack inspection; the pre-tag
+   `version:check` is intentionally replaced by the exact tag/package equality check above;
 4. skips `npm publish` only when that exact version is already present (safe recovery);
 5. publishes to npm with provenance;
 6. waits for and verifies the exact version with npm, npx, and bunx;

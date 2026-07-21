@@ -52,6 +52,9 @@ describe('release automation', () => {
     expect(workflow).toContain('"v*.*.*"');
     expect(workflow).toContain('npm publish --access public --provenance');
     expect(workflow).toContain('id-token: write');
+    expect(workflow).toContain('Run tag release gates');
+    expect(workflow).toContain('bun run version:audit');
+    expect(workflow).not.toContain('- run: bun run release:dry-run');
     expect(workflow).toContain('release:verify-published');
     expect(workflow).toContain('gh release create');
   });

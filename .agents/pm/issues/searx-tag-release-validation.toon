@@ -1,0 +1,43 @@
+id: searx-tag-release-validation
+title: Validate tag releases without requiring the next version
+description: Use tag-appropriate release gates after the workflow has verified exact tag and package version equality.
+type: Issue
+status: closed
+priority: 0
+tags[4]: github-actions,recovery,regression,release
+created_at: "2026-07-21T18:26:49.945Z"
+updated_at: "2026-07-21T18:28:20.893Z"
+deadline: "2026-07-22T18:26:51.509Z"
+closed_at: "2026-07-21T18:28:20.117Z"
+author: codex-release-agent
+estimated_minutes: 30
+acceptance_criteria: Release workflow verifies exact tag/package equality; Existing-tag recovery runs all non-pretag release gates; npm publication remains idempotent
+definition_of_ready: The failed tag-triggered run proves exact tag/package equality passed and only the pre-tag next-version assertion failed.
+parent: searx-repo-health-2026
+reviewer: repository-owner
+risk: high
+confidence: 100
+sprint: 2026-07-release-automation
+release: next
+reporter: codex-release-agent
+severity: high
+environment: Tag-triggered and manual recovery Release workflow
+repro_steps: "Run Release for an existing tag whose package version matches the tag; release:dry-run rejects it as the next version."
+resolution: Tagged publication now validates the immutable tag/package pair and runs every remaining release gate without incorrectly predicting a subsequent version.
+expected_result: Existing-tag recovery and future tag pushes can reach idempotent npm publication.
+actual_result: All tag-context gates pass locally against v2026.7.21; manual workflow recovery will verify the protected environment after merge.
+affected_version: v2026.7.21 release workflow
+component: release
+regression: true
+customer_impact: The tagged package cannot publish until recovery validation uses tag semantics.
+files[2]{path,scope,note}:
+  .github/workflows/release.yml,project,Use tag-context release gates after exact tag/package validation
+  tests/unit/release-automation.test.ts,project,Enforce tag-context workflow contract
+tests[3]{command,scope,timeout_seconds}:
+  "bun run smoke:package",project,180
+  "bun run test:unit",project,180
+  "docker run --rm -v \"$PWD:/repo:ro\" -w /repo rhysd/actionlint:latest -color .github/workflows/release.yml",project,120
+docs[1]{path,scope,note}:
+  docs/release-process.md,project,Document the distinction between pre-tag and tagged validation
+close_reason: "Replaced the pre-tag next-version assertion with tag-context gates after exact tag/package equality; tag audit, lint, secret history, build, 625 unit tests, package smoke, pack inspection, and Actionlint pass."
+body: "The first production tag run reached publication validation, but the pre-tag version rule interpreted the newly created tag as requiring the next same-day ordinal. The Release workflow already verifies exact tag/package equality and should run the remaining release gates without the pre-tag next-version assertion."
