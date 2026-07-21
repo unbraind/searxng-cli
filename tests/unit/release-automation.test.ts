@@ -55,7 +55,9 @@ describe('release automation', () => {
     expect(workflow).toContain('Run tag release gates');
     expect(workflow).toContain('bun run version:audit');
     expect(workflow).not.toContain('- run: bun run release:dry-run');
-    expect(workflow).toContain('release:verify-published');
+    expect(workflow).toContain('$RUNNER_TEMP/published-consumers');
+    expect(workflow).toContain('npx --yes --package');
+    expect(workflow).toContain('bunx --bun');
     expect(workflow).toContain('gh release create');
   });
 });

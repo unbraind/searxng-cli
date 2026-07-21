@@ -1,0 +1,44 @@
+id: searx-published-consumer-isolation
+title: Verify published consumers outside the source checkout
+description: Run exact-version npm and Bun consumer checks from an isolated directory so the local package cannot shadow registry resolution.
+type: Issue
+status: closed
+priority: 0
+tags[5]: bun,npm,recovery,regression,release
+created_at: "2026-07-21T18:34:27.322Z"
+updated_at: "2026-07-21T18:35:55.119Z"
+deadline: "2026-07-22T18:34:29.978Z"
+closed_at: "2026-07-21T18:35:52.713Z"
+author: codex-release-agent
+estimated_minutes: 30
+acceptance_criteria: npm exact-version execution runs outside the checkout; Bun exact-version execution runs outside the checkout; Existing-tag recovery skips republish and creates the GitHub Release
+definition_of_ready: The exact commands pass from an unrelated directory and fail only from the package source checkout.
+parent: searx-repo-health-2026
+reviewer: repository-owner
+risk: high
+confidence: 100
+sprint: 2026-07-release-automation
+release: next
+reporter: codex-release-agent
+severity: high
+environment: Post-publication npm and Bun consumer verification
+repro_steps: From the package checkout run npm exec with --package searxng-cli at the current version and invoke searxng; repeat from an unrelated directory.
+resolution: Published consumer verification now uses isolated temporary working directories and asserts both outputs contain the exact release version.
+expected_result: "Idempotent recovery skips publication, verifies npm and Bun consumers, and creates the GitHub Release."
+actual_result: Local isolated npm and Bun executions both pass for 2026.7.21; protected recovery verification will run after merge.
+affected_version: v2026.7.21 release verification
+component: release
+regression: true
+customer_impact: Publication succeeds but workflow recovery cannot create the GitHub Release until exact-version verification is isolated.
+files[3]{path,scope,note}:
+  .github/workflows/release.yml,project,Run recovery-compatible exact-version checks under runner temporary storage
+  scripts/release/verify-published-release.mjs,project,Isolate local exact-version verification from the source checkout
+  tests/unit/release-automation.test.ts,project,Enforce isolated npm and Bun verification contract
+tests[3]{command,scope,timeout_seconds}:
+  "bun run test:release",project,180
+  "docker run --rm -v \"$PWD:/repo:ro\" -w /repo rhysd/actionlint:latest -color .github/workflows/release.yml",project,120
+  node scripts/release/verify-published-release.mjs --version 2026.7.21,project,180
+docs[1]{path,scope,note}:
+  docs/release-process.md,project,Document isolated registry consumer verification
+close_reason: "Moved npm and Bun exact-version execution outside the package checkout; both resolve and execute searxng-cli 2026.7.21, release contracts pass, and Actionlint is clean."
+body: "The published package and Bun execution succeeded, but npm exec inside the package source checkout treated the local project as satisfying its own package request while no self-installed bin existed. The identical exact-version command succeeds outside the checkout."

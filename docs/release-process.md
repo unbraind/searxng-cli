@@ -95,7 +95,8 @@ existing tag. It:
    `version:check` is intentionally replaced by the exact tag/package equality check above;
 4. skips `npm publish` only when that exact version is already present (safe recovery);
 5. publishes to npm with provenance;
-6. waits for and verifies the exact version with npm, npx, and bunx;
+6. waits for and verifies the exact version with npm, npx, and bunx from an isolated temporary
+   directory so the source checkout cannot satisfy or shadow registry resolution;
 7. creates or repairs the matching GitHub Release.
 
 ## Required release environment
