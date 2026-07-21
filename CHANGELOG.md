@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Complete local SearXNG feature parity and agent-ready CLI delivery ([searx-feature-parity-plan](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/plans/searx-feature-parity-plan.toon))
 - Automate change-aware releases with generated project history ([searx-auto-release](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/features/searx-auto-release.toon))
 - Added conservative global coverage thresholds so test-coverage regressions fail the quality gate. ([searx-pkax](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/tasks/searx-pkax.toon))
 
