@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
-LIVE_SEARXNG_URL="${SEARXNG_URL:-http://localhost:8080}"
+LIVE_SEARXNG_URL="${SEARXNG_URL:-http://192.168.1.183:38522}"
 unset SEARXNG_URL
 
 bash scripts/version-check.sh

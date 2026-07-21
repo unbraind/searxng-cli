@@ -6,7 +6,7 @@ status: in_progress
 priority: 0
 tags[5]: agent,cli,e2e,searxng,toon
 created_at: "2026-07-21T18:58:31.352Z"
-updated_at: "2026-07-21T22:44:38.982Z"
+updated_at: "2026-07-21T22:51:00.550Z"
 deadline: "2026-07-23T18:58:31.352Z"
 assignee: codex-root
 author: codex-root
@@ -29,7 +29,7 @@ dependencies[9]{id,kind,created_at,author,source_kind}:
   searx-published-consumer-isolation,related,"2026-07-21T22:22:11.695Z",null,null
   searx-release-validation,related,"2026-07-21T22:22:11.695Z",null,null
   searx-tag-release-validation,related,"2026-07-21T22:22:11.695Z",null,null
-comments[13]{created_at,author,text}:
+comments[14]{created_at,author,text}:
   "2026-07-21T18:58:31.352Z",codex-root,Live instance returns 403 for JSON while HTML search succeeds; response negotiation is mandatory.
   "2026-07-21T19:11:09.654Z",codex-root,"Live installed-command proof: raw output reported _upstreamFormat=html and five upstream engine timeouts; repeated validated JSON query produced cached=true; cache status reports unlimited and Endless. Full live E2E script passed after making zero-result format checks schema-aware."
   "2026-07-21T19:12:10.309Z",codex-root,"Quality acceptance was raised after initial coverage measurement. Current honest baseline is statements 72.70%, branches 60.81%, functions 84.48%, lines 74.67%; publication is blocked until the mandated 100/100/100/100 gate and docstring/static/security layers are real."
@@ -43,6 +43,7 @@ comments[13]{created_at,author,text}:
   "2026-07-21T22:24:08.200Z",codex-root,"The composite live release:check was also removed from PM sandbox execution because it intentionally contains the same project-owned pm-changelog gate. Direct workspace release:check already passed end-to-end against 192.168.1.183:38522; PM retains its constituent lint, coverage, build, security, package, and live E2E commands."
   "2026-07-21T22:38:04.140Z",codex-root,"Final local gate checkpoint: 20 files and 931 tests pass at 100% statements (4636/4636), branches (3389/3389), functions (521/521), and lines (4339/4339); module docstrings are 18/18. Bun audit exposed newly published GHSA-v2hh-gcrm-f6hx against fast-uri 3.1.3, so the override moved to patched 3.1.4; Bun audit, Trivy, history secret scan, quality, package smoke, changelog checks, and live release:check are green. Prettier is current at 3.9.6; TypeScript remains 6.0.3 because latest typescript-eslint requires TypeScript below 6.1."
   "2026-07-21T22:44:38.322Z",codex-root,"PR #41 quality-bun run 29874503562 exposed Bun's temporary node PATH shim: bun run test:unit launched Vitest under Bun 1.3.14, where V8 coverage APIs are unavailable. Fixed scripts/test-coverage.sh to remove only the leading /tmp/bun-node-* shim while preserving the caller's configured Node installation; package test:unit now uses the same canonical launcher. Regression coverage asserts the runtime boundary. Local proof: bun run test:unit => 20 files, 932 tests, 100/100/100/100; bun run quality => typecheck, ESLint, Prettier, 18/18 module docstrings, jscpd threshold, ShellCheck, and full coverage passed."
+  "2026-07-21T22:50:49.902Z",codex-root,"Composite release validation found nested bun run invocations can leave multiple /tmp/bun-node-* shims in PATH. Hardened the canonical coverage launcher to remove every Bun shim while preserving configured Node entries, and added a regression contract. The release gate also now defaults to the governed local service instead of resetting global settings to localhost. Final proof: bun run release:check passes against http://192.168.1.183:38522; health is green, built-in acceptance is 19/19, 20 test files and 933 tests pass at 100/100/100/100, and ~/.searxng-cli/settings.json remains local with TOON default."
 notes[6]{created_at,author,text}:
   "2026-07-21T18:58:31.352Z",codex-root,Preserve legacy global flags while establishing explicit command-family contracts.
   "2026-07-21T19:12:11.256Z",codex-root,"New mandatory constraints: eliminate unjustified any, inline one-use trivial helpers, use top-level/static imports, preserve erasable TypeScript syntax, inspect dependency declarations instead of guessing, enforce docstring coverage, and add non-cheatable unit/integration/E2E/performance/acceptance/functional/smoke/dogfood/white-box/black-box gates."
@@ -55,7 +56,8 @@ learnings[4]{created_at,author,text}:
   "2026-07-21T20:12:22.301Z",codex-root,Persistent state must be loaded before process-wide exit persistence is armed; otherwise read-only commands can truncate state created by prior processes.
   "2026-07-21T22:22:15.059Z",codex-root,"A cache hit must not launch unref background refresh work in a one-shot CLI: open network handles delay process termination and make installed-command acceptance nondeterministic. Explicit refresh commands preserve predictable CLI lifecycle semantics."
   "2026-07-21T22:38:04.736Z",codex-root,"Security databases can disagree temporarily: Bun audit detected the fast-uri host-confusion advisory while the current Trivy database still reported zero. Release security requires both gates and remediation of the stricter result."
-files[50]{path,scope,note}:
+files[51]{path,scope,note}:
+  docs/e2e-testing.md,project,null
   eslint.config.mjs,project,Strict type-aware source and test quality policy
   LICENSE,project,Package licensing contract
   package.json,project,Release gates dependencies and review inventory script
@@ -176,11 +178,12 @@ plan_steps[5]:
   - id: plan-step-005
     order: 4
     title: "Enforce repo-wide 100% coverage, docstrings, duplication, lint, and security quality gates"
-    status: in_progress
+    status: completed
     created_at: "2026-07-21T19:12:08.544Z"
-    updated_at: "2026-07-21T20:15:11.507Z"
+    updated_at: "2026-07-21T22:51:00.550Z"
     owner: codex-root
-    evidence: "Type-aware source/test lint, erasable syntax rules, 100% module docstring gate, ShellCheck, 4% clone ceiling, Trivy, and exact 100% per-file coverage enforcement are installed. Current honest coverage is 72.55/60.91/84.00/74.49, so publication remains gated."
+    evidence: "Mandatory repository gates are enforced and green: 20 files, 933 tests, 100% statements/branches/functions/lines, 18/18 module docstrings, strict ESLint/typecheck/erasable syntax, Prettier, ShellCheck, jscpd non-regression ceiling, Bun audit, Trivy, Gitleaks history scan, package smoke, and live installed-command acceptance. Composite nested-Bun release execution and GitHub Node/Bun quality jobs are proven."
+    completed_at: "2026-07-21T22:48:18.603Z"
     linked_items[3]{id,kind,note}:
       searx-coverage-governance,supersedes,Raises the prior non-regression floor to the mandated honest 100 percent per-file gate
       searx-dependency-remediation,depends_on,Keeps dependency and vulnerability health within the quality gate
@@ -188,10 +191,11 @@ plan_steps[5]:
   - id: plan-step-004
     order: 5
     title: "Document, publish, review, merge, and verify exact master head"
-    status: pending
+    status: in_progress
     created_at: "2026-07-21T18:58:34.449Z"
-    updated_at: "2026-07-21T20:12:21.578Z"
+    updated_at: "2026-07-21T22:48:19.219Z"
     owner: codex-root
+    evidence: "Documentation, PM graph normalization, package-owned changelog, PR #41, exact-head CI, and exhaustive review inventory are complete. Gemini is sunset; CodeRabbit and Sourcery reported size limits with no findings; all individual bot responses were upvoted and acknowledged. Greptile was retriggered and remains awaited before merge."
     linked_items[5]{id,kind,note}:
       searx-auto-release,depends_on,Delivery must preserve daily change-aware automatic release behavior
       searx-changelog-migration,depends_on,Changelog remains generated exclusively from pm history

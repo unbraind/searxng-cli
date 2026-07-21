@@ -62,7 +62,15 @@ describe('release automation', () => {
     expect(pkg.scripts['test:unit']).toBe('bash scripts/test-coverage.sh');
     expect(coverageScript).toContain('node ./node_modules/vitest/vitest.mjs');
     expect(coverageScript).not.toContain('/usr/bin/node');
-    expect(coverageScript).toContain('[[ "${PATH%%:*}" == /tmp/bun-node-* ]]');
+    expect(coverageScript).toContain('for path_entry in "${path_entries[@]}"');
+    expect(coverageScript).toContain('[[ "$path_entry" != /tmp/bun-node-* ]]');
+  });
+
+  it('runs release acceptance against the governed local SearXNG service by default', () => {
+    const releaseCheck = readFileSync('scripts/release-check.sh', 'utf8');
+    expect(releaseCheck).toContain(
+      'LIVE_SEARXNG_URL="${SEARXNG_URL:-http://192.168.1.183:38522}"',
+    );
   });
 
   it('publishes once to npm and verifies npm and Bun consumers', () => {

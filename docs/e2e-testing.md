@@ -33,7 +33,7 @@ E2E_QUERY="release verification query" bun run test:e2e:searxng
 
 Supported env vars:
 
-- `SEARXNG_URL`: target SearXNG base URL (default: `http://localhost:8080`)
+- `SEARXNG_URL`: target SearXNG base URL (release default: `http://192.168.1.183:38522`)
 - `CMD_TIMEOUT`: per-command timeout (default: `120s`)
 - `TIMEOUT_BIN`: timeout command name (default: `timeout`)
 - `E2E_QUERY`: query string used for smoke checks

@@ -2,13 +2,12 @@ id: searx-modular-command-architecture
 title: Decompose command and storage monoliths behind tested module boundaries
 description: "Reduce change risk in the 2,660-line command dispatcher and 1,368-line storage module through incremental extraction and contract tests."
 type: Feature
-status: in_progress
+status: open
 priority: 0
 tags[4]: architecture,coverage,maintainability,testing
 created_at: "2026-07-16T17:12:24.079Z"
-updated_at: "2026-07-21T22:32:09.174Z"
+updated_at: "2026-07-21T22:48:21.004Z"
 deadline: "2026-07-23T18:57:11.044Z"
-assignee: codex-root
 author: codex-root
 estimated_minutes: 720
 acceptance_criteria: Command families have explicit module ownership; storage concerns are split by responsibility; public CLI and SDK behavior remains compatible; per-file coverage improves without disabling global gates
@@ -21,10 +20,11 @@ sprint: 2026-07-feature-parity
 release: next
 dependencies[1]{id,kind,created_at,author,source_kind}:
   searx-repository-audit,discovered_from,"2026-07-16T17:12:24.079Z",null,null
-comments[3]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-07-16T17:12:24.079Z",codex-root,"Source inventory: src/index.ts is 2,660 lines and src/storage/index.ts is 1,368 lines."
   "2026-07-21T18:57:12.739Z",codex-root,"Live orientation completed: all 52 tracker items inspected; local SearXNG 2026.7.19 exposes /config but returns 403 for format=json because only HTML is enabled; browser-form GET/POST searches succeed. Global settings still point to localhost and the mise searxng shim is broken. pm-cli upgrade anomaly filed as unbraind/pm-cli#634 after duplicate search."
   "2026-07-21T21:52:02.069Z",codex-root,"Coverage hardening complete: all 20 test files and 930 tests pass with honest repo-wide V8 coverage at 100% statements (4645/4645), branches (3389/3389), functions (525/525), and lines (4346/4346). No source exclusions or artificial ignore directives were added. The monolithic dispatcher was improved through exported lifecycle/diagnostic parsers, deterministic background-refresh handling, shared self-test assertions, and exhaustive real command-path matrices."
+  "2026-07-21T22:48:19.808Z",codex-root,"The feature-parity delivery improved module seams and achieved 100% coverage, but the parent Feature's explicit command/storage decomposition acceptance remains future work. Returning it to open and releasing the claim so only the actively finishing parity Plan remains in progress."
 notes[2]{created_at,author,text}:
   "2026-07-16T17:12:24.079Z",codex-root,"Avoid a flag-day rewrite; each extraction must preserve CLI snapshots, exit codes, and configuration compatibility."
   "2026-07-21T18:57:14.648Z",codex-root,"Implementation will preserve existing flag compatibility while adding a centralized response adapter, explicit command help for every advertised command, deterministic global setup at ~/.searxng-cli, and live-instance E2E proof. The local service URL is http://192.168.1.183:38522."
