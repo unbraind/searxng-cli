@@ -1,17 +1,12 @@
-import {
-  SEARXNG_URL,
-  getSearxngUrl,
-  VERSION,
-  TOON_SPEC_VERSION,
-  IS_LOCAL_INSTANCE,
-} from '../config';
-import { getConnectionHealth } from '../http';
+/**
+ * Core human-readable and machine-readable formatters for every supported CLI output contract.
+ */
+import { getSearxngUrl } from '../config';
 import {
   colorize,
   truncate,
   stripHtml,
   unescapeHtml,
-  escapeHtml,
   wrapText,
   highlightTerms,
   formatDate,
@@ -35,6 +30,12 @@ function escapeYamlScalar(value: string | number | boolean | null | undefined): 
   return `'${normalized.replace(/'/g, "''")}'`;
 }
 
+/**
+ *
+ * @param result
+ * @param idx
+ * @param options
+ */
 export function formatResult(result: SearchResult, idx: number, options: SearchOptions): string {
   const lines: string[] = [];
   let title = result.title ?? 'No title';
@@ -62,7 +63,7 @@ export function formatResult(result: SearchResult, idx: number, options: SearchO
     metaParts.push(colorize(`score:${score}`, 'magenta'));
   }
   if (result.publishedDate) {
-    metaParts.push(colorize(`${formatDate(result.publishedDate)}`, 'dim'));
+    metaParts.push(colorize(formatDate(result.publishedDate), 'dim'));
   }
   if (metaParts.length > 0) lines.push(`   ${metaParts.join(' ')}`);
   let content = result.content ?? result.abstract ?? result.snippet ?? '';
@@ -78,6 +79,11 @@ export function formatResult(result: SearchResult, idx: number, options: SearchO
   return lines.join('\n');
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatJsonOutput(data: SearchResponse, options: SearchOptions): string {
   const results = data.results ?? [];
   let filteredResults = [...results];
@@ -85,9 +91,9 @@ export function formatJsonOutput(data: SearchResponse, options: SearchOptions): 
     const filterLower = options.filter.toLowerCase();
     filteredResults = filteredResults.filter(
       (r) =>
-        (r.title && r.title.toLowerCase().includes(filterLower)) ||
-        (r.content && r.content.toLowerCase().includes(filterLower)) ||
-        (r.url && r.url.toLowerCase().includes(filterLower))
+        r.title?.toLowerCase().includes(filterLower) ||
+        (r.content?.toLowerCase().includes(filterLower) ?? false) ||
+        r.url?.toLowerCase().includes(filterLower)
     );
   }
 
@@ -132,6 +138,11 @@ export function formatJsonOutput(data: SearchResponse, options: SearchOptions): 
   return safeJsonStringify(output, options.compact ? 0 : 2);
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatJsonlOutput(data: SearchResponse, options: SearchOptions): string {
   const results = data.results ?? [];
   const limit = options.limit === 0 ? results.length : Math.min(options.limit, results.length);
@@ -161,6 +172,11 @@ export function formatJsonlOutput(data: SearchResponse, options: SearchOptions):
     .join('\n');
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatCsvOutput(data: SearchResponse, options: SearchOptions): string {
   const results = data.results ?? [];
   const limit = options.limit === 0 ? results.length : Math.min(options.limit, results.length);
@@ -183,6 +199,11 @@ export function formatCsvOutput(data: SearchResponse, options: SearchOptions): s
   return lines.join('\n');
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatMarkdownOutput(data: SearchResponse, options: SearchOptions): string {
   const results = data.results ?? [];
   const limit = options.limit === 0 ? results.length : Math.min(options.limit, results.length);
@@ -198,10 +219,19 @@ export function formatMarkdownOutput(data: SearchResponse, options: SearchOption
   return lines.join('\n');
 }
 
+/**
+ *
+ * @param data
+ */
 export function formatRawOutput(data: SearchResponse): string {
   return safeJsonStringify(data, 2);
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatYamlOutput(data: SearchResponse, options: SearchOptions): string {
   const results = data.results ?? [];
   const limit = options.limit === 0 ? results.length : Math.min(options.limit, results.length);
@@ -249,6 +279,11 @@ export function formatYamlOutput(data: SearchResponse, options: SearchOptions): 
   return lines.join('\n');
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatTableOutput(data: SearchResponse, options: SearchOptions): string {
   const results = data.results ?? [];
   const limit = options.limit === 0 ? results.length : Math.min(options.limit, results.length);
@@ -282,6 +317,11 @@ export function formatTableOutput(data: SearchResponse, options: SearchOptions):
   return lines.join('\n');
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatTextOutput(data: SearchResponse, options: SearchOptions): string {
   const results = data.results ?? [];
   const limit = options.limit === 0 ? results.length : Math.min(options.limit, results.length);
@@ -298,6 +338,11 @@ export function formatTextOutput(data: SearchResponse, options: SearchOptions): 
   return lines.join('\n');
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatSimpleOutput(data: SearchResponse, options: SearchOptions): string {
   const results = data.results ?? [];
   const limit = options.limit === 0 ? results.length : Math.min(options.limit, results.length);
@@ -313,6 +358,11 @@ export function formatSimpleOutput(data: SearchResponse, options: SearchOptions)
   return lines.join('\n');
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatQuickOutput(data: SearchResponse, options: SearchOptions): string {
   const results = data.results ?? [];
   const limit = options.limit === 0 ? results.length : Math.min(options.limit, results.length);
@@ -329,12 +379,17 @@ export function formatQuickOutput(data: SearchResponse, options: SearchOptions):
   return lines.join('\n');
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatSummaryOutput(data: SearchResponse, options: SearchOptions): string {
   const results = data.results ?? [];
   const limit = options.limit === 0 ? results.length : Math.min(options.limit, results.length);
   const displayResults = results.slice(0, limit);
   const lines: string[] = [
-    colorize(`${options.query}`, 'bold'),
+    colorize(options.query, 'bold'),
     colorize(`${results.length} results`, 'dim'),
     '',
   ];
@@ -352,6 +407,11 @@ export function formatSummaryOutput(data: SearchResponse, options: SearchOptions
   return lines.join('\n');
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatCitationOutput(data: SearchResponse, options: SearchOptions): string {
   const results = data.results ?? [];
   const limit = options.limit === 0 ? results.length : Math.min(options.limit, results.length);

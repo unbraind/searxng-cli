@@ -1,3 +1,6 @@
+/**
+ * Process-wide SearXNG configuration constants and mutable instance capability state derived from global settings and environment overrides.
+ */
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -10,8 +13,18 @@ import type {
   SearchAlias,
 } from '../types';
 
-export const CONFIG_DIR =
-  process.env.SEARXNG_CLI_CONFIG_DIR || path.join(os.homedir(), '.searxng-cli');
+/**
+ *
+ * @param envValue
+ * @param homeDirectory
+ */
+export function resolveConfigDirectory(
+  envValue: string | undefined,
+  homeDirectory: string
+): string {
+  return envValue ?? path.join(homeDirectory, '.searxng-cli');
+}
+export const CONFIG_DIR = resolveConfigDirectory(process.env.SEARXNG_CLI_CONFIG_DIR, os.homedir());
 export const SETTINGS_FILE = path.join(CONFIG_DIR, 'settings.json');
 export const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 export const HISTORY_FILE = path.join(CONFIG_DIR, 'history.json');
@@ -24,6 +37,10 @@ export const ENGINES_CACHE_FILE = path.join(CONFIG_DIR, 'engines.json');
 
 export const DEFAULT_SEARXNG_URL = 'http://localhost:8080';
 
+/**
+ *
+ * @param value
+ */
 export function normalizeSearxngUrl(value: string | null | undefined): string | null {
   if (!value) return null;
   const trimmed = value.trim();
@@ -31,20 +48,24 @@ export function normalizeSearxngUrl(value: string | null | undefined): string | 
   const withProtocol =
     trimmed.startsWith('http://') || trimmed.startsWith('https://') ? trimmed : `http://${trimmed}`;
   try {
-    const parsed = new URL(withProtocol);
-    if (!parsed.hostname) return null;
+    new URL(withProtocol);
     return withProtocol.replace(/\/+$/, '');
   } catch {
     return null;
   }
 }
 
-function loadSearxngUrlFromSettings(): string | null {
+/**
+ *
+ * @param settingsFile
+ */
+export function loadSearxngUrlFromSettings(settingsFile = SETTINGS_FILE): string | null {
   try {
-    if (fs.existsSync(SETTINGS_FILE)) {
-      const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
-      if (settings.searxngUrl && typeof settings.searxngUrl === 'string') {
-        return normalizeSearxngUrl(settings.searxngUrl);
+    if (fs.existsSync(settingsFile)) {
+      const settings: unknown = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
+      if (typeof settings === 'object' && settings !== null && 'searxngUrl' in settings) {
+        const { searxngUrl } = settings as { searxngUrl?: unknown };
+        if (typeof searxngUrl === 'string') return normalizeSearxngUrl(searxngUrl);
       }
     }
   } catch {
@@ -53,12 +74,20 @@ function loadSearxngUrlFromSettings(): string | null {
   return null;
 }
 
-function getInitialSearxngUrl(): string {
-  const envUrl = normalizeSearxngUrl(process.env.SEARXNG_URL);
+/**
+ *
+ * @param envValue
+ * @param settingsFile
+ */
+export function getInitialSearxngUrl(
+  envValue = process.env.SEARXNG_URL,
+  settingsFile = SETTINGS_FILE
+): string {
+  const envUrl = normalizeSearxngUrl(envValue);
   if (envUrl) {
     return envUrl;
   }
-  const settingsUrl = loadSearxngUrlFromSettings();
+  const settingsUrl = loadSearxngUrlFromSettings(settingsFile);
   if (settingsUrl) {
     return settingsUrl;
   }
@@ -78,43 +107,135 @@ function computeIsLocal(url: string): boolean {
 
 export const SEARXNG_URL: string = _searxngUrl;
 
+/**
+ *
+ */
 export function getSearxngUrl(): string {
   return _searxngUrl;
 }
 
+/**
+ *
+ * @param url
+ */
 export function setSearxngUrl(url: string): void {
   _searxngUrl = normalizeSearxngUrl(url) ?? DEFAULT_SEARXNG_URL;
   _isLocalInstance = computeIsLocal(_searxngUrl);
 }
 
+/**
+ *
+ */
 export function reloadSearxngUrl(): void {
   _searxngUrl = getInitialSearxngUrl();
   _isLocalInstance = computeIsLocal(_searxngUrl);
 }
 
+/**
+ *
+ */
 export function isLocalInstance(): boolean {
   return _isLocalInstance;
 }
 
-export const TOON_SPEC_VERSION = '3.0';
+export const TOON_SPEC_VERSION = '3.3';
 export const IS_LOCAL_INSTANCE: boolean = _isLocalInstance;
-export const DEFAULT_TIMEOUT: number =
-  parseInt(process.env.SEARXNG_TIMEOUT ?? '0', 10) || (IS_LOCAL_INSTANCE ? 15000 : 30000);
-export const MAX_RETRIES: number =
-  parseInt(process.env.SEARXNG_MAX_RETRIES ?? '0', 10) || (IS_LOCAL_INSTANCE ? 2 : 3);
-export const RETRY_DELAY: number =
-  parseInt(process.env.SEARXNG_RETRY_DELAY ?? '0', 10) || (IS_LOCAL_INSTANCE ? 100 : 1000);
-declare const __APP_VERSION__: string | undefined;
+/**
+ *
+ * @param isLocal
+ */
+export function getRuntimeProfile(isLocal: boolean): {
+  defaultTimeout: number;
+  maxRetries: number;
+  retryDelay: number;
+  rateLimitDelay: number;
+  maxConcurrentRequests: number;
+  parallelBatchSize: number;
+  healthCheckInterval: number;
+  connectionTimeout: number;
+  circuitBreakerThreshold: number;
+  circuitBreakerResetTime: number;
+  maxKeepaliveSockets: number;
+  socketTimeout: number;
+  warmupTimeout: number;
+  prefetchDelay: number;
+} {
+  if (isLocal) {
+    return {
+      defaultTimeout: 15000,
+      maxRetries: 2,
+      retryDelay: 100,
+      rateLimitDelay: 0,
+      maxConcurrentRequests: 100,
+      parallelBatchSize: 50,
+      healthCheckInterval: 120000,
+      connectionTimeout: 500,
+      circuitBreakerThreshold: 25,
+      circuitBreakerResetTime: 1000,
+      maxKeepaliveSockets: 100,
+      socketTimeout: 3000,
+      warmupTimeout: 1000,
+      prefetchDelay: 0,
+    };
+  }
+  return {
+    defaultTimeout: 30000,
+    maxRetries: 3,
+    retryDelay: 1000,
+    rateLimitDelay: 30,
+    maxConcurrentRequests: 20,
+    parallelBatchSize: 12,
+    healthCheckInterval: 30000,
+    connectionTimeout: 3000,
+    circuitBreakerThreshold: 5,
+    circuitBreakerResetTime: 30000,
+    maxKeepaliveSockets: 20,
+    socketTimeout: 10000,
+    warmupTimeout: 3000,
+    prefetchDelay: 100,
+  };
+}
 
-function resolveVersion(): string {
-  const injected = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '';
-  if (injected) return injected;
-  if (process.env.npm_package_version) return process.env.npm_package_version;
+/**
+ *
+ * @param value
+ * @param fallback
+ */
+export function resolveConfiguredInteger(value: string | undefined, fallback: number): number {
+  return parseInt(value ?? '0', 10) || fallback;
+}
+
+const runtimeProfile = getRuntimeProfile(IS_LOCAL_INSTANCE);
+export const DEFAULT_TIMEOUT = resolveConfiguredInteger(
+  process.env.SEARXNG_TIMEOUT,
+  runtimeProfile.defaultTimeout
+);
+export const MAX_RETRIES = resolveConfiguredInteger(
+  process.env.SEARXNG_MAX_RETRIES,
+  runtimeProfile.maxRetries
+);
+export const RETRY_DELAY = resolveConfiguredInteger(
+  process.env.SEARXNG_RETRY_DELAY,
+  runtimeProfile.retryDelay
+);
+
+/**
+ *
+ * @param npmVersion
+ * @param cwd
+ * @param moduleDirectory
+ */
+export function resolveVersion(
+  npmVersion = process.env.npm_package_version,
+  cwd = process.cwd(),
+  moduleDirectory = __dirname
+): string {
+  if (npmVersion) return npmVersion;
 
   const candidates = [
-    path.resolve(process.cwd(), 'package.json'),
-    path.resolve(__dirname, '../../package.json'),
-    path.resolve(__dirname, '../package.json'),
+    path.resolve(cwd, 'package.json'),
+    path.resolve(moduleDirectory, '../../package.json'),
+    path.resolve(moduleDirectory, '../package.json'),
   ];
 
   for (const candidate of candidates) {
@@ -133,17 +254,24 @@ function resolveVersion(): string {
 }
 
 export const VERSION = resolveVersion();
-export const RATE_LIMIT_DELAY: number = IS_LOCAL_INSTANCE ? 0 : 30;
-export const MAX_CONCURRENT_REQUESTS: number = IS_LOCAL_INSTANCE ? 100 : 20;
-export const PARALLEL_BATCH_SIZE: number = IS_LOCAL_INSTANCE ? 50 : 12;
-export const LRU_CACHE_SIZE: number = 0;
-export const HEALTH_CHECK_INTERVAL: number = IS_LOCAL_INSTANCE ? 120000 : 30000;
-export const CONNECTION_TIMEOUT: number = IS_LOCAL_INSTANCE ? 500 : 3000;
-export const CIRCUIT_BREAKER_THRESHOLD: number = IS_LOCAL_INSTANCE ? 25 : 5;
-export const CIRCUIT_BREAKER_RESET_TIME: number = IS_LOCAL_INSTANCE ? 1000 : 30000;
+export const RATE_LIMIT_DELAY = runtimeProfile.rateLimitDelay;
+export const MAX_CONCURRENT_REQUESTS = runtimeProfile.maxConcurrentRequests;
+export const PARALLEL_BATCH_SIZE = runtimeProfile.parallelBatchSize;
+export const LRU_CACHE_SIZE = 0;
+export const HEALTH_CHECK_INTERVAL = runtimeProfile.healthCheckInterval;
+export const CONNECTION_TIMEOUT = runtimeProfile.connectionTimeout;
+export const CIRCUIT_BREAKER_THRESHOLD = runtimeProfile.circuitBreakerThreshold;
+export const CIRCUIT_BREAKER_RESET_TIME = runtimeProfile.circuitBreakerResetTime;
 export const REQUEST_DEDUP_WINDOW = 25;
 export const DEFAULT_QUIET_LIMIT = 5;
-export const JSON_INDENT: number = process.stdout.isTTY ? 2 : 0;
+/**
+ *
+ * @param isTTY
+ */
+export function getJsonIndent(isTTY: boolean | undefined): number {
+  return isTTY ? 2 : 0;
+}
+export const JSON_INDENT = getJsonIndent(process.stdout.isTTY);
 export const ENABLE_COMPRESSION = true;
 export const PERSISTENT_CACHE_ENABLED = true;
 export const CACHE_COMPRESSION = true;
@@ -156,15 +284,15 @@ export const ADAPTIVE_TIMEOUT_ENABLED = true;
 export const STREAMING_ENABLED = true;
 export const SMART_DEDUP_ENABLED = true;
 export const RESULT_SCORING_ENABLED = true;
-export const MAX_KEEPALIVE_SOCKETS: number = IS_LOCAL_INSTANCE ? 100 : 20;
-export const SOCKET_TIMEOUT: number = IS_LOCAL_INSTANCE ? 3000 : 10000;
-export const WARMUP_TIMEOUT: number = IS_LOCAL_INSTANCE ? 1000 : 3000;
-export const PREFETCH_DELAY: number = IS_LOCAL_INSTANCE ? 0 : 100;
+export const MAX_KEEPALIVE_SOCKETS = runtimeProfile.maxKeepaliveSockets;
+export const SOCKET_TIMEOUT = runtimeProfile.socketTimeout;
+export const WARMUP_TIMEOUT = runtimeProfile.warmupTimeout;
+export const PREFETCH_DELAY = runtimeProfile.prefetchDelay;
 
 export const CACHE_MAX_AGE = Infinity;
 export const ENGINES_CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
 
-export const IS_PIPE_MODE: boolean = !process.stdout.isTTY;
+export const IS_PIPE_MODE = !process.stdout.isTTY;
 export const IS_TTY: boolean = process.stdout.isTTY;
 
 export const COLORS: ColorConfig = {
@@ -338,46 +466,80 @@ export const SEARCH_ALIASES: Record<string, SearchAlias> = {
   '!privacy': { engines: 'duckduckgo,startpage', desc: 'Privacy search' },
 };
 
+/**
+ *
+ * @param type
+ */
 export function getThemeColor(type: keyof ThemeColors): string {
-  const theme = COLOR_THEMES[currentTheme] ?? COLOR_THEMES.default;
-  return theme[type] ?? type;
+  return COLOR_THEMES[currentTheme][type];
 }
 
+/**
+ *
+ * @param theme
+ */
 export function setTheme(theme: ColorTheme): void {
   if (COLOR_THEMES[theme]) {
     currentTheme = theme;
   }
 }
 
+/**
+ *
+ */
 export function getTheme(): ColorTheme {
   return currentTheme;
 }
 
+/**
+ *
+ */
 export function getValidEngines(): string[] {
   return [...validEngines];
 }
 
+/**
+ *
+ * @param engines
+ */
 export function setValidEngines(engines: string[]): void {
   validEngines = [...engines];
 }
 
+/**
+ *
+ */
 export function getValidCategories(): string[] {
   return [...VALID_CATEGORIES];
 }
 
+/**
+ *
+ * @param categories
+ */
 export function setValidCategories(categories: string[]): void {
   VALID_CATEGORIES.length = 0;
   VALID_CATEGORIES.push(...categories);
 }
 
+/**
+ *
+ */
 export function getInstanceInfo(): InstanceInfo {
   return { ...instanceInfo };
 }
 
+/**
+ *
+ * @param info
+ */
 export function setInstanceInfo(info: Partial<InstanceInfo>): void {
   instanceInfo = { ...instanceInfo, ...info };
 }
 
+/**
+ *
+ */
 export function getDefaultConfig(): AppConfig {
   return {
     defaultLimit: 10,

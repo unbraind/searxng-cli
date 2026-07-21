@@ -1,8 +1,15 @@
+/**
+ * Agent-oriented TOON, XML, HTML, and citation formatters for structured SearXNG response workflows.
+ */
 import { encode } from '@toon-format/toon';
 import { TOON_SPEC_VERSION, VERSION, getSearxngUrl } from '../config';
 import { stripHtml, unescapeHtml, escapeHtml, getDomain } from '../utils';
-import type { SearchResult, SearchResponse, SearchOptions } from '../types';
+import type { SearchResponse, SearchOptions } from '../types';
 
+/**
+ *
+ * @param num
+ */
 function normalizeNumber(num: number): number | string | undefined {
   if (typeof num !== 'number' || !Number.isFinite(num)) return undefined;
   if (Object.is(num, -0)) return 0;
@@ -19,6 +26,11 @@ function shortenUrl(url: string): string {
   }
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatToonOutput(data: SearchResponse, options: SearchOptions): string {
   const results = data.results ?? [];
   const limit = options.limit === 0 ? results.length : Math.min(options.limit, results.length);
@@ -27,7 +39,7 @@ export function formatToonOutput(data: SearchResponse, options: SearchOptions): 
   const isCompact = options.compact || options.agent;
   const snippetLen = options.agent ? 80 : 120;
 
-  const toonData: Record<string, any> = {
+  const toonData: Record<string, unknown> = {
     tv: TOON_SPEC_VERSION,
     v: VERSION,
     q: options.query,
@@ -47,7 +59,7 @@ export function formatToonOutput(data: SearchResponse, options: SearchOptions): 
   toonData.results = displayResults.map((r, idx) => {
     const title = stripHtml(unescapeHtml(r.title ?? '')).substring(0, 60);
     const url = options.agent ? shortenUrl(r.url ?? '') : (r.url ?? '');
-    const engine = r.engine ?? (r.engines && r.engines[0]) ?? undefined;
+    const engine = r.engine ?? r.engines?.[0] ?? undefined;
     const score = typeof r.score === 'number' ? normalizeNumber(r.score) : undefined;
     const snippet = stripHtml(unescapeHtml(r.content ?? r.abstract ?? r.snippet ?? ''))
       .substring(0, snippetLen)
@@ -56,7 +68,7 @@ export function formatToonOutput(data: SearchResponse, options: SearchOptions): 
       ? new Date(r.publishedDate).toISOString().split('T')[0]
       : undefined;
 
-    const res: any = { i: idx + 1, title, url };
+    const res: Record<string, string | number> = { i: idx + 1, title, url };
     if (engine) res.engine = engine;
     if (score !== undefined) res.score = score;
     if (snippet) res.snippet = snippet;
@@ -103,13 +115,10 @@ export function formatToonOutput(data: SearchResponse, options: SearchOptions): 
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3);
     if (sorted.length > 0) {
-      toonData.domains = sorted.reduce(
-        (acc, [d, c]) => {
-          acc[d] = c;
-          return acc;
-        },
-        {} as Record<string, number>
-      );
+      toonData.domains = sorted.reduce<Record<string, number>>((acc, [d, c]) => {
+        acc[d] = c;
+        return acc;
+      }, {});
     }
   }
 
@@ -120,6 +129,11 @@ export function formatToonOutput(data: SearchResponse, options: SearchOptions): 
   return encode(toonData);
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatToonOutputFull(data: SearchResponse, options: SearchOptions): string {
   return formatToonOutput(data, { ...options, compact: false });
 }
@@ -133,6 +147,11 @@ function escapeXml(str: string): string {
     .replace(/"/g, '&quot;');
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatXmlOutput(data: SearchResponse, options: SearchOptions): string {
   const results = data.results ?? [];
   const limit = options.limit === 0 ? results.length : Math.min(options.limit, results.length);
@@ -163,6 +182,11 @@ export function formatXmlOutput(data: SearchResponse, options: SearchOptions): s
   return parts.join('\n');
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export function formatHtmlReportOutput(data: SearchResponse, options: SearchOptions): string {
   const results = data.results ?? [];
   const limit = options.limit === 0 ? results.length : Math.min(options.limit, results.length);

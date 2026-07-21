@@ -1,3 +1,6 @@
+/**
+ * Public TypeScript contracts shared by the CLI, SDK entry point, formatters, storage, cache, and MCP server.
+ */
 export interface SearchResult {
   title: string;
   url: string;
@@ -13,24 +16,31 @@ export interface SearchResult {
   img_src?: string;
   parsed_url?: [string, string, string, string];
   embeddings?: number[];
+  relevanceScore?: number;
 }
 
+/**
+ *
+ */
 export interface SearXNGInfobox {
   infobox?: string;
   id?: string;
   content?: string;
   img_src?: string;
-  urls?: Array<{ title: string; url: string }>;
-  attributes?: Array<{ label: string; value: string }>;
+  urls?: { title: string; url: string }[];
+  attributes?: { label: string; value: string }[];
   engine?: string;
   engines?: string[];
 }
 
+/**
+ *
+ */
 export interface SearchResponse {
   query: string;
   results: SearchResult[];
   suggestions?: string[];
-  answers?: Array<string | { answer: string; url?: string }>;
+  answers?: (string | { answer: string; url?: string })[];
   corrections?: string[];
   infoboxes?: SearXNGInfobox[];
   number_of_results?: number;
@@ -41,8 +51,12 @@ export interface SearchResponse {
   _cacheAge?: number;
   _semantic?: boolean;
   _similarity?: number;
+  _upstreamFormat?: 'json' | 'html';
 }
 
+/**
+ *
+ */
 export interface SearchOptions {
   query: string;
   format: OutputFormat;
@@ -131,6 +145,9 @@ export interface SearchOptions {
   maxTokens?: number | null;
 }
 
+/**
+ *
+ */
 export type OutputFormat =
   | 'toon'
   | 'json'
@@ -148,28 +165,52 @@ export type OutputFormat =
   | 'text'
   | 'simple';
 
+/**
+ *
+ */
 export type SafeSearchLevel = 0 | 1 | 2;
 
+/**
+ *
+ */
 export type TimeRange = 'day' | 'week' | 'month' | 'year';
 
+/**
+ *
+ */
 export type ColorTheme = 'default' | 'ocean' | 'forest' | 'sunset' | 'mono';
 
+/**
+ *
+ */
 export type GithubStarPromptStatus =
   'starred' | 'declined' | 'already-starred' | 'manual-link-shown' | 'star-failed';
 
+/**
+ *
+ */
 export type GithubStarPromptSource = 'first-run' | 'setup' | 'setup-local';
 
+/**
+ *
+ */
 export interface GithubStarPromptState {
   status: GithubStarPromptStatus;
   source: GithubStarPromptSource;
   completedAt: string;
 }
 
+/**
+ *
+ */
 export interface CacheEntry {
   timestamp: number;
   data: SearchResponse;
 }
 
+/**
+ *
+ */
 export interface CacheStats {
   entries: number;
   maxSize: number | 'unlimited';
@@ -184,6 +225,9 @@ export interface CacheStats {
   newestEntry: string | null;
 }
 
+/**
+ *
+ */
 export interface ConnectionHealth {
   healthy: boolean;
   lastCheck: number;
@@ -195,12 +239,18 @@ export interface ConnectionHealth {
   consecutiveFailures: number;
 }
 
+/**
+ *
+ */
 export interface CircuitBreakerStatus {
   state: 'CLOSED' | 'OPEN' | 'HALF_OPEN';
   failures: number;
   threshold: number;
 }
 
+/**
+ *
+ */
 export interface InstanceInfo {
   name: string;
   version: string;
@@ -212,6 +262,9 @@ export interface InstanceInfo {
   privacypolicy_url?: string | null;
 }
 
+/**
+ *
+ */
 export interface AppConfig {
   defaultLimit: number;
   defaultFormat: OutputFormat;
@@ -227,6 +280,9 @@ export interface AppConfig {
   theme: ColorTheme;
 }
 
+/**
+ *
+ */
 export interface Settings extends AppConfig {
   searxngUrl: string;
   defaultSearxngParams: Record<string, string>;
@@ -237,21 +293,33 @@ export interface Settings extends AppConfig {
   githubStarPrompt?: GithubStarPromptState | null;
 }
 
+/**
+ *
+ */
 export interface HistoryEntry {
   query: string;
   timestamp: string;
 }
 
+/**
+ *
+ */
 export interface BookmarkEntry extends SearchResult {
   bookmarkedAt: string;
 }
 
+/**
+ *
+ */
 export interface QueryExpansion {
   query: string;
   engines: string | null;
   category: string | null;
 }
 
+/**
+ *
+ */
 export interface AdvancedFilters {
   domain: string | null;
   excludeDomain: string | null;
@@ -261,11 +329,14 @@ export interface AdvancedFilters {
   dateBefore: string | null;
 }
 
+/**
+ *
+ */
 export interface ResultMetadata {
   totalResults: number;
   uniqueDomains: number;
-  domains: Array<[string, number]>;
-  engines: Array<[string, number]>;
+  domains: [string, number][];
+  engines: [string, number][];
   types: {
     withImages: number;
     withDates: number;
@@ -273,12 +344,15 @@ export interface ResultMetadata {
   };
 }
 
+/**
+ *
+ */
 export interface ResultAnalysis {
   query: string;
   totalResults: number;
   domains: Record<string, number>;
   engines: Record<string, number>;
-  topKeywords: Array<{ word: string; count: number }>;
+  topKeywords: { word: string; count: number }[];
   avgTitleLength: number;
   avgContentLength: number;
   withImages: number;
@@ -289,10 +363,13 @@ export interface ResultAnalysis {
     negative: number;
     neutral: number;
   };
-  topDomains?: Array<{ domain: string; count: number }>;
-  topEngines?: Array<{ engine: string; count: number }>;
+  topDomains?: { domain: string; count: number }[];
+  topEngines?: { engine: string; count: number }[];
 }
 
+/**
+ *
+ */
 export interface ClusterResult {
   domain?: string;
   engine?: string;
@@ -300,11 +377,17 @@ export interface ClusterResult {
   results: SearchResult[];
 }
 
+/**
+ *
+ */
 export interface Suggestions {
   popular: string[];
   recent: string[];
 }
 
+/**
+ *
+ */
 export interface PerformanceMetricsData {
   totalRequests: number;
   successfulRequests: number;
@@ -319,6 +402,9 @@ export interface PerformanceMetricsData {
   cacheHitRate: string;
 }
 
+/**
+ *
+ */
 export interface ExportResult {
   success: boolean;
   entries?: number;
@@ -326,6 +412,9 @@ export interface ExportResult {
   error?: string;
 }
 
+/**
+ *
+ */
 export interface ImportResult {
   success: boolean;
   imported?: number;
@@ -334,11 +423,17 @@ export interface ImportResult {
   error?: string;
 }
 
+/**
+ *
+ */
 export interface PruneResult {
   pruned: number;
   remaining: number;
 }
 
+/**
+ *
+ */
 export interface ColorConfig {
   reset: string;
   bold: string;
@@ -375,6 +470,9 @@ export interface ColorConfig {
   [key: string]: string;
 }
 
+/**
+ *
+ */
 export interface ThemeColors {
   primary: string;
   secondary: string;
@@ -383,6 +481,9 @@ export interface ThemeColors {
   dim: string;
 }
 
+/**
+ *
+ */
 export interface SearchAlias {
   engines?: string;
   category?: string;

@@ -1,17 +1,11 @@
+/**
+ * Search request construction, filtering, ranking, clustering, analysis, and guarded remote-content enrichment.
+ */
 import { URL } from 'url';
 import { isIP } from 'net';
-import { SEARXNG_URL, getSearxngUrl, SEARCH_ALIASES } from '../config';
+import { getSearxngUrl, SEARCH_ALIASES } from '../config';
 import { smartDeduplicator } from '../cache';
-import {
-  getDomain,
-  escapeRegex,
-  colorize,
-  truncate,
-  stripHtml,
-  unescapeHtml,
-  embedText,
-  cosineSimilarity,
-} from '../utils';
+import { colorize, truncate, stripHtml, unescapeHtml, embedText } from '../utils';
 import type {
   SearchResult,
   SearchOptions,
@@ -22,6 +16,10 @@ import type {
   ClusterResult,
 } from '../types';
 
+/**
+ *
+ * @param options
+ */
 export function buildUrl(options: SearchOptions): URL {
   const url = new URL(`${getSearxngUrl()}/search`);
   if (options.searxngParams) {
@@ -42,6 +40,11 @@ export function buildUrl(options: SearchOptions): URL {
   return url;
 }
 
+/**
+ *
+ * @param result
+ * @param query
+ */
 export function calculateRelevanceScore(result: SearchResult, query: string): number {
   let score = 0;
   const queryTerms = query
@@ -79,6 +82,11 @@ export function calculateRelevanceScore(result: SearchResult, query: string): nu
   return Math.round(score * 10) / 10;
 }
 
+/**
+ *
+ * @param results
+ * @param query
+ */
 export function rankResults(results: SearchResult[], query: string): SearchResult[] {
   const ranked = results.map((r) => ({
     ...r,
@@ -86,12 +94,15 @@ export function rankResults(results: SearchResult[], query: string): SearchResul
   }));
 
   return ranked.sort((a, b) => {
-    const scoreA = a.relevanceScore ?? 0;
-    const scoreB = b.relevanceScore ?? 0;
-    return scoreB - scoreA;
+    return b.relevanceScore - a.relevanceScore;
   });
 }
 
+/**
+ *
+ * @param results
+ * @param filters
+ */
 export function applyAdvancedFilters(
   results: SearchResult[],
   filters: AdvancedFilters
@@ -133,7 +144,7 @@ export function applyAdvancedFilters(
   }
 
   if (filters.hasImage) {
-    filtered = filtered.filter((r) => r.thumbnail || r.img_src);
+    filtered = filtered.filter((r) => Boolean(r.thumbnail ?? r.img_src));
   }
 
   if (filters.dateAfter) {
@@ -155,6 +166,10 @@ export function applyAdvancedFilters(
   return filtered;
 }
 
+/**
+ *
+ * @param results
+ */
 export function extractMetadata(results: SearchResult[]): ResultMetadata {
   const domains: Record<string, number> = {};
   const engines: Record<string, number> = {};
@@ -169,7 +184,7 @@ export function extractMetadata(results: SearchResult[]): ResultMetadata {
       // Ignore URL parse errors
     }
 
-    const engine = r.engine ?? (r.engines && r.engines[0]) ?? 'unknown';
+    const engine = r.engine ?? r.engines?.[0] ?? 'unknown';
     engines[engine] = (engines[engine] ?? 0) + 1;
 
     if (r.thumbnail || r.img_src) types.withImages++;
@@ -182,12 +197,16 @@ export function extractMetadata(results: SearchResult[]): ResultMetadata {
     uniqueDomains: Object.keys(domains).length,
     domains: Object.entries(domains)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10) as Array<[string, number]>,
-    engines: Object.entries(engines).sort((a, b) => b[1] - a[1]) as Array<[string, number]>,
+      .slice(0, 10),
+    engines: Object.entries(engines).sort((a, b) => b[1] - a[1]),
     types,
   };
 }
 
+/**
+ *
+ * @param results
+ */
 export function deduplicateResults(results: SearchResult[]): SearchResult[] {
   smartDeduplicator.clear();
   const seen = new Map<string, boolean>();
@@ -206,6 +225,10 @@ export function deduplicateResults(results: SearchResult[]): SearchResult[] {
   return deduped;
 }
 
+/**
+ *
+ * @param results
+ */
 export function sortByScore(results: SearchResult[]): SearchResult[] {
   return [...results].sort((a, b) => {
     const scoreA = typeof a.score === 'number' ? a.score : 0;
@@ -214,6 +237,10 @@ export function sortByScore(results: SearchResult[]): SearchResult[] {
   });
 }
 
+/**
+ *
+ * @param query
+ */
 export function expandQuery(query: string): QueryExpansion {
   let expanded = query;
   let engines: string | null = null;
@@ -231,6 +258,10 @@ export function expandQuery(query: string): QueryExpansion {
   return { query: expanded, engines, category };
 }
 
+/**
+ *
+ * @param results
+ */
 export function clusterByDomain(results: SearchResult[]): ClusterResult[] {
   const clusters: Record<string, SearchResult[]> = {};
   for (const result of results) {
@@ -248,10 +279,14 @@ export function clusterByDomain(results: SearchResult[]): ClusterResult[] {
     .sort((a, b) => b.count - a.count);
 }
 
+/**
+ *
+ * @param results
+ */
 export function clusterByEngine(results: SearchResult[]): ClusterResult[] {
   const clusters: Record<string, SearchResult[]> = {};
   for (const result of results) {
-    const engine = result.engine ?? (result.engines && result.engines[0]) ?? 'unknown';
+    const engine = result.engine ?? result.engines?.[0] ?? 'unknown';
     if (!clusters[engine]) clusters[engine] = [];
     clusters[engine].push(result);
   }
@@ -260,6 +295,11 @@ export function clusterByEngine(results: SearchResult[]): ClusterResult[] {
     .sort((a, b) => b.count - a.count);
 }
 
+/**
+ *
+ * @param results
+ * @param query
+ */
 export function analyzeResults(results: SearchResult[], query: string): ResultAnalysis {
   const keywordCounts: Record<string, number> = {};
   const analysis: ResultAnalysis = {
@@ -301,7 +341,7 @@ export function analyzeResults(results: SearchResult[], query: string): ResultAn
     } catch {
       // Ignore URL parse errors
     }
-    const engine = r.engine ?? (r.engines && r.engines[0]) ?? 'unknown';
+    const engine = r.engine ?? r.engines?.[0] ?? 'unknown';
     analysis.engines[engine] = (analysis.engines[engine] ?? 0) + 1;
     if (r.thumbnail || r.img_src) analysis.withImages++;
     if (r.publishedDate) analysis.withDates++;
@@ -336,6 +376,11 @@ export function analyzeResults(results: SearchResult[], query: string): ResultAn
   return analysis;
 }
 
+/**
+ *
+ * @param results
+ * @param clusterType
+ */
 export function showClusteredResults(results: SearchResult[], clusterType: string): void {
   const clusters = clusterType === 'engine' ? clusterByEngine(results) : clusterByDomain(results);
 
@@ -372,6 +417,10 @@ export function showClusteredResults(results: SearchResult[], clusterType: strin
   console.log(colorize(`Total: ${clusters.length} clusters, ${results.length} results`, 'dim'));
 }
 
+/**
+ *
+ * @param results
+ */
 export function generateVectorEmbeddings(results: SearchResult[]): SearchResult[] {
   return results.map((r) => {
     const textToEmbed = `${r.title ?? ''} ${r.content ?? r.snippet ?? ''}`.toLowerCase();
@@ -382,6 +431,10 @@ export function generateVectorEmbeddings(results: SearchResult[]): SearchResult[
   });
 }
 
+/**
+ *
+ * @param query
+ */
 export function autoRefineQuery(query: string): string {
   const noQuotes = query.replace(/["']/g, '');
   const stopWords = [
@@ -420,8 +473,8 @@ const MAX_FETCH_CONCURRENCY = 5;
 
 function isPrivateIpv4(hostname: string): boolean {
   const octets = hostname.split('.').map(Number);
-  if (octets.length !== 4 || octets.some((octet) => !Number.isInteger(octet))) return false;
-  const [first = 0, second = 0] = octets;
+  const first = octets[0];
+  const second = octets[1];
   return (
     first === 0 ||
     first === 10 ||
@@ -454,6 +507,11 @@ function isPrivateHostname(hostname: string): boolean {
   return false;
 }
 
+/**
+ *
+ * @param value
+ * @param base
+ */
 export function validateRemoteContentUrl(value: string, base?: URL): URL | null {
   try {
     const url = base ? new URL(value, base) : new URL(value);
@@ -540,6 +598,10 @@ async function fetchResultContent(result: SearchResult): Promise<SearchResult> {
   return result;
 }
 
+/**
+ *
+ * @param results
+ */
 export async function fetchWebpageContent(results: SearchResult[]): Promise<SearchResult[]> {
   const enriched = [...results];
   let nextIndex = 0;
@@ -548,8 +610,7 @@ export async function fetchWebpageContent(results: SearchResult[]): Promise<Sear
     async () => {
       while (nextIndex < results.length) {
         const index = nextIndex++;
-        const result = results[index];
-        if (result) enriched[index] = await fetchResultContent(result);
+        enriched[index] = await fetchResultContent(results[index]);
       }
     }
   );

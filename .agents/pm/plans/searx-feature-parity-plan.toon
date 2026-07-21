@@ -1,0 +1,199 @@
+id: searx-feature-parity-plan
+title: Complete local SearXNG feature parity and agent-ready CLI delivery
+description: "Implement live-instance compatibility, complete command UX, global setup, format contracts, unlimited cache proof, and release-ready validation."
+type: Plan
+status: in_progress
+priority: 0
+tags[5]: agent,cli,e2e,searxng,toon
+created_at: "2026-07-21T18:58:31.352Z"
+updated_at: "2026-07-21T22:38:04.736Z"
+deadline: "2026-07-23T18:58:31.352Z"
+assignee: codex-root
+author: codex-root
+estimated_minutes: 420
+acceptance_criteria: "Live searches succeed against http://192.168.1.183:38522 even when JSON format is disabled; Every advertised command has detailed help and global flags; TOON is the default and all programmatic formats validate; Global settings and all state live under ~/.searxng-cli; Unlimited persistent caching and cache reuse are proven; 100% coverage and full release gates pass; PR checks and bot reviews are clean and merged master is verified"
+definition_of_ready: "All 52 existing pm items, current source, GitHub state, official SearXNG API docs, TOON spec, and local instance capabilities have been inspected."
+parent: searx-modular-command-architecture
+reviewer: repository-owner
+risk: high
+confidence: 85
+sprint: 2026-07-feature-parity
+release: next
+dependencies[9]{id,kind,created_at,author,source_kind}:
+  searx-verification,discovered_from,"2026-07-21T18:58:31.352Z",null,null
+  searx-auto-release,related,"2026-07-21T22:22:11.695Z",null,null
+  searx-changelog-migration,related,"2026-07-21T22:22:11.695Z",null,null
+  searx-coverage-governance,related,"2026-07-21T22:22:11.695Z",null,null
+  searx-dependency-remediation,related,"2026-07-21T22:22:11.695Z",null,null
+  searx-hermetic-e2e,related,"2026-07-21T22:22:11.695Z",null,null
+  searx-published-consumer-isolation,related,"2026-07-21T22:22:11.695Z",null,null
+  searx-release-validation,related,"2026-07-21T22:22:11.695Z",null,null
+  searx-tag-release-validation,related,"2026-07-21T22:22:11.695Z",null,null
+comments[12]{created_at,author,text}:
+  "2026-07-21T18:58:31.352Z",codex-root,Live instance returns 403 for JSON while HTML search succeeds; response negotiation is mandatory.
+  "2026-07-21T19:11:09.654Z",codex-root,"Live installed-command proof: raw output reported _upstreamFormat=html and five upstream engine timeouts; repeated validated JSON query produced cached=true; cache status reports unlimited and Endless. Full live E2E script passed after making zero-result format checks schema-aware."
+  "2026-07-21T19:12:10.309Z",codex-root,"Quality acceptance was raised after initial coverage measurement. Current honest baseline is statements 72.70%, branches 60.81%, functions 84.48%, lines 74.67%; publication is blocked until the mandated 100/100/100/100 gate and docstring/static/security layers are real."
+  "2026-07-21T19:29:56.312Z",codex-root,"Global latest reinstall reproduced pm-cli bundle_integrity_torn_install; uninstall plus exact latest reinstall restored the Homebrew-prefix binary. This matches existing unbraind/pm-cli#634, so no duplicate issue was filed."
+  "2026-07-21T20:12:22.301Z",codex-root,"Installed-package E2E found and fixed cache lifecycle loss: every CLI invocation now loads the persistent cache before exit handlers can save it. Repeated real searxng processes prove firstCached=false, secondCached=true, entries=1, maxSize=unlimited, maxAge=Endless."
+  "2026-07-21T20:15:12.473Z",codex-root,"Current mandatory coverage gate correctly fails at statements 72.55%, branches 60.91%, functions 84.00%, lines 74.49%. The gate remains 100% per file; no source exclusions, ignore pragmas, mocked acceptance, or threshold reductions were used."
+  "2026-07-21T20:15:12.473Z",codex-root,Security sweep found MCP SDK 1.29.0 resolved @hono/node-server 1.19.14 with GHSA-frvp-7c67-39w9. Raised the explicit override to 2.0.11; bun audit is now clean and all 628 unit tests plus typechecking pass.
+  "2026-07-21T20:17:43.731Z",codex-root,"After adding executable entry-point success/failure coverage and rejected-request cleanup coverage, 20 files and 631 tests pass. Honest coverage moved to statements 72.66%, branches 60.88%, functions 84.76%, lines 74.61%; the 100% per-file gate still correctly blocks release."
+  "2026-07-21T21:52:02.707Z",codex-root,"End-to-end implementation verification checkpoint: full repository coverage now passes at 100/100/100/100 across 930 tests. Test matrices cover local-routing enforcement, TOON/JSON/JSONL/YAML/XML/CSV/Markdown/table/text/HTML formats, schemas and payload validation, setup-local states, cache CRUD/offline/semantic behavior, request JSON, autocomplete, presets, multi-search/strict modes, doctor and formatter verification, MCP dispatch, and the built-in acceptance suite. Proceeding to complete quality/security/live-service/package/release gates."
+  "2026-07-21T22:23:19.586Z",codex-root,"PM linked-test execution was attempted in schema and tracker modes. The project pm-changelog command entered a fresh pm init prompt because extension dependency resolution is unavailable in the linked-test sandbox, matching the existing searx-changelog-migration learning. It remains a mandatory direct workspace gate; the other linked gates are executed through PM."
+  "2026-07-21T22:24:08.200Z",codex-root,"The composite live release:check was also removed from PM sandbox execution because it intentionally contains the same project-owned pm-changelog gate. Direct workspace release:check already passed end-to-end against 192.168.1.183:38522; PM retains its constituent lint, coverage, build, security, package, and live E2E commands."
+  "2026-07-21T22:38:04.140Z",codex-root,"Final local gate checkpoint: 20 files and 931 tests pass at 100% statements (4636/4636), branches (3389/3389), functions (521/521), and lines (4339/4339); module docstrings are 18/18. Bun audit exposed newly published GHSA-v2hh-gcrm-f6hx against fast-uri 3.1.3, so the override moved to patched 3.1.4; Bun audit, Trivy, history secret scan, quality, package smoke, changelog checks, and live release:check are green. Prettier is current at 3.9.6; TypeScript remains 6.0.3 because latest typescript-eslint requires TypeScript below 6.1."
+notes[6]{created_at,author,text}:
+  "2026-07-21T18:58:31.352Z",codex-root,Preserve legacy global flags while establishing explicit command-family contracts.
+  "2026-07-21T19:12:11.256Z",codex-root,"New mandatory constraints: eliminate unjustified any, inline one-use trivial helpers, use top-level/static imports, preserve erasable TypeScript syntax, inspect dependency declarations instead of guessing, enforce docstring coverage, and add non-cheatable unit/integration/E2E/performance/acceptance/functional/smoke/dogfood/white-box/black-box gates."
+  "2026-07-21T19:29:57.670Z",codex-root,"Operational caveat: verify the pm binary and version immediately after global upgrades; the current confirmed latest is 2026.7.21."
+  "2026-07-21T20:12:22.301Z",codex-root,"The configured SearXNG instance is reachable and advertises 241 engines, 31 categories, 62 locales, and 9 plugins, but enabled upstream engines currently time out. CLI transport, HTML fallback, zero-result schema handling, formatter contracts, and error metadata are therefore the available live acceptance surface."
+  "2026-07-21T20:15:12.473Z",codex-root,npm audit cannot execute in this Bun-lockfile repository because npm requires package-lock.json; bun audit and Trivy are the authoritative dependency scans and are both clean after the Hono override.
+  "2026-07-21T22:22:14.417Z",codex-root,"Review governance uses scripts/pr-review-inventory.mjs to capture exact-head checks plus every conversation comment, submitted review, inline thread, resolution state, edit time, and reaction total. Human judgment remains explicit for voting, thread replies, and resolution."
+learnings[4]{created_at,author,text}:
+  "2026-07-21T18:58:31.352Z",codex-root,Full SearXNG compatibility must follow instance-advertised capabilities rather than assume API formats are enabled.
+  "2026-07-21T20:12:22.301Z",codex-root,Persistent state must be loaded before process-wide exit persistence is armed; otherwise read-only commands can truncate state created by prior processes.
+  "2026-07-21T22:22:15.059Z",codex-root,"A cache hit must not launch unref background refresh work in a one-shot CLI: open network handles delay process termination and make installed-command acceptance nondeterministic. Explicit refresh commands preserve predictable CLI lifecycle semantics."
+  "2026-07-21T22:38:04.736Z",codex-root,"Security databases can disagree temporarily: Bun audit detected the fast-uri host-confusion advisory while the current Trivy database still reported zero. Release security requires both gates and remediation of the stricter result."
+files[49]{path,scope,note}:
+  eslint.config.mjs,project,Strict type-aware source and test quality policy
+  LICENSE,project,Package licensing contract
+  package.json,project,Release gates dependencies and review inventory script
+  scripts/check-module-docstrings.mjs,project,Repo-wide source module documentation coverage gate
+  scripts/e2e-searxng.sh,project,Live installed CLI validation
+  scripts/pr-review-inventory.mjs,project,Exact-head PR review thread comment reaction and check inventory
+  scripts/release-check.sh,project,Complete installed CLI release acceptance gate
+  scripts/secret-scan-history.sh,project,Full-history credential and private-endpoint scan with exact documented local-service allowlist
+  src/cache/index.ts,project,Unlimited persistent cache lifecycle
+  src/classes/index.ts,project,Public result and client class contracts
+  src/cli/index.ts,project,Command parser global flags and detailed help contracts
+  src/config/index.ts,project,Local routing and configuration precedence
+  src/formatters-advanced/index.ts,project,TOON XML and HTML formatter implementations
+  src/formatters/index.ts,project,TOON-default and programmatic format dispatch
+  src/formatters/schema.ts,project,Machine-readable output schemas
+  src/formatters/validation.ts,project,Programmatic payload validation
+  src/http/index.ts,project,Retry rate-limit circuit-breaker and transport safety
+  src/index.ts,project,CLI orchestration
+  src/mcp/index.ts,project,MCP agent search surface
+  src/search-response/index.ts,project,Capability-aware response adapter
+  src/search/index.ts,project,Complete SearXNG request parameter transport
+  src/searxng-cli.ts,project,Executable entry point
+  src/storage/index.ts,project,Global settings cache history engines and preset storage under home directory
+  src/types/index.ts,project,Complete type-safe public contracts
+  src/utils/github.ts,project,GitHub workflow integration utility
+  src/utils/index.ts,project,Shared safe parsing transformation and ranking utilities
+  tests/e2e/cli.test.ts,project,Installed command black-box acceptance coverage
+  tests/helpers/search-options.ts,project,Shared deterministic test fixtures
+  tests/setup.ts,project,Hermetic test environment setup
+  tests/unit/cache.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/classes.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/cli.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/config.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/entrypoint-error.test.ts,project,Fatal entry-point failure coverage
+  tests/unit/entrypoint-success.test.ts,project,Executable entry-point success coverage
+  tests/unit/formatters.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/github.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/http.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/index.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/main.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/mcp.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/release-automation.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/search-response.test.ts,project,Response negotiation and HTML mapping regression suite
+  tests/unit/search.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/setup-wizard.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/star-prompt.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/storage.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/utils.test.ts,project,Complete unit integration white-box and contract verification suite
+  tests/unit/validation.test.ts,project,Complete unit integration white-box and contract verification suite
+tests[9]{command,scope,timeout_seconds}:
+  bun audit,project,180
+  "bun run build:full",project,300
+  bun run lint,project,300
+  "bun run lint:docs",project,120
+  "bun run lint:duplicates",project,120
+  "bun run security:trivy",project,600
+  "bun run smoke:package",project,600
+  "bun run test:coverage",project,300
+  "SEARXNG_URL=http://192.168.1.183:38522 bun run test:e2e:searxng",project,300
+docs[12]{path,scope,note}:
+  AGENTS.md,project,Repository PM workflow and agent governance instructions
+  docs/agent-mode.md,project,Configured LAN routing guarantee
+  docs/api.md,project,SDK and structured response contract
+  docs/caching.md,project,Unlimited persistent cache semantics
+  docs/configuration.md,project,Global settings and transport behavior
+  docs/e2e-testing.md,project,Live validation contract
+  docs/formats.md,project,Validated output format and schema reference
+  docs/getting-started.md,project,Installation setup and first-search guide
+  docs/index.md,project,Documentation navigation and product overview
+  docs/release-process.md,project,Daily release and exhaustive bot review closeout workflow
+  docs/usage.md,project,Complete command and flag usage reference
+  README.md,project,Complete user-facing CLI command format and onboarding reference
+plan_mode: approved
+plan_decisions[2]{ts,author,decision,rationale,evidence}:
+  "2026-07-21T18:58:35.178Z",codex-root,Use capability-aware JSON first with HTML fallback for disabled API formats.,"SearXNG intentionally returns 403 for disabled response formats, while the configured local service supports HTML search.",Official Search API docs plus live GET and POST probes on 2026-07-21.
+  "2026-07-21T19:16:14.250Z",codex-root,"Use TypeScript 6.0.3, the newest release supported by typescript-eslint 8.65.0.",TypeScript 7.0.2 is the registry latest but lies outside the current typescript-eslint peer range >=4.8.4 <6.1.0; a mandatory type-aware ESLint gate cannot be dependency-clean on TS 7.,npm registry peer metadata checked 2026-07-21.
+plan_discoveries[1]{ts,author,text}:
+  "2026-07-21T18:58:35.905Z",codex-root,"The existing command router provides detailed help for core commands but generic help for engines, schema, completion, agent, and mcp."
+plan_steps[5]:
+  - id: plan-step-001
+    order: 1
+    title: Implement SearXNG JSON-to-HTML response negotiation and full result mapping
+    status: completed
+    created_at: "2026-07-21T18:58:32.154Z"
+    updated_at: "2026-07-21T20:12:11.666Z"
+    owner: codex-root
+    evidence: "Added src/search-response with JSON/HTML negotiation, full HTML normalization, central use in search/doctor/format verification/built-in tests, and focused regression tests."
+    completed_at: "2026-07-21T19:11:00.454Z"
+    linked_items[3]{id,kind,note}:
+      searx-modular-command-architecture,implements,Implements the governed modular CLI architecture through capability-aware transport
+      searx-remote-fetch-hardening,depends_on,Reuses SSRF and redirect hardening for fetched result content
+      searx-repository-audit,discovered_from,Audit identified transport and response-contract gaps
+  - id: plan-step-002
+    order: 2
+    title: Complete command-specific help and upstream capability UX
+    status: completed
+    created_at: "2026-07-21T18:58:32.900Z"
+    updated_at: "2026-07-21T20:12:13.821Z"
+    owner: codex-root
+    evidence: "Command-specific help remains available for every advertised command; capability UX now reports 241 engines, 31 categories, 62 locales, 9 plugins, engine flags and instance defaults."
+    completed_at: "2026-07-21T19:11:03.132Z"
+    linked_items[2]{id,kind,note}:
+      searx-changelog-08,depends_on,Preserves explicit unknown-command behavior while expanding command families
+      searx-changelog-13,depends_on,Preserves documented end-of-options semantics in global help
+  - id: plan-step-003
+    order: 3
+    title: "Prove global settings, unlimited cache, formats, package installation, and live end-to-end behavior"
+    status: completed
+    created_at: "2026-07-21T18:58:33.666Z"
+    updated_at: "2026-07-21T20:15:10.468Z"
+    owner: codex-root
+    evidence: "Packed and globally installed searxng 2026.7.21; set LAN URL and TOON globally; validated all advertised command help; passed 15/15 formatter contracts and the full live E2E script; decoded TOON v3.3; proved cross-process firstCached=false then secondCached=true with persistent entries=1, maxSize=unlimited, maxAge=Endless; all state paths resolve under ~/.searxng-cli. The live instance itself advertises 241 engines but currently reports upstream timeouts, so non-empty live results are externally unavailable."
+    completed_at: "2026-07-21T20:15:10.468Z"
+    linked_items[2]{id,kind,note}:
+      searx-hermetic-e2e,depends_on,Extends the existing hermetic harness with an explicit live LAN acceptance lane
+      searx-verification,supersedes,Raises prior package verification to installed live-service and persistent-state proof
+  - id: plan-step-005
+    order: 4
+    title: "Enforce repo-wide 100% coverage, docstrings, duplication, lint, and security quality gates"
+    status: in_progress
+    created_at: "2026-07-21T19:12:08.544Z"
+    updated_at: "2026-07-21T20:15:11.507Z"
+    owner: codex-root
+    evidence: "Type-aware source/test lint, erasable syntax rules, 100% module docstring gate, ShellCheck, 4% clone ceiling, Trivy, and exact 100% per-file coverage enforcement are installed. Current honest coverage is 72.55/60.91/84.00/74.49, so publication remains gated."
+    linked_items[3]{id,kind,note}:
+      searx-coverage-governance,supersedes,Raises the prior non-regression floor to the mandated honest 100 percent per-file gate
+      searx-dependency-remediation,depends_on,Keeps dependency and vulnerability health within the quality gate
+      searx-ci-modernization,depends_on,Carries strict local gates into current CI runtimes
+  - id: plan-step-004
+    order: 5
+    title: "Document, publish, review, merge, and verify exact master head"
+    status: pending
+    created_at: "2026-07-21T18:58:34.449Z"
+    updated_at: "2026-07-21T20:12:21.578Z"
+    owner: codex-root
+    linked_items[5]{id,kind,note}:
+      searx-auto-release,depends_on,Delivery must preserve daily change-aware automatic release behavior
+      searx-changelog-migration,depends_on,Changelog remains generated exclusively from pm history
+      searx-release-validation,verifies,Final exact-head proof validates the release operating model
+      searx-release-publishing,depends_on,Published package proof and automated release workflow are part of closeout
+      searx-github-delivery,supersedes,Extends prior consolidated delivery with mandatory bot-thread acknowledgements
+body: "Single governed execution plan for the requested end-to-end delivery. Reuses the established architecture Feature and prior verification lineage; no duplicate recovery or coverage item is created.\n\nQuality addendum: all source and quality tooling must meet the user-mandated repo-wide gates. Coverage exclusions, ignore pragmas, mocked-only acceptance, duplicate tests, or threshold reductions are not valid completion evidence."

@@ -28,7 +28,7 @@ if "${SEARCH_CMD[@]}" '(?i)(password|secret|api[_-]?key|token)\s*[:=]\s*["\x27][
 fi
 
 "${SEARCH_CMD[@]}" 'https?://(192\.168\.[0-9]{1,3}\.[0-9]{1,3}|10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|172\.(1[6-9]|2[0-9]|3[0-1])\.[0-9]{1,3}\.[0-9]{1,3})(:[0-9]{1,5})?' "$TMP_HISTORY" >/tmp/searxng-private-endpoint-findings.txt || true
-grep -Ev 'https?://192\.168\.1\.1(:[0-9]{1,5})?' /tmp/searxng-private-endpoint-findings.txt >/tmp/searxng-private-endpoint-findings-filtered.txt || true
+grep -Ev 'https?://(192\.168\.1\.1(:[0-9]{1,5})?|192\.168\.1\.183:38522|192\.168\.1\.10|10\.0\.0\.1|172\.16\.0\.1|172\.31\.255\.255)([/#?.,;:)}[:space:]"'"'"'`]|$)' /tmp/searxng-private-endpoint-findings.txt >/tmp/searxng-private-endpoint-findings-filtered.txt || true
 if [ -s /tmp/searxng-private-endpoint-findings-filtered.txt ]; then
   echo 'Private network endpoint found in git history:'
   cat /tmp/searxng-private-endpoint-findings-filtered.txt

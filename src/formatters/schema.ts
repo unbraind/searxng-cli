@@ -1,3 +1,6 @@
+/**
+ * JSON Schema definitions and discovery helpers for each structured CLI output format.
+ */
 export interface FormatterSchemaRecord {
   format: string;
   aliases: string[];
@@ -7,6 +10,9 @@ export interface FormatterSchemaRecord {
   requiredChecks: string[];
 }
 
+/**
+ *
+ */
 export interface FormatterSchemaBundle {
   schemaVersion: string;
   generatedAt: string;
@@ -292,28 +298,33 @@ const FORMAT_SCHEMAS: FormatterSchemaRecord[] = [
   },
 ];
 
-const ALIAS_TO_FORMAT = FORMAT_SCHEMAS.reduce(
+const ALIAS_TO_SCHEMA = FORMAT_SCHEMAS.reduce<Record<string, FormatterSchemaRecord>>(
   (acc, schema) => {
-    acc[schema.format] = schema.format;
+    acc[schema.format] = schema;
     schema.aliases.forEach((alias) => {
-      acc[alias] = schema.format;
+      acc[alias] = schema;
     });
     return acc;
   },
-  {} as Record<string, string>
+  {}
 );
 
 function findFormatSchema(format: string): FormatterSchemaRecord | null {
   const normalized = format.trim().toLowerCase();
-  const canonical = ALIAS_TO_FORMAT[normalized];
-  if (!canonical) return null;
-  return FORMAT_SCHEMAS.find((schema) => schema.format === canonical) ?? null;
+  return ALIAS_TO_SCHEMA[normalized] ?? null;
 }
 
+/**
+ *
+ */
 export function getSupportedSchemaFormats(): string[] {
   return FORMAT_SCHEMAS.map((schema) => schema.format);
 }
 
+/**
+ *
+ * @param format
+ */
 export function getFormatterSchemas(
   format = 'all'
 ): FormatterSchemaBundle | FormatterSchemaRecord | null {

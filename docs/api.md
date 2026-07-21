@@ -151,6 +151,7 @@ interface SearchResponse {
   timing?: string;
   _cached?: boolean;
   _cacheAge?: number;
+  _upstreamFormat?: 'json' | 'html';
 }
 ```
 

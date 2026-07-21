@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   buildUrl,
   calculateRelevanceScore,
@@ -13,81 +13,12 @@ import {
   analyzeResults,
   fetchWebpageContent,
   validateRemoteContentUrl,
+  showClusteredResults,
+  generateVectorEmbeddings,
+  autoRefineQuery,
 } from '@/search/index';
-import type { SearchResult, SearchOptions } from '@/types/index';
-
-const createMockOptions = (overrides: Partial<SearchOptions> = {}): SearchOptions => ({
-  query: 'test query',
-  format: 'toon',
-  engines: null,
-  lang: null,
-  page: 1,
-  safeSearch: 0,
-  timeRange: null,
-  category: null,
-  limit: 10,
-  timeout: 15000,
-  verbose: false,
-  output: null,
-  unescape: true,
-  autoformat: true,
-  score: false,
-  interactive: false,
-  noCache: false,
-  retries: 2,
-  open: null,
-  stats: false,
-  raw: false,
-  filter: null,
-  batch: null,
-  bookmark: null,
-  export: null,
-  quick: false,
-  summary: false,
-  dedup: true,
-  sort: false,
-  group: null,
-  config: null,
-  showInfo: false,
-  runTest: false,
-  preset: null,
-  savePreset: null,
-  listPresets: false,
-  compare: null,
-  cluster: null,
-  suggestions: false,
-  pipe: false,
-  stream: false,
-  jsonl: false,
-  rank: false,
-  multiSearch: null,
-  domainFilter: null,
-  excludeDomain: null,
-  minScore: null,
-  hasImage: false,
-  dateAfter: null,
-  dateBefore: null,
-  theme: 'default',
-  compact: false,
-  metadata: false,
-  urlsOnly: false,
-  titlesOnly: false,
-  autocomplete: false,
-  proxy: null,
-  insecure: false,
-  health: false,
-  watch: false,
-  silent: false,
-  pretty: false,
-  confirm: false,
-  agent: false,
-  analyze: false,
-  cacheStatus: false,
-  extract: null,
-  sentiment: false,
-  structured: false,
-  ...overrides,
-});
+import { createTestSearchOptions as createMockOptions } from '../helpers/search-options';
+import type { AdvancedFilters, SearchResult } from '@/types/index';
 
 const createMockResult = (overrides: Partial<SearchResult> = {}): SearchResult => ({
   title: 'Test Result',
@@ -176,6 +107,11 @@ describe('Search Module', () => {
       expect(url.searchParams.get('categories')).toBe('news');
       expect(url.searchParams.get('image_proxy')).toBe('true');
     });
+
+    it('ignores blank passthrough parameter names', () => {
+      const url = buildUrl(createMockOptions({ searxngParams: { ' ': 'ignored' } }));
+      expect(url.searchParams.has(' ')).toBe(false);
+    });
   });
 
   describe('calculateRelevanceScore', () => {
@@ -203,6 +139,20 @@ describe('Search Module', () => {
       const githubScore = calculateRelevanceScore(githubResult, 'test');
       const otherScore = calculateRelevanceScore(otherResult, 'test');
       expect(githubScore).toBeGreaterThan(otherScore);
+    });
+
+    it('handles missing fields, invalid URLs, short terms, and trusted categories', () => {
+      const missing = { score: 'invalid' } as unknown as SearchResult;
+      expect(calculateRelevanceScore(missing, 'a valid')).toBe(0);
+      expect(calculateRelevanceScore(createMockResult({ url: 'not a url' }), 'none')).toBe(5);
+      for (const url of [
+        'https://docs.example.com',
+        'https://university.edu',
+        'https://agency.gov',
+        'https://sub.wikipedia.org',
+      ]) {
+        expect(calculateRelevanceScore(createMockResult({ url }), 'none')).toBe(10);
+      }
     });
   });
 
@@ -291,6 +241,91 @@ describe('Search Module', () => {
       });
       expect(filtered.length).toBe(1);
     });
+
+    it('handles subdomains, invalid URLs, score fallbacks, and date boundaries', () => {
+      const results = [
+        createMockResult({
+          url: 'https://docs.example.com/a',
+          score: undefined,
+          publishedDate: undefined,
+          img_src: 'image.png',
+        }),
+        createMockResult({
+          url: 'invalid',
+          score: 1,
+          publishedDate: '2026-01-15',
+        }),
+        createMockResult({
+          url: 'https://other.test',
+          score: 0.7,
+          publishedDate: '2026-02-01',
+        }),
+      ];
+      expect(
+        applyAdvancedFilters(results, {
+          domain: ' example.com , absent.test ',
+          excludeDomain: null,
+          minScore: null,
+          hasImage: false,
+          dateAfter: null,
+          dateBefore: null,
+        })
+      ).toHaveLength(1);
+      expect(
+        applyAdvancedFilters(results, {
+          domain: null,
+          excludeDomain: 'example.com',
+          minScore: '0.5',
+          hasImage: false,
+          dateAfter: '2026-01-01',
+          dateBefore: '2026-01-31',
+        })
+      ).toEqual([results[1]]);
+      expect(
+        applyAdvancedFilters(results, {
+          domain: null,
+          excludeDomain: null,
+          minScore: null,
+          hasImage: true,
+          dateAfter: null,
+          dateBefore: null,
+        })
+      ).toEqual([results[0]]);
+      const baseFilters: AdvancedFilters = {
+        domain: null,
+        excludeDomain: null,
+        minScore: null,
+        hasImage: false,
+        dateAfter: null,
+        dateBefore: null,
+      };
+      expect(
+        applyAdvancedFilters([createMockResult({ url: undefined })], {
+          ...baseFilters,
+          domain: 'example.com',
+        })
+      ).toEqual([]);
+      expect(
+        applyAdvancedFilters([createMockResult({ url: undefined })], {
+          ...baseFilters,
+          excludeDomain: 'example.com',
+        })
+      ).toHaveLength(1);
+      expect(
+        applyAdvancedFilters([createMockResult({ score: undefined })], {
+          ...baseFilters,
+          minScore: '0.1',
+        })
+      ).toEqual([]);
+      for (const key of ['dateAfter', 'dateBefore'] as const) {
+        expect(
+          applyAdvancedFilters([createMockResult({ publishedDate: undefined })], {
+            ...baseFilters,
+            [key]: '2026-01-01',
+          })
+        ).toEqual([]);
+      }
+    });
   });
 
   describe('extractMetadata', () => {
@@ -313,6 +348,26 @@ describe('Search Module', () => {
       ];
       const metadata = extractMetadata(results);
       expect(metadata.types.withImages).toBe(2);
+    });
+
+    it('normalizes malformed and optional metadata', () => {
+      const metadata = extractMetadata([
+        createMockResult({
+          url: 'https://www.example.com/a',
+          engine: undefined,
+          engines: ['bing'],
+        }),
+        createMockResult({ url: 'https://example.com/b', engine: undefined, engines: undefined }),
+        createMockResult({
+          url: 'invalid',
+          score: undefined,
+          publishedDate: '2026-01-01',
+        }),
+        createMockResult({ url: undefined }),
+      ]);
+      expect(metadata.domains).toEqual([['example.com', 2]]);
+      expect(Object.fromEntries(metadata.engines)).toEqual({ bing: 1, unknown: 1, google: 2 });
+      expect(metadata.types).toMatchObject({ withDates: 1, withScores: 3 });
     });
   });
 
@@ -345,6 +400,12 @@ describe('Search Module', () => {
       const secondDeduped = deduplicateResults(second);
       expect(firstDeduped.length).toBe(1);
       expect(secondDeduped.length).toBe(1);
+    });
+
+    it('uses link and empty fallbacks when URL is absent', () => {
+      const linked = createMockResult({ url: undefined, link: 'https://example.com/link' });
+      const empty = createMockResult({ url: undefined, link: undefined });
+      expect(deduplicateResults([linked, linked, empty, empty])).toEqual([linked, empty]);
     });
   });
 
@@ -396,6 +457,10 @@ describe('Search Module', () => {
       expect(expanded.query).toBe('regular search query');
       expect(expanded.engines).toBeNull();
     });
+
+    it('supports an exact alias token', () => {
+      expect(expandQuery('!img')).toEqual({ query: '', engines: null, category: 'images' });
+    });
   });
 
   describe('clusterByDomain', () => {
@@ -421,6 +486,15 @@ describe('Search Module', () => {
       const clusters = clusterByDomain(results);
       expect(clusters[0]?.domain).toBe('a.com');
     });
+
+    it('uses link fallbacks and ignores malformed results', () => {
+      expect(
+        clusterByDomain([
+          createMockResult({ url: undefined, link: 'https://www.example.com/a' }),
+          createMockResult({ url: undefined, link: undefined }),
+        ])
+      ).toMatchObject([{ domain: 'example.com', count: 1 }]);
+    });
   });
 
   describe('clusterByEngine', () => {
@@ -434,6 +508,50 @@ describe('Search Module', () => {
       expect(clusters.length).toBe(2);
       const googleCluster = clusters.find((c) => c.engine === 'google');
       expect(googleCluster?.count).toBe(2);
+    });
+
+    it('uses engine-array and unknown fallbacks', () => {
+      expect(
+        clusterByEngine([
+          createMockResult({ engine: undefined, engines: ['bing'] }),
+          createMockResult({ engine: undefined, engines: undefined }),
+        ]).map((cluster) => cluster.engine)
+      ).toEqual(['bing', 'unknown']);
+    });
+  });
+
+  describe('agent-oriented transformations', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it('renders domain and engine clusters including overflow summaries', () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const results = Array.from({ length: 4 }, (_, index) =>
+        createMockResult({
+          title: index === 0 ? undefined : `<b>Result ${index}</b>`,
+          url: index === 1 ? undefined : `https://example.com/${index}`,
+          engine: undefined,
+          engines: ['bing'],
+        })
+      );
+      showClusteredResults(results, 'domain');
+      showClusteredResults(results, 'engine');
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('and 1 more'));
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Total:'));
+    });
+
+    it('generates deterministic vectors from every text fallback', () => {
+      const embedded = generateVectorEmbeddings([
+        createMockResult({ title: undefined, content: undefined, snippet: 'Snippet' }),
+        createMockResult({ title: 'Title', content: 'Content' }),
+        createMockResult({ title: undefined, content: undefined, snippet: undefined }),
+      ]);
+      expect(embedded.every((result) => Array.isArray(result.embeddings))).toBe(true);
+    });
+
+    it('refines quoted, long, and stop-word-only queries', () => {
+      expect(autoRefineQuery('"one" two three four five six')).toBe('one two three four five');
+      expect(autoRefineQuery('the and or')).toBe('the and or');
+      expect(autoRefineQuery('a concise query')).toBe('concise query');
     });
   });
 
@@ -457,6 +575,34 @@ describe('Search Module', () => {
       expect(validateRemoteContentUrl('http://192.168.1.10')).toBeNull();
       expect(validateRemoteContentUrl('http://[::ffff:7f00:1]')).toBeNull();
       expect(validateRemoteContentUrl('https://example.com/page')?.hostname).toBe('example.com');
+    });
+
+    it('covers all reserved IP ranges, IPv6 forms, relative redirects, and malformed input', () => {
+      for (const value of [
+        'http://0.1.2.3',
+        'http://10.0.0.1',
+        'http://169.254.1.1',
+        'http://172.16.0.1',
+        'http://172.31.255.255',
+        'http://192.168.1.1',
+        'http://100.64.0.1',
+        'http://100.127.0.1',
+        'http://224.0.0.1',
+        'http://[::]',
+        'http://[::1]',
+        'http://[fc00::1]',
+        'http://[fd00::1]',
+        'http://[fe80::1]',
+        'http://host.localhost',
+      ]) {
+        expect(validateRemoteContentUrl(value)).toBeNull();
+      }
+      expect(validateRemoteContentUrl('not a URL')).toBeNull();
+      expect(
+        validateRemoteContentUrl('/next', new URL('https://example.com/start'))?.pathname
+      ).toBe('/next');
+      expect(validateRemoteContentUrl('http://172.32.0.1')).not.toBeNull();
+      expect(validateRemoteContentUrl('http://100.128.0.1')).not.toBeNull();
     });
 
     it('does not fetch rejected targets', async () => {
@@ -495,6 +641,64 @@ describe('Search Module', () => {
       const [enriched] = await fetchWebpageContent([result]);
       expect(enriched?.content).toContain('Useful result');
     });
+
+    it('handles redirects, response rejection, unsupported content, empty bodies, and failures', async () => {
+      const original = createMockResult({ url: 'https://example.com/page', content: 'snippet' });
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+      fetchSpy.mockResolvedValueOnce(new Response(null, { status: 302 }));
+      await expect(fetchWebpageContent([original])).resolves.toEqual([original]);
+
+      fetchSpy.mockResolvedValueOnce(new Response('no', { status: 500 }));
+      await expect(fetchWebpageContent([original])).resolves.toEqual([original]);
+
+      fetchSpy.mockResolvedValueOnce(
+        new Response('binary', { headers: { 'content-type': 'application/octet-stream' } })
+      );
+      await expect(fetchWebpageContent([original])).resolves.toEqual([original]);
+
+      fetchSpy.mockResolvedValueOnce(new Response(null, { status: 200 }));
+      await expect(fetchWebpageContent([original])).resolves.toEqual([
+        { ...original, content: 'snippet' },
+      ]);
+
+      fetchSpy.mockRejectedValueOnce(new Error('offline'));
+      await expect(fetchWebpageContent([original])).resolves.toEqual([original]);
+      await expect(fetchWebpageContent([])).resolves.toEqual([]);
+      await expect(
+        fetchWebpageContent([{ title: 'missing URL', url: undefined } as unknown as SearchResult])
+      ).resolves.toEqual([{ title: 'missing URL', url: undefined }]);
+    });
+
+    it('follows safe redirects and stops at the redirect limit', async () => {
+      const original = createMockResult({ url: 'https://example.com/start' });
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(new Response(null, { status: 302, headers: { location: '/next' } }))
+        .mockResolvedValueOnce(
+          new Response('<p>redirected</p>', { headers: { 'content-type': 'text/plain' } })
+        );
+      expect((await fetchWebpageContent([original]))[0]?.content).toContain('redirected');
+
+      fetchSpy.mockResolvedValue(
+        new Response(null, { status: 302, headers: { location: '/again' } })
+      );
+      await expect(fetchWebpageContent([original])).resolves.toEqual([original]);
+    });
+
+    it('cancels streamed bodies that exceed the byte ceiling', async () => {
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new Uint8Array(1024 * 1024 + 1));
+          controller.close();
+        },
+      });
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(body, { headers: { 'content-type': 'application/xhtml+xml' } })
+      );
+      const original = createMockResult({ url: 'https://example.com/large' });
+      await expect(fetchWebpageContent([original])).resolves.toEqual([original]);
+    });
   });
 
   describe('analyzeResults', () => {
@@ -529,6 +733,47 @@ describe('Search Module', () => {
       ];
       const analysis = analyzeResults(positiveResults, 'test');
       expect(analysis.sentiment.positive).toBeGreaterThanOrEqual(0);
+    });
+
+    it('covers negative, neutral, missing, malformed, image, date, score, and engine fallbacks', () => {
+      const analysis = analyzeResults(
+        [
+          createMockResult({
+            title: 'Broken error',
+            content: 'problem failure',
+            url: 'invalid',
+            engine: undefined,
+            engines: ['bing'],
+            thumbnail: 'image',
+            publishedDate: '2026-01-01',
+          }),
+          createMockResult({
+            title: undefined,
+            content: undefined,
+            url: undefined,
+            engine: undefined,
+            engines: undefined,
+            score: undefined,
+          }),
+        ],
+        'failure'
+      );
+      expect(analysis.sentiment).toEqual({ positive: 0, negative: 1, neutral: 1 });
+      expect(analysis.engines).toMatchObject({ bing: 1, unknown: 1 });
+      expect(analyzeResults([], 'empty')).toMatchObject({
+        avgTitleLength: 0,
+        avgContentLength: 0,
+      });
+      expect(
+        analyzeResults(
+          [
+            createMockResult({ url: 'https://a.example/1' }),
+            createMockResult({ url: 'https://a.example/2' }),
+            createMockResult({ url: 'https://b.example/1' }),
+          ],
+          'none'
+        ).topDomains?.[0]
+      ).toEqual({ domain: 'a.example', count: 2 });
     });
   });
 });

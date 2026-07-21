@@ -1,6 +1,5 @@
 import * as fs from 'fs';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import * as childProcess from 'child_process';
 import {
   parseArgs,
   createDefaultOptions,
@@ -10,81 +9,7 @@ import {
   showSpinner,
 } from '@/cli/index';
 import * as storage from '@/storage/index';
-import type { SearchOptions } from '@/types/index';
-
-const createMockOptions = (overrides: Partial<SearchOptions> = {}): SearchOptions => ({
-  query: '',
-  format: 'toon',
-  engines: null,
-  lang: null,
-  page: 1,
-  safeSearch: 0,
-  timeRange: null,
-  category: null,
-  limit: 10,
-  timeout: 15000,
-  verbose: false,
-  output: null,
-  unescape: true,
-  autoformat: true,
-  score: false,
-  interactive: false,
-  noCache: false,
-  retries: 2,
-  open: null,
-  stats: false,
-  raw: false,
-  filter: null,
-  batch: null,
-  bookmark: null,
-  export: null,
-  quick: false,
-  summary: false,
-  dedup: true,
-  sort: false,
-  group: null,
-  config: null,
-  showInfo: false,
-  runTest: false,
-  preset: null,
-  savePreset: null,
-  listPresets: false,
-  compare: null,
-  cluster: null,
-  suggestions: false,
-  pipe: false,
-  stream: false,
-  jsonl: false,
-  rank: false,
-  multiSearch: null,
-  domainFilter: null,
-  excludeDomain: null,
-  minScore: null,
-  hasImage: false,
-  dateAfter: null,
-  dateBefore: null,
-  theme: 'default',
-  compact: false,
-  metadata: false,
-  urlsOnly: false,
-  titlesOnly: false,
-  autocomplete: false,
-  proxy: null,
-  insecure: false,
-  health: false,
-  watch: false,
-  silent: false,
-  pretty: false,
-  confirm: false,
-  agent: false,
-  analyze: false,
-  cacheStatus: false,
-  extract: null,
-  sentiment: false,
-  structured: false,
-  strict: false,
-  ...overrides,
-});
+import type { AppConfig, ConnectionHealth, Settings } from '@/types/index';
 
 describe('CLI Module', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
@@ -131,6 +56,60 @@ describe('CLI Module', () => {
       const options = createDefaultOptions();
       expect(options.searxngParams).toEqual({ theme: 'simple' });
       loadSettingsSpy.mockRestore();
+    });
+
+    it('resolves settings, legacy config, hard defaults, and explicit pipe mode', () => {
+      const config = storage.loadConfig();
+      const settings = storage.getDefaultSettings();
+      const legacy = createDefaultOptions(
+        { ...config, defaultFormat: 'json', defaultLimit: 7 } as AppConfig,
+        {
+          ...settings,
+          defaultFormat: undefined,
+          defaultLimit: undefined,
+          defaultTimeout: undefined,
+          defaultEngines: undefined,
+          defaultCategory: undefined,
+          autoUnescape: undefined,
+          autoFormat: undefined,
+          showScores: undefined,
+          theme: undefined,
+          defaultSearxngParams: undefined,
+        } as unknown as Settings,
+        false
+      );
+      expect(legacy).toMatchObject({ format: 'json', limit: 7, pipe: false });
+
+      const hardDefaults = createDefaultOptions(
+        {
+          ...config,
+          defaultFormat: undefined,
+          defaultLimit: undefined,
+          defaultTimeout: undefined,
+          defaultEngines: undefined,
+          defaultCategory: undefined,
+          showScores: undefined,
+          theme: undefined,
+        } as unknown as AppConfig,
+        {
+          ...settings,
+          defaultFormat: undefined,
+          defaultLimit: undefined,
+          defaultTimeout: undefined,
+          defaultEngines: undefined,
+          defaultCategory: undefined,
+          showScores: undefined,
+          theme: undefined,
+        } as unknown as Settings
+      );
+      expect(hardDefaults).toMatchObject({
+        format: 'toon',
+        limit: 10,
+        engines: null,
+        category: null,
+        score: false,
+        theme: 'default',
+      });
     });
   });
 
@@ -529,6 +508,178 @@ describe('CLI Module', () => {
         const options = parseArgs(['--has-image', 'query']);
         expect(options.hasImage).toBe(true);
       });
+
+      it('parses the complete boolean and shortcut surface', () => {
+        const options = parseArgs([
+          '--stats',
+          '--interactive',
+          '--pipe',
+          '--stream',
+          '--ndjson',
+          '--jsonl',
+          '--autocomplete',
+          '--health-check',
+          '--watch',
+          '--insecure',
+          '--pretty',
+          '--no-pretty',
+          '--yes',
+          '--csv',
+          '--yml',
+          '--xml',
+          '--md',
+          '--table',
+          '--html-report',
+          '--estimate-tokens',
+          '--max-tokens=500',
+          '--analysis',
+          '--ld',
+          '--sentiment',
+          '--cite',
+          '--raw-content',
+          '--export-embeddings',
+          '--auto-refine',
+          '--fetch-content',
+          '--score',
+          '--autoformat',
+          '--no-unescape',
+          '--summary',
+          '--instance-info-json',
+          '--instance-info',
+          '--info',
+          '--test',
+          '--presets',
+          '--suggestions',
+          'query',
+        ]);
+        expect(options).toMatchObject({
+          stats: true,
+          interactive: true,
+          pipe: true,
+          stream: true,
+          jsonl: true,
+          autocomplete: true,
+          health: true,
+          watch: true,
+          insecure: true,
+          pretty: false,
+          confirm: true,
+          estimateTokens: true,
+          maxTokens: 500,
+          analyze: true,
+          structured: true,
+          sentiment: true,
+          citation: true,
+          rawContent: true,
+          exportEmbeddings: true,
+          autoRefine: true,
+          fetchContent: true,
+          score: true,
+          autoformat: true,
+          unescape: false,
+          summary: true,
+          instanceInfo: true,
+          instanceInfoJson: true,
+          showInfo: true,
+          runTest: true,
+          listPresets: true,
+          suggestions: true,
+        });
+      });
+
+      it('parses all value-bearing workflow options', () => {
+        const options = parseArgs([
+          '--filter=needle',
+          '--date-after=2026-01-01',
+          '--date-before=2026-12-31',
+          '--batch=queries.txt',
+          '--multi=a,b',
+          '--bookmark=2',
+          '--export=out.json',
+          '--cluster=domain',
+          '--compare=google,bing',
+          '--preset=fast',
+          '--save-preset=new',
+          '--extract=emails',
+          '--config=show',
+          'query',
+        ]);
+        expect(options).toMatchObject({
+          filter: 'needle',
+          dateAfter: '2026-01-01',
+          dateBefore: '2026-12-31',
+          batch: 'queries.txt',
+          multiSearch: 'a,b',
+          bookmark: '2',
+          export: 'out.json',
+          cluster: 'domain',
+          compare: 'google,bing',
+          preset: 'fast',
+          savePreset: 'new',
+          extract: 'emails',
+          config: 'show',
+        });
+        expect(parseArgs(['--config']).config).toBe('show');
+        expect(parseArgs(['--open']).open).toBe(1);
+      });
+    });
+
+    describe('complete validation failures', () => {
+      it.each([
+        ['--params-json={broken'],
+        ['--params-json={"nested":{}}'],
+        ['--params-json='],
+        ['--params-file='],
+        ['--params-file=/definitely/missing/searxng.json'],
+        ['--format=invalid'],
+        ['--time=century'],
+        ['--category=invalid'],
+        ['--sx-theme='],
+        ['--sx-enabled-plugins=,'],
+        ['--sx-disabled-plugins=,'],
+        ['--sx-disabled-engines=,'],
+        ['--sx-enabled-categories=,'],
+        ['--sx-disabled-categories=,'],
+        ['--sx-query='],
+      ])('rejects invalid input %s', (arg) => {
+        expect(() => parseArgs([arg, 'query'])).toThrow(/process\.exit/);
+      });
+
+      it('accepts false boolean aliases and skips blank JSON keys', () => {
+        expect(parseArgs(['--sx-image-proxy=off', 'query']).searxngParams).toMatchObject({
+          image_proxy: 'false',
+        });
+        expect(
+          parseArgs(['--params-json={" ":"ignored","theme":"simple"}', 'query']).searxngParams
+        ).toEqual({ theme: 'simple' });
+        expect(parseArgs(['--sx-query==ignored&theme=simple', 'query']).searxngParams).toEqual({
+          theme: 'simple',
+        });
+        expect(() => parseArgs(['--sx', '  =value', 'query'])).toThrow(/process\.exit/);
+        expect(parseArgs(['--max-tokens=-1', 'query']).maxTokens).toBeNull();
+        expect(parseArgs(['--page=0', 'query']).page).toBe(1);
+        expect(parseArgs(['--safe=99', 'query']).safeSearch).toBe(0);
+        expect(parseArgs(['--timeout=invalid', 'query']).timeout).toBeGreaterThan(0);
+        expect(parseArgs(['--retries=-1', 'query']).retries).toBeGreaterThanOrEqual(0);
+        expect(parseArgs(['--theme=not-a-theme', 'query']).theme).toBe('not-a-theme');
+        expect(parseArgs(['--group=missing', 'query']).engines).toBeNull();
+        const config = { ...storage.loadConfig(), defaultLimit: undefined } as unknown as AppConfig;
+        expect(parseArgs(['--limit=invalid', 'query'], config).limit).toBe(10);
+        for (const bare of [
+          '--param',
+          '--sx-param',
+          '--sx-query',
+          '--params-json',
+          '--params-file',
+        ]) {
+          expect(() => parseArgs([bare])).toThrow(/process\.exit/);
+        }
+      });
+    });
+
+    it('renders help and version through parser shortcuts', () => {
+      expect(() => parseArgs(['--help'])).toThrow(/process\.exit\(0\)/);
+      expect(() => parseArgs(['--version'])).toThrow(/process\.exit\(0\)/);
     });
 
     describe('agent mode', () => {
@@ -708,18 +859,33 @@ describe('CLI Module', () => {
       expect(output).toContain('SearXNG CLI');
       expect(output).toMatch(/v\d{4}\.[1-9]\d*\.[1-9]\d*(?:-[1-9]\d*)?/);
     });
+
+    it('renders bounded remote unhealthy profiles', () => {
+      showVersion(25, false, {
+        healthy: false,
+        latency: 10,
+      } as ConnectionHealth);
+      const output = consoleLogSpy.mock.calls.flat().join('\n');
+      expect(output).toContain('/25');
+      expect(output).toContain('remote');
+      expect(output).toContain('fail');
+    });
   });
 
   describe('openInBrowser', () => {
-    it('should not throw when called with a URL', () => {
-      // spawn is non-configurable in CJS, so we can't spy on it directly.
-      // Just verify openInBrowser doesn't throw when called.
-      expect(() => openInBrowser('https://example.com')).not.toThrow();
-    });
-
-    it('should accept any URL string', () => {
-      // Verify the function accepts different URL formats without throwing
-      expect(() => openInBrowser('http://localhost:8080/results')).not.toThrow();
+    it.each([
+      ['darwin', 'open'],
+      ['win32', 'explorer.exe'],
+      ['linux', 'xdg-open'],
+    ] as const)('uses the native %s launcher', (platform, expectedCommand) => {
+      const unref = vi.fn();
+      const launch = vi.fn(() => ({ unref }));
+      openInBrowser('https://example.com', platform, launch);
+      expect(launch).toHaveBeenCalledWith(expectedCommand, ['https://example.com'], {
+        detached: true,
+        stdio: 'ignore',
+      });
+      expect(unref).toHaveBeenCalled();
     });
   });
 

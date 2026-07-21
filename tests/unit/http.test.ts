@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import * as zlib from 'zlib';
 import {
   compressData,
   decompressData,
   updateLatencyStats,
   resetHealthStats,
+  resetConnectionHealth,
   incrementFailureCount,
   isHealthy,
   getAdaptiveTimeout,
@@ -23,84 +23,11 @@ import {
   rateLimitedFetch,
 } from '@/http/index';
 import { CIRCUIT_BREAKER_THRESHOLD } from '@/config/index';
-import type { SearchOptions } from '@/types/index';
-
-const createMockOptions = (overrides: Partial<SearchOptions> = {}): SearchOptions => ({
-  query: 'test',
-  format: 'toon',
-  engines: null,
-  lang: null,
-  page: 1,
-  safeSearch: 0,
-  timeRange: null,
-  category: null,
-  limit: 10,
-  timeout: 15000,
-  verbose: false,
-  output: null,
-  unescape: true,
-  autoformat: true,
-  score: false,
-  interactive: false,
-  noCache: true,
-  retries: 0,
-  open: null,
-  stats: false,
-  raw: false,
-  filter: null,
-  batch: null,
-  bookmark: null,
-  export: null,
-  quick: false,
-  summary: false,
-  dedup: false,
-  sort: false,
-  group: null,
-  config: null,
-  showInfo: false,
-  runTest: false,
-  preset: null,
-  savePreset: null,
-  listPresets: false,
-  compare: null,
-  cluster: null,
-  suggestions: false,
-  pipe: false,
-  stream: false,
-  jsonl: false,
-  rank: false,
-  multiSearch: null,
-  domainFilter: null,
-  excludeDomain: null,
-  minScore: null,
-  hasImage: false,
-  dateAfter: null,
-  dateBefore: null,
-  theme: 'default',
-  compact: false,
-  metadata: false,
-  urlsOnly: false,
-  titlesOnly: false,
-  autocomplete: false,
-  proxy: null,
-  insecure: false,
-  health: false,
-  watch: false,
-  silent: true,
-  pretty: false,
-  confirm: false,
-  agent: false,
-  analyze: false,
-  cacheStatus: false,
-  extract: null,
-  sentiment: false,
-  structured: false,
-  ...overrides,
-});
+import { createTestSearchOptions as createMockOptions } from '../helpers/search-options';
 
 describe('HTTP Module', () => {
   beforeEach(() => {
-    resetHealthStats();
+    resetConnectionHealth();
     circuitBreaker.reset();
     performanceMetrics.reset();
     requestDeduplicator.clear();
@@ -122,6 +49,15 @@ describe('HTTP Module', () => {
       const result = await compressData(data);
       expect(result).toBe(data);
     });
+
+    it('returns input when compression is disabled or deflate fails', async () => {
+      expect(await compressData('plain', false)).toBe('plain');
+      expect(
+        await compressData('plain', true, (_data, callback) => {
+          callback(new Error('deflate failed'), Buffer.alloc(0));
+        })
+      ).toBe('plain');
+    });
   });
 
   describe('decompressData', () => {
@@ -141,6 +77,10 @@ describe('HTTP Module', () => {
     it('should handle invalid base64 gracefully', async () => {
       const result = await decompressData('not-valid-base64!!!');
       expect(result).toBe('not-valid-base64!!!');
+    });
+
+    it('returns input when decompression is disabled', async () => {
+      expect(await decompressData('plain', false)).toBe('plain');
     });
   });
 
@@ -229,6 +169,16 @@ describe('HTTP Module', () => {
     it('should return default timeout for remote instances', () => {
       const timeout = getAdaptiveTimeout();
       expect(timeout).toBeGreaterThan(0);
+    });
+
+    it('covers disabled, local baseline, degraded, and capped profiles', () => {
+      expect(getAdaptiveTimeout(false, true)).toBeGreaterThan(0);
+      resetHealthStats();
+      expect(getAdaptiveTimeout(true, true)).toBe(5000);
+      for (let index = 0; index < 4; index++) incrementFailureCount();
+      updateLatencyStats(5000);
+      expect(getAdaptiveTimeout(true, true)).toBe(30000);
+      expect(getAdaptiveTimeout(true, false)).toBeGreaterThan(0);
     });
   });
 
@@ -360,6 +310,14 @@ describe('HTTP Module', () => {
       // lastCheck should be set to a recent timestamp
       expect(health.lastCheck).toBeGreaterThan(0);
     });
+
+    it('records transport failure and reuses that recent result', async () => {
+      const fetchSpy = vi.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('offline'));
+      await expect(checkConnectionHealth()).resolves.toBe(false);
+      expect(getConnectionHealth()).toMatchObject({ healthy: false, latency: 0 });
+      await expect(checkConnectionHealth()).resolves.toBe(false);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('warmupConnection', () => {
@@ -370,6 +328,15 @@ describe('HTTP Module', () => {
     it('should not throw even when server is unavailable', async () => {
       vi.spyOn(global, 'fetch').mockRejectedValue(new Error('ECONNREFUSED'));
       await expect(warmupConnection()).resolves.not.toThrow();
+    });
+
+    it('supports explicit disabled and local warmup profiles', async () => {
+      const fetchSpy = vi.spyOn(global, 'fetch').mockRejectedValue(new Error('offline'));
+      await warmupConnection(false, true);
+      await warmupConnection(true, false);
+      expect(fetchSpy).not.toHaveBeenCalled();
+      await warmupConnection(true, true);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -383,6 +350,17 @@ describe('HTTP Module', () => {
       vi.spyOn(global, 'fetch').mockResolvedValueOnce(mockResponse);
       const result = await rateLimitedFetch('http://localhost:8080/config', {});
       expect(result.ok).toBe(true);
+    });
+
+    it('merges HTTPS request headers and rate limits consecutive calls', async () => {
+      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({ ok: true } as Response);
+      await rateLimitedFetch('https://example.com/config', { headers: { Accept: 'text/html' } });
+      await rateLimitedFetch('https://example.com/config');
+      expect(fetchSpy).toHaveBeenLastCalledWith(
+        'https://example.com/config',
+        expect.objectContaining({ agent: httpsAgent })
+      );
+      expect(fetchSpy.mock.calls[0]?.[1]?.headers).toMatchObject({ Accept: 'text/html' });
     });
   });
 
@@ -409,6 +387,14 @@ describe('HTTP Module', () => {
       await expect(fetchWithRetry(url, options, 0)).rejects.toThrow();
     });
 
+    it('uses adaptive defaults and preserves non-Error failures', async () => {
+      vi.spyOn(global, 'fetch').mockRejectedValue({});
+      const options = Object.assign(createMockOptions(), { timeout: undefined });
+      await expect(
+        fetchWithRetry(new URL('http://localhost:8080/search?q=test'), options, 0)
+      ).rejects.toEqual({});
+    });
+
     it('should retry on ECONNREFUSED and eventually succeed', async () => {
       const econnError = Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' });
       const mockResponse = { ok: true, status: 200 } as Response;
@@ -420,6 +406,57 @@ describe('HTTP Module', () => {
       const url = new URL('http://localhost:8080/search?q=test');
       const result = await fetchWithRetry(url, options, 1);
       expect(result.ok).toBe(true);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([
+      Object.assign(new Error('aborted'), { name: 'AbortError' }),
+      Object.assign(new Error('timed out'), { code: 'ETIMEDOUT' }),
+      new Error('network unavailable'),
+      new Error('fetch failed'),
+      new Error('message ECONNREFUSED'),
+      new Error('request timeout'),
+    ])('retries every supported transient error: %s', async (error) => {
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce({ ok: true } as Response);
+      const result = await fetchWithRetry(
+        new URL('http://localhost:8080/search?q=test'),
+        createMockOptions({ timeout: undefined, lang: undefined, silent: true }),
+        1,
+        0,
+        true
+      );
+      expect(result.ok).toBe(true);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports visible retry progress', async () => {
+      vi.spyOn(global, 'fetch')
+        .mockRejectedValueOnce(new Error('network failed'))
+        .mockResolvedValueOnce({ ok: true } as Response);
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      await fetchWithRetry(
+        new URL('http://localhost:8080/search?q=test'),
+        createMockOptions({ silent: false, verbose: false }),
+        1
+      );
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Retry 1'));
+    });
+
+    it('uses the remote-instance backoff profile', async () => {
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
+        .mockRejectedValueOnce(new Error('network failed'))
+        .mockResolvedValueOnce({ ok: true } as Response);
+      await fetchWithRetry(
+        new URL('http://localhost:8080/search?q=test'),
+        createMockOptions({ silent: true }),
+        1,
+        0,
+        false
+      );
       expect(fetchSpy).toHaveBeenCalledTimes(2);
     });
   });

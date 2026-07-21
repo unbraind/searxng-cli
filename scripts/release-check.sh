@@ -3,18 +3,19 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+LIVE_SEARXNG_URL="${SEARXNG_URL:-http://localhost:8080}"
+unset SEARXNG_URL
 
 bash scripts/version-check.sh
 bun run clean
 bun run build
 bun run typecheck
-bun run test
-echo "Running coverage suite (full, includes E2E)..."
+echo "Running the complete unit and coverage suite..."
 bun run test:coverage
 
 bun link
 
-searxng --set-url http://localhost:8080
+searxng --set-url "$LIVE_SEARXNG_URL"
 searxng --set-format toon
 
 searxng --health-check

@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-// @ts-expect-error Native ESM release helper intentionally has no declaration output.
 import {
   calendarVersion,
   isReleaseRelevantPath,
@@ -45,6 +44,14 @@ describe('release automation', () => {
     expect(changelog).toContain('https://keepachangelog.com/en/1.0.0/');
     expect(generator).toContain('pm');
     expect(generator).toContain('baseline.preamble');
+  });
+
+  it('allows only the documented private SearXNG service through history scanning', () => {
+    const scanner = readFileSync('scripts/secret-scan-history.sh', 'utf8');
+    expect(scanner).toContain('192\\.168\\.1\\.183:38522');
+    expect(scanner).toContain('10\\.0\\.0\\.1');
+    expect(scanner).toContain('172\\.31\\.255\\.255');
+    expect(scanner).toContain('searxng-private-endpoint-findings-filtered.txt');
   });
 
   it('publishes once to npm and verifies npm and Bun consumers', () => {

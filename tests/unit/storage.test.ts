@@ -31,6 +31,8 @@ import {
   manageConfig,
   showSettings,
   updateSetting,
+  discoverInstance,
+  fetchInstanceCapabilities,
 } from '@/storage/index';
 import type { AppConfig, HistoryEntry, BookmarkEntry, SearchResult, Settings } from '@/types/index';
 import {
@@ -378,6 +380,7 @@ describe('Storage Module', () => {
         maxHistory: 200,
         defaultEngines: 'bing',
         defaultCategory: 'news',
+        defaultSearxngParams: {},
         theme: 'ocean',
         forceLocalRouting: true,
         forceLocalAgentRouting: true,
@@ -481,6 +484,249 @@ describe('Storage Module', () => {
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     }, 15000);
+
+    it('reports non-success HTTP responses', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 403 } as Response);
+      await expect(testConnection('http://example.com')).resolves.toMatchObject({
+        success: false,
+        error: 'HTTP 403',
+      });
+    });
+  });
+
+  describe('instance discovery and capabilities', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it('reuses a fresh discovery cache including legacy fallback fields', async () => {
+      fs.writeFileSync(
+        ENGINES_CACHE_FILE,
+        JSON.stringify({ timestamp: Date.now(), engines: null, categories: null, info: null })
+      );
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+      await discoverInstance();
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('ignores malformed and stale caches and persists normalized live discovery', async () => {
+      fs.writeFileSync(ENGINES_CACHE_FILE, '{broken');
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            engines: [
+              { name: 'zeta' },
+              { name: 'disabled', disabled: true },
+              { name: '' },
+              { name: 'alpha' },
+            ],
+            categories: ['news', 'hidden_value', '', 'general'],
+            instance_name: 'Local',
+            version: '1.2.3',
+            contact_url: 'https://example.com/contact',
+            donation_url: 'https://example.com/donate',
+            privacypolicy_url: 'https://example.com/privacy',
+            api_version: '2',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        )
+      );
+      await discoverInstance();
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      expect(JSON.parse(fs.readFileSync(ENGINES_CACHE_FILE, 'utf8'))).toMatchObject({
+        engines: ['alpha', 'zeta'],
+        categories: ['general', 'news'],
+      });
+
+      fs.writeFileSync(
+        ENGINES_CACHE_FILE,
+        JSON.stringify({ timestamp: 0, engines: [], categories: [], info: {} })
+      );
+      fetchSpy.mockResolvedValueOnce(new Response('{}', { status: 403 }));
+      await discoverInstance();
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('preserves defaults for sparse discovery and handles transport failures', async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(
+          new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } })
+        )
+        .mockRejectedValueOnce(new Error('offline'));
+      await discoverInstance(true);
+      process.env.DEBUG = '1';
+      await discoverInstance(true);
+      delete process.env.DEBUG;
+      fetchSpy.mockRejectedValueOnce(new Error('offline again'));
+      await discoverInstance(true);
+      expect(fetchSpy).toHaveBeenCalledTimes(3);
+    });
+
+    it('maps the complete capabilities response', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            engines: [
+              {
+                name: 'zeta',
+                shortcut: 'z',
+                categories: ['general'],
+                language: 'en',
+                paging: true,
+                enabled: false,
+                safesearch: true,
+                time_range_support: true,
+                timeout: 2,
+              },
+              { name: 'alpha' },
+              { name: 'disabled', disabled: true },
+              { name: '' },
+            ],
+            categories: ['general', 1],
+            search: { languages: ['en', 1], default_lang: 'en' },
+            plugins: [{ name: 'enabled' }, { name: 'disabled', enabled: false }, {}],
+            autocomplete: 'duckduckgo',
+            default_locale: 'en-US',
+            default_theme: 'simple',
+            safe_search: 2,
+            instance_name: 'Local',
+            version: '1',
+            contact_url: 'contact',
+            donation_url: 'donate',
+            privacypolicy_url: 'privacy',
+            api_version: '2',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        )
+      );
+      const capabilities = await fetchInstanceCapabilities();
+      expect(capabilities.engines.map((engine) => engine.name)).toEqual(['alpha', 'zeta']);
+      expect(capabilities.plugins).toEqual(['disabled:disabled', 'enabled:enabled']);
+      expect(capabilities.defaults).toMatchObject({ language: 'en', safeSearch: 2 });
+    });
+
+    it('maps locale/plugin-object fallbacks and rejects HTTP errors', async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              locales: { de: 'Deutsch', en: 'English' },
+              plugin: { active: {}, inactive: null },
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } }
+          )
+        )
+        .mockResolvedValueOnce(new Response('{}', { status: 500 }));
+      const capabilities = await fetchInstanceCapabilities();
+      expect(capabilities.languages).toEqual(['de', 'en']);
+      expect(capabilities.plugins).toEqual(['active']);
+      expect(capabilities.instance).toMatchObject({ name: 'SearXNG', version: 'unknown' });
+      await expect(fetchInstanceCapabilities()).rejects.toThrow('HTTP 500');
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('uses empty capability fallbacks when search and plugin metadata are absent', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(JSON.stringify({ search: {} }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      );
+      await expect(fetchInstanceCapabilities()).resolves.toMatchObject({
+        categories: [],
+        languages: [],
+        engines: [],
+        plugins: [],
+      });
+    });
+  });
+
+  describe('settings normalization matrix', () => {
+    it.each([
+      ['md', 'markdown'],
+      ['yml', 'yaml'],
+      ['html', 'html-report'],
+      ['ndjson', 'jsonl'],
+      ['JSON', 'json'],
+      ['unknown', 'toon'],
+      ['', 'toon'],
+      [42, 'toon'],
+    ])('normalizes format %s to %s', (input, expected) => {
+      fs.writeFileSync(
+        SETTINGS_FILE,
+        JSON.stringify({ ...getDefaultSettings(), defaultFormat: input })
+      );
+      expect(loadSettings().defaultFormat).toBe(expected);
+    });
+
+    it('normalizes passthrough values and rejects malformed star metadata', () => {
+      fs.writeFileSync(
+        SETTINGS_FILE,
+        JSON.stringify({
+          ...getDefaultSettings(),
+          defaultSearxngParams: {
+            ' ': 'ignored',
+            string: 'value',
+            number: 1,
+            boolean: true,
+            nil: null,
+            nested: {},
+          },
+          githubStarPrompt: { status: 'invalid', source: 'bad', completedAt: 1 },
+        })
+      );
+      expect(loadSettings()).toMatchObject({
+        defaultSearxngParams: {
+          string: 'value',
+          number: '1',
+          boolean: 'true',
+          nil: 'null',
+        },
+        githubStarPrompt: null,
+      });
+      for (const githubStarPrompt of [
+        null,
+        [],
+        {},
+        { status: 'declined', source: 'bad', completedAt: 'now' },
+        { status: 'bad', source: 'setup', completedAt: 'now' },
+      ]) {
+        saveSettings({
+          ...getDefaultSettings(),
+          githubStarPrompt: githubStarPrompt as unknown as Settings['githubStarPrompt'],
+        });
+        expect(loadSettings().githubStarPrompt).toBeNull();
+      }
+    });
+
+    it('falls back from invalid URLs and non-object passthrough settings', () => {
+      for (const defaultSearxngParams of [null, [], 'bad']) {
+        fs.writeFileSync(
+          SETTINGS_FILE,
+          JSON.stringify({
+            ...getDefaultSettings(),
+            searxngUrl: '://invalid',
+            defaultSearxngParams,
+          })
+        );
+        expect(loadSettings()).toMatchObject({
+          searxngUrl: 'http://localhost:8080',
+          defaultSearxngParams: {},
+        });
+      }
+      saveSettings({ ...getDefaultSettings(), searxngUrl: '://invalid' });
+      expect(loadSettings().searxngUrl).toBe('http://localhost:8080');
+    });
+
+    it('migrates legacy config and recovers from corrupt settings', () => {
+      if (fs.existsSync(SETTINGS_FILE)) fs.unlinkSync(SETTINGS_FILE);
+      fs.writeFileSync(CONFIG_FILE, JSON.stringify({ ...loadConfig(), defaultFormat: 'md' }));
+      expect(loadSettings().defaultFormat).toBe('markdown');
+      fs.writeFileSync(SETTINGS_FILE, '{broken');
+      process.env.DEBUG = '1';
+      expect(loadSettings().defaultFormat).toBe('toon');
+      delete process.env.DEBUG;
+    });
   });
 
   describe('showSearchHistory', () => {
@@ -554,6 +800,17 @@ describe('Storage Module', () => {
       const allOutput = consoleLogSpy.mock.calls.map((c) => c[0]).join('\n');
       expect(allOutput).toContain('Bookmark 1');
     });
+
+    it('uses URL when a bookmark title is absent', () => {
+      fs.writeFileSync(
+        BOOKMARKS_FILE,
+        JSON.stringify([
+          { url: 'https://example.com/fallback', bookmarkedAt: new Date().toISOString() },
+        ])
+      );
+      showBookmarks();
+      expect(consoleLogSpy.mock.calls.flat().join('\n')).toContain('example.com/fallback');
+    });
   });
 
   describe('manageConfig', () => {
@@ -591,6 +848,16 @@ describe('Storage Module', () => {
       expect(consoleLogSpy).toHaveBeenCalled();
       const allOutput = consoleLogSpy.mock.calls.map((c) => c[0]).join('\n');
       expect(allOutput).toContain('Unknown');
+    });
+
+    it('launches configured and fallback editors through the injected adapter', () => {
+      const launch = vi.fn();
+      process.env.EDITOR = 'code';
+      manageConfig('edit', launch);
+      expect(launch).toHaveBeenCalledWith('code', [CONFIG_FILE], { stdio: 'inherit' });
+      delete process.env.EDITOR;
+      manageConfig('edit', launch);
+      expect(launch).toHaveBeenLastCalledWith('nano', [CONFIG_FILE], { stdio: 'inherit' });
     });
   });
 
@@ -859,6 +1126,10 @@ describe('Storage Module', () => {
       expect(consoleErrorSpy).toHaveBeenCalled();
     });
 
+    it.each(['null', '[]', '"value"'])('rejects non-object params JSON: %s', (value) => {
+      expect(updateSetting('setParamsJson', value)).toBe(false);
+    });
+
     it('should replace default passthrough params from URL query', () => {
       const result = updateSetting(
         'setParamsQuery',
@@ -877,6 +1148,13 @@ describe('Storage Module', () => {
       const result = updateSetting('setParamsQuery', '   ');
       expect(result).toBe(false);
       expect(consoleErrorSpy).toHaveBeenCalled();
+    });
+
+    it('rejects query params without assignments and empty mutation keys', () => {
+      expect(updateSetting('setParamsQuery', 'theme')).toBe(false);
+      expect(updateSetting('setParamsQuery', '=value')).toBe(false);
+      expect(updateSetting('setParam', ' =value')).toBe(false);
+      expect(updateSetting('unsetParam', ' ')).toBe(false);
     });
   });
 });

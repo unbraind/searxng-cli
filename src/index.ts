@@ -1,3 +1,6 @@
+/**
+ * Top-level CLI orchestration that dispatches commands, performs searches, formats results, and coordinates persistent application state.
+ */
 import * as fs from 'fs';
 import { decode as decodeToon } from '@toon-format/toon';
 import {
@@ -83,7 +86,8 @@ import {
 import { validateFormattedOutput } from './formatters/validation';
 import { getFormatterSchemas, getSupportedSchemaFormats } from './formatters/schema';
 import { formatToonOutput, formatXmlOutput, formatHtmlReportOutput } from './formatters-advanced';
-import { fetchWithRetry, circuitBreaker, rateLimitedFetch, checkConnectionHealth } from './http';
+import { circuitBreaker, rateLimitedFetch, checkConnectionHealth } from './http';
+import { fetchSearchResponse } from './search-response';
 import {
   discoverInstance,
   addToHistory,
@@ -110,7 +114,10 @@ let isShuttingDown = false;
 let cacheLoaded = false;
 let exitHandlersSetup = false;
 
-function showGlobalFlagHelp(): void {
+/**
+ *
+ */
+export function showGlobalFlagHelp(): void {
   console.log();
   console.log('Global flags (supported for all commands):');
   console.log('  --help, -h              Show command help');
@@ -124,7 +131,11 @@ function showGlobalFlagHelp(): void {
   console.log('  --paths-json            Machine-readable ~/.searxng-cli paths');
 }
 
-function showCommandHelp(command: string): void {
+/**
+ *
+ * @param command
+ */
+export function showCommandHelp(command: string): void {
   const cmd = command.toLowerCase();
   if (cmd === 'search' || cmd === 's') {
     console.log('Usage: searxng search [flags] <query>');
@@ -297,7 +308,7 @@ const COMMAND_LIKE_PATTERN = /^[a-z][a-z0-9-]*$/;
 function damerauLevenshteinDistance(a: string, b: string): number {
   const rows = a.length + 1;
   const cols = b.length + 1;
-  const matrix: number[][] = Array.from({ length: rows }, () => Array(cols).fill(0));
+  const matrix = Array.from({ length: rows }, () => Array.from<number>({ length: cols }).fill(0));
 
   for (let i = 0; i < rows; i++) matrix[i][0] = i;
   for (let j = 0; j < cols; j++) matrix[0][j] = j;
@@ -317,30 +328,33 @@ function damerauLevenshteinDistance(a: string, b: string): number {
     }
   }
 
-  return matrix[a.length][b.length] ?? Number.MAX_SAFE_INTEGER;
+  return matrix[a.length][b.length];
 }
 
 function suggestCommand(input: string): string | null {
   const normalized = input.trim().toLowerCase();
   if (!normalized || normalized.length < 3) return null;
 
-  let best: { command: string; distance: number } | null = null;
+  let best = { command: 'search', distance: damerauLevenshteinDistance(normalized, 'search') };
   for (const command of KNOWN_COMMANDS) {
     if (command.length <= 1) continue;
     const distance = damerauLevenshteinDistance(normalized, command);
-    if (!best || distance < best.distance) {
+    if (distance < best.distance) {
       best = { command, distance };
     }
   }
 
-  if (!best) return null;
   const threshold = normalized.length <= 7 ? 1 : 2;
   return best.distance <= threshold ? best.command : null;
 }
 
-function normalizeCommandArgs(rawArgs: string[]): string[] {
+/**
+ *
+ * @param rawArgs
+ */
+export function normalizeCommandArgs(rawArgs: string[]): string[] {
   if (rawArgs.length === 0) return rawArgs;
-  const command = (rawArgs[0] ?? '').toLowerCase();
+  const command = String(rawArgs[0]).toLowerCase();
   if (!command || command.startsWith('-')) return rawArgs;
   if (!KNOWN_COMMANDS.has(command)) {
     const suggestion = suggestCommand(command);
@@ -403,7 +417,7 @@ function normalizeCommandArgs(rawArgs: string[]): string[] {
       return ['--schema', args[1] ?? 'all'];
     }
     if (sub === 'validate') {
-      if (args[1] === '--json' || args[1] === 'json') {
+      if (args[1] === '--json') {
         return ['--validate-payload-json', ...args.slice(2)];
       }
       return ['--validate-payload', ...args.slice(1)];
@@ -447,14 +461,62 @@ function normalizeCommandArgs(rawArgs: string[]): string[] {
   return rawArgs;
 }
 
-function parseMultiQueries(raw: string): string[] {
+/**
+ *
+ * @param raw
+ */
+export function parseMultiQueries(raw: string): string[] {
   return raw
     .split(/\r?\n|;;|\|\||;/g)
     .map((query) => query.trim())
     .filter((query) => query.length > 0);
 }
 
-function normalizeValidationFormat(raw: string): OutputFormat | null {
+/**
+ * Parse one RFC 4180-style CSV row for the built-in formatter acceptance suite.
+ * @param row
+ */
+export function splitCsvRow(row: string): string[] {
+  const cells: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < row.length; i++) {
+    const ch = row[i];
+    if (ch === '"') {
+      const next = row[i + 1];
+      if (inQuotes && next === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (ch === ',' && !inQuotes) {
+      cells.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  cells.push(current);
+  return cells;
+}
+
+/**
+ * Fail a built-in acceptance check with an actionable message.
+ * @param condition
+ * @param message
+ */
+export function assertSelfTest(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new Error(message);
+}
+
+/**
+ *
+ * @param raw
+ */
+export function normalizeValidationFormat(raw: string): OutputFormat | null {
   const normalized = raw.trim().toLowerCase();
   if (!normalized) return null;
   if (normalized === 'md') return 'markdown';
@@ -464,17 +526,45 @@ function normalizeValidationFormat(raw: string): OutputFormat | null {
   return normalized as OutputFormat;
 }
 
-function readValidationPayload(inputPath: string | null): string {
+/**
+ * Render a cache age for diagnostics without coupling the doctor to one configured value.
+ * @param maxAge
+ */
+export function formatCacheMaxAge(maxAge: number): string {
+  return maxAge === Infinity ? 'infinite (no expiry)' : `${maxAge}ms`;
+}
+
+/**
+ * Describe whether payload validation read from a file or standard input.
+ * @param inputPath
+ */
+export function describePayloadSource(inputPath: string | null): string {
+  return inputPath ?? 'stdin';
+}
+
+/**
+ *
+ * @param inputPath
+ * @param readFile
+ */
+export function readValidationPayload(
+  inputPath: string | null,
+  readFile: typeof fs.readFileSync = fs.readFileSync
+): string {
   if (inputPath && inputPath !== '-') {
-    return fs.readFileSync(inputPath, 'utf8');
+    return readFile(inputPath, 'utf8');
   }
   if (!process.stdin.isTTY) {
-    return fs.readFileSync(0, 'utf8');
+    return readFile(0, 'utf8');
   }
   throw new Error('Provide an input file path or pipe payload via stdin');
 }
 
-function toPlainParams(searchParams: URLSearchParams): Record<string, string> {
+/**
+ *
+ * @param searchParams
+ */
+export function toPlainParams(searchParams: URLSearchParams): Record<string, string> {
   const params: Record<string, string> = {};
   for (const [key, value] of searchParams.entries()) {
     params[key] = value;
@@ -482,24 +572,26 @@ function toPlainParams(searchParams: URLSearchParams): Record<string, string> {
   return params;
 }
 
-function enforceLocalRouting(options: Pick<SearchOptions, 'agent' | 'verbose' | 'silent'>): void {
+/**
+ *
+ * @param options
+ */
+export function enforceLocalRouting(
+  options: Pick<SearchOptions, 'agent' | 'verbose' | 'silent'>
+): void {
   const settings = loadSettings();
-  if (
-    options.agent &&
-    settings.forceLocalAgentRouting !== false &&
-    getSearxngUrl() !== DEFAULT_SEARXNG_URL
-  ) {
-    setSearxngUrl(DEFAULT_SEARXNG_URL);
+  const configuredUrl = normalizeSearxngUrl(settings.searxngUrl) ?? DEFAULT_SEARXNG_URL;
+  if (options.agent && settings.forceLocalAgentRouting && getSearxngUrl() !== configuredUrl) {
+    setSearxngUrl(configuredUrl);
     if (options.verbose && !options.silent) {
       console.error(
-        colorize(`Agent mode routing forced to local SearXNG: ${DEFAULT_SEARXNG_URL}`, 'yellow')
+        colorize(`Agent mode routing forced to configured SearXNG: ${configuredUrl}`, 'yellow')
       );
     }
     return;
   }
 
-  if (settings.forceLocalRouting !== false) {
-    const configuredUrl = normalizeSearxngUrl(settings.searxngUrl) ?? DEFAULT_SEARXNG_URL;
+  if (settings.forceLocalRouting) {
     if (getSearxngUrl() !== configuredUrl) {
       setSearxngUrl(configuredUrl);
       if (options.verbose && !options.silent) {
@@ -509,10 +601,14 @@ function enforceLocalRouting(options: Pick<SearchOptions, 'agent' | 'verbose' | 
   }
 }
 
-function getExplicitPresetOverrideKeys(args: string[]): Set<keyof SearchOptions> {
+/**
+ *
+ * @param args
+ */
+export function getExplicitPresetOverrideKeys(args: string[]): Set<keyof SearchOptions> {
   const keys = new Set<keyof SearchOptions>();
   for (let i = 0; i < args.length; i++) {
-    const arg = args[i] ?? '';
+    const arg = String(args[i]);
     if (arg === '--json' || arg === '--toon' || arg === '--csv' || arg === '--xml') {
       keys.add('format');
     }
@@ -623,12 +719,18 @@ function getExplicitPresetOverrideKeys(args: string[]): Set<keyof SearchOptions>
   return keys;
 }
 
-function applyPresetToOptions(
+/**
+ *
+ * @param options
+ * @param preset
+ * @param explicitKeys
+ */
+export function applyPresetToOptions(
   options: SearchOptions,
   preset: Record<string, unknown>,
   explicitKeys: Set<keyof SearchOptions>
 ): void {
-  const allowedKeys: Array<keyof SearchOptions> = [
+  const allowedKeys: (keyof SearchOptions)[] = [
     'format',
     'engines',
     'lang',
@@ -679,7 +781,11 @@ function applyPresetToOptions(
   }
 }
 
-async function runAutocomplete(options: SearchOptions): Promise<number> {
+/**
+ *
+ * @param options
+ */
+export async function runAutocomplete(options: SearchOptions): Promise<number> {
   enforceLocalRouting(options);
   if (!options.query.trim()) {
     console.error(colorize('Error: --autocomplete requires a query', 'red'));
@@ -701,7 +807,7 @@ async function runAutocomplete(options: SearchOptions): Promise<number> {
         lastError = `HTTP ${response.status} from ${endpoint}`;
         continue;
       }
-      const payload = (await response.json()) as unknown;
+      const payload: unknown = await response.json();
       const suggestions = Array.isArray(payload)
         ? payload
             .map((item) => {
@@ -755,7 +861,12 @@ async function runAutocomplete(options: SearchOptions): Promise<number> {
   return 1;
 }
 
-function savePresetFromOptions(name: string, options: SearchOptions): void {
+/**
+ *
+ * @param name
+ * @param options
+ */
+export function savePresetFromOptions(name: string, options: SearchOptions): void {
   const presetPayload: Record<string, unknown> = {
     format: options.format,
     engines: options.engines,
@@ -787,6 +898,9 @@ function savePresetFromOptions(name: string, options: SearchOptions): void {
   addPreset(name, presetPayload);
 }
 
+/**
+ *
+ */
 export function ensureCacheLoaded(): number {
   if (!cacheLoaded) {
     const count = loadCacheSync();
@@ -799,52 +913,72 @@ export function ensureCacheLoaded(): number {
   return 0;
 }
 
+/**
+ *
+ */
 export function resetCacheLoaded(): void {
   cacheLoaded = false;
 }
 
+/** Persist cache state once during a normal process shutdown. */
+export function handleGracefulExit(): void {
+  if (!isShuttingDown) {
+    isShuttingDown = true;
+    saveCacheSync();
+  }
+}
+
+/** Persist cache state and terminate cleanly after an interrupt signal. */
+export function handleInterrupt(): void {
+  if (!isShuttingDown) {
+    handleGracefulExit();
+    console.log(colorize('\n\nInterrupted by user.', 'yellow'));
+    process.exit(0);
+  }
+}
+
+/** Persist cache state and terminate cleanly after a termination signal. */
+export function handleTermination(): void {
+  if (!isShuttingDown) {
+    handleGracefulExit();
+    console.log(colorize('\n\nTerminated.', 'yellow'));
+    process.exit(0);
+  }
+}
+
+/**
+ * Report an unhandled asynchronous failure and terminate unsuccessfully.
+ * @param reason
+ */
+export function handleUnhandledRejection(reason: unknown): void {
+  const message = reason instanceof Error ? reason.message : String(reason);
+  console.error(colorize(`Unhandled error: ${message}`, 'red'));
+  process.exit(1);
+}
+
+/** Reset shutdown state for isolated tests and embedded CLI invocations. */
+export function resetShutdownState(): void {
+  isShuttingDown = false;
+}
+
+/**
+ *
+ */
 export function setupExitHandlers(): void {
   if (exitHandlersSetup) return;
   exitHandlersSetup = true;
 
-  process.on('beforeExit', () => {
-    if (!isShuttingDown) {
-      isShuttingDown = true;
-      saveCacheSync();
-    }
-  });
-
-  process.on('exit', () => {
-    if (!isShuttingDown) {
-      isShuttingDown = true;
-      saveCacheSync();
-    }
-  });
-
-  process.on('SIGINT', () => {
-    if (!isShuttingDown) {
-      isShuttingDown = true;
-      saveCacheSync();
-      console.log(colorize('\n\nInterrupted by user.', 'yellow'));
-      process.exit(0);
-    }
-  });
-
-  process.on('SIGTERM', () => {
-    if (!isShuttingDown) {
-      isShuttingDown = true;
-      saveCacheSync();
-      console.log(colorize('\n\nTerminated.', 'yellow'));
-      process.exit(0);
-    }
-  });
-
-  process.on('unhandledRejection', (reason: unknown) => {
-    console.error(colorize(`Unhandled error: ${(reason as Error).message}`, 'red'));
-    process.exit(1);
-  });
+  process.on('beforeExit', handleGracefulExit);
+  process.on('exit', handleGracefulExit);
+  process.on('SIGINT', handleInterrupt);
+  process.on('SIGTERM', handleTermination);
+  process.on('unhandledRejection', handleUnhandledRejection);
 }
 
+/**
+ *
+ * @param options
+ */
 export async function performSearch(options: SearchOptions): Promise<SearchResponse | null> {
   enforceLocalRouting(options);
   ensureCacheLoaded();
@@ -866,16 +1000,6 @@ export async function performSearch(options: SearchOptions): Promise<SearchRespo
     }
 
     if (cached) {
-      // Background fetch to continually build and improve local cache
-      fetchWithRetry(url, { ...options, silent: true, verbose: false }, options.retries)
-        .then(async (res) => {
-          if (res.ok) {
-            const freshData = (await res.json()) as SearchResponse;
-            setCachedResult(options.query, options, freshData);
-          }
-        })
-        .catch(() => {}); // Ignore errors in background fetch
-
       return await formatAndOutput(cached, options);
     }
 
@@ -912,17 +1036,15 @@ export async function performSearch(options: SearchOptions): Promise<SearchRespo
     spinnerInterval = showSpinner('Searching...', startTime);
 
   try {
-    const response = await fetchWithRetry(url, options, options.retries);
+    const data = await fetchSearchResponse(url, options, options.retries);
     if (spinnerInterval) {
       clearInterval(spinnerInterval);
       process.stderr.write('\r' + ' '.repeat(50) + '\r');
     }
     const duration = Date.now() - startTime;
-    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     if (!options.silent && options.verbose) {
       console.error(colorize(`✓ Response received in ${formatDuration(duration)}`, 'green'));
     }
-    const data = (await response.json()) as SearchResponse;
     data.timing = formatDuration(duration);
 
     if (options.autoRefine && (!data.results || data.results.length === 0)) {
@@ -963,6 +1085,11 @@ export async function performSearch(options: SearchOptions): Promise<SearchRespo
   }
 }
 
+/**
+ *
+ * @param data
+ * @param options
+ */
 export async function formatAndOutput(
   data: SearchResponse,
   options: SearchOptions
@@ -1006,7 +1133,9 @@ export async function formatAndOutput(
   if (options.silent && data.results && data.results.length > 0) {
     const limit =
       options.limit === 0 ? data.results.length : Math.min(options.limit, data.results.length);
-    data.results.slice(0, limit).forEach((r) => console.log(r.url ?? r.link ?? ''));
+    data.results.slice(0, limit).forEach((r) => {
+      console.log(r.url ?? r.link ?? '');
+    });
     return data;
   }
 
@@ -1022,9 +1151,7 @@ export async function formatAndOutput(
     const titles = data.results
       .slice(0, options.limit === 0 ? undefined : options.limit)
       .map((r) => {
-        let title = r.title ?? 'No title';
-        if (options.unescape) title = title.replace(/&[^;]+;/g, (e) => e);
-        return title;
+        return r.title ?? 'No title';
       });
     console.log(titles.join('\n'));
     return data;
@@ -1119,31 +1246,29 @@ export async function formatAndOutput(
     console.log(output);
   }
 
-  if (options.open !== null && data.results && data.results[options.open - 1]) {
-    openInBrowser(data.results[options.open - 1]?.url ?? '');
-  }
+  const openResult = options.open === null ? undefined : data.results?.[options.open - 1];
+  if (openResult) openInBrowser(openResult.url);
 
-  if (
-    options.bookmark !== null &&
-    data.results &&
-    data.results[parseInt(options.bookmark, 10) - 1]
-  ) {
-    const result = data.results[parseInt(options.bookmark, 10) - 1];
-    if (result) {
-      addBookmark(result);
-      console.log(colorize(`\n✓ Bookmarked result #${options.bookmark}`, 'green'));
-    }
+  const bookmarkResult =
+    options.bookmark === null ? undefined : data.results?.[parseInt(options.bookmark, 10) - 1];
+  if (bookmarkResult) {
+    addBookmark(bookmarkResult);
+    console.log(colorize(`\n✓ Bookmarked result #${options.bookmark}`, 'green'));
   }
 
   return data;
 }
 
-async function runDoctor(asJson = false): Promise<number> {
+/**
+ *
+ * @param asJson
+ */
+export async function runDoctor(asJson = false): Promise<number> {
   ensureCacheLoaded();
   reloadSearxngUrl();
   const settings = loadSettings();
   const currentUrl = getSearxngUrl();
-  const checks: Array<{ id: string; name: string; pass: boolean; detail: string }> = [];
+  const checks: { id: string; name: string; pass: boolean; detail: string }[] = [];
 
   const addCheck = (name: string, pass: boolean, detail: string): void => {
     const id = name
@@ -1196,11 +1321,7 @@ async function runDoctor(asJson = false): Promise<number> {
     PERSISTENT_CACHE_ENABLED,
     `persistent=${String(PERSISTENT_CACHE_ENABLED)} compression=${String(CACHE_COMPRESSION)}`
   );
-  addCheck(
-    'Cache Max Age',
-    CACHE_MAX_AGE === Infinity,
-    CACHE_MAX_AGE === Infinity ? 'infinite (no expiry)' : `${CACHE_MAX_AGE}ms`
-  );
+  addCheck('Cache Max Age', CACHE_MAX_AGE === Infinity, formatCacheMaxAge(CACHE_MAX_AGE));
 
   try {
     const response = await rateLimitedFetch(`${currentUrl}/config`, {
@@ -1234,15 +1355,7 @@ async function runDoctor(asJson = false): Promise<number> {
 
   let probeData: SearchResponse | null = null;
   try {
-    const response = await fetchWithRetry(
-      buildUrl(probeOptions),
-      probeOptions,
-      probeOptions.retries
-    );
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    probeData = (await response.json()) as SearchResponse;
+    probeData = await fetchSearchResponse(buildUrl(probeOptions), probeOptions);
     addCheck('Probe Search', true, `${probeData.results?.length ?? 0} results`);
   } catch (error) {
     addCheck('Probe Search', false, (error as Error).message);
@@ -1357,7 +1470,12 @@ async function runDoctor(asJson = false): Promise<number> {
   return failed === 0 ? 0 : 1;
 }
 
-async function runFormatVerification(query: string, asJson: boolean): Promise<number> {
+/**
+ *
+ * @param query
+ * @param asJson
+ */
+export async function runFormatVerification(query: string, asJson: boolean): Promise<number> {
   ensureCacheLoaded();
   const probeOptions: SearchOptions = {
     ...createDefaultOptions(),
@@ -1371,15 +1489,7 @@ async function runFormatVerification(query: string, asJson: boolean): Promise<nu
 
   let probeData: SearchResponse;
   try {
-    const response = await fetchWithRetry(
-      buildUrl(probeOptions),
-      probeOptions,
-      probeOptions.retries
-    );
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    probeData = (await response.json()) as SearchResponse;
+    probeData = await fetchSearchResponse(buildUrl(probeOptions), probeOptions);
   } catch (error) {
     if (asJson) {
       console.log(
@@ -1441,8 +1551,7 @@ async function runFormatVerification(query: string, asJson: boolean): Promise<nu
       'html-report': formatHtmlReportOutput,
     };
 
-  const results: Array<{ format: OutputFormat; valid: boolean; message: string; bytes: number }> =
-    [];
+  const results: { format: OutputFormat; valid: boolean; message: string; bytes: number }[] = [];
   for (const format of formats) {
     try {
       const output = formatters[format](probeData, { ...probeOptions, format });
@@ -1520,8 +1629,12 @@ async function runFormatVerification(query: string, asJson: boolean): Promise<nu
 
 import { runMcpServer } from './mcp';
 
+/**
+ *
+ */
 export async function main(): Promise<void> {
   setupExitHandlers();
+  ensureCacheLoaded();
   loadSettings();
   reloadSearxngUrl();
   const args = normalizeCommandArgs(process.argv.slice(2));
@@ -1548,8 +1661,8 @@ export async function main(): Promise<void> {
 
   if (args[0] === '--setup-local') {
     const settings = applyLocalAgentDefaults();
-    let connectionReady: boolean | null = null;
-    let discoveryReady = false;
+    let connectionReady: boolean | null;
+    let discoveryReady: boolean;
     try {
       connectionReady = await checkConnectionHealth();
     } catch {
@@ -1578,7 +1691,7 @@ export async function main(): Promise<void> {
   }
 
   if (args[0] === '--settings') {
-    await showSettings();
+    showSettings();
     process.exit(0);
   }
 
@@ -1704,9 +1817,7 @@ export async function main(): Promise<void> {
     let payloadPath: string | null = null;
 
     for (let i = 0; i < extraArgs.length; i++) {
-      const token = extraArgs[i] ?? '';
-      if (!token) continue;
-
+      const token = String(extraArgs[i]);
       if (token === '--input' || token === '--file') {
         const next = extraArgs[i + 1];
         if (!next) {
@@ -1760,7 +1871,7 @@ export async function main(): Promise<void> {
               valid: validation.valid,
               message: validation.message,
               bytes: Buffer.byteLength(payload, 'utf8'),
-              source: payloadPath ?? 'stdin',
+              source: describePayloadSource(payloadPath),
             },
             2
           )
@@ -1782,7 +1893,7 @@ export async function main(): Promise<void> {
               valid: false,
               message: (error as Error).message,
               bytes: 0,
-              source: payloadPath ?? 'stdin',
+              source: describePayloadSource(payloadPath),
             },
             2
           )
@@ -1887,7 +1998,7 @@ export async function main(): Promise<void> {
       '--unset-param': 'unsetParam',
       '--clear-params': 'clearParams',
     };
-    const settingKey = settingMap[args[0] ?? ''];
+    const settingKey = settingMap[String(args[0])];
     let value =
       args[0] === '--set-local-url'
         ? DEFAULT_SEARXNG_URL
@@ -1908,7 +2019,7 @@ export async function main(): Promise<void> {
     ) {
       value = '';
     }
-    updateSetting(settingKey ?? args[0]?.replace('--set-', ''), value);
+    updateSetting(settingKey, value);
     process.exit(0);
   }
 
@@ -2043,28 +2154,26 @@ export async function main(): Promise<void> {
       }
       process.exit(0);
     }
-    if (args[0] === '--cache-prune') {
-      const days = parseInt(args[1] ?? '0', 10);
-      if (isNaN(days) || days < 1) {
-        console.log(colorize('Error: --cache-prune requires a number of days', 'red'));
-        process.exit(1);
-      }
-      const result = pruneCache(days * 24 * 60 * 60 * 1000);
-      console.log(
-        colorize(`\n✓ Pruned ${result.pruned} entries, ${result.remaining} remaining`, 'green')
-      );
-      process.exit(0);
+    const days = parseInt(args[1] ?? '0', 10);
+    if (isNaN(days) || days < 1) {
+      console.log(colorize('Error: --cache-prune requires a number of days', 'red'));
+      process.exit(1);
     }
+    const result = pruneCache(days * 24 * 60 * 60 * 1000);
+    console.log(
+      colorize(`\n✓ Pruned ${result.pruned} entries, ${result.remaining} remaining`, 'green')
+    );
+    process.exit(0);
   }
 
   if (args[0] === '--health' || args[0] === '--health-check') {
     const start = Date.now();
     let health = false;
-    let latency = 0;
+    let latency: number;
     const currentUrl = getSearxngUrl();
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(controller.abort.bind(controller), 8000);
       const response = await fetch(`${currentUrl}/config`, {
         headers: { 'User-Agent': `searxng-cli/${VERSION}` },
         signal: controller.signal,
@@ -2113,7 +2222,7 @@ export async function main(): Promise<void> {
     let passed = 0;
     let failed = 0;
 
-    const test = async (name: string, fn: () => Promise<void>): Promise<void> => {
+    const test = async (name: string, fn: () => void | Promise<void>): Promise<void> => {
       process.stdout.write(`  ${name}... `);
       try {
         await fn();
@@ -2123,33 +2232,6 @@ export async function main(): Promise<void> {
         console.log(colorize(`✗ FAIL: ${(err as Error).message}`, 'red'));
         failed++;
       }
-    };
-
-    const splitCsvRow = (row: string): string[] => {
-      const cells: string[] = [];
-      let current = '';
-      let inQuotes = false;
-      for (let i = 0; i < row.length; i++) {
-        const ch = row[i];
-        if (ch === '"') {
-          const next = row[i + 1];
-          if (inQuotes && next === '"') {
-            current += '"';
-            i++;
-          } else {
-            inQuotes = !inQuotes;
-          }
-          continue;
-        }
-        if (ch === ',' && !inQuotes) {
-          cells.push(current);
-          current = '';
-          continue;
-        }
-        current += ch;
-      }
-      cells.push(current);
-      return cells;
     };
 
     const defaultTestOptions: SearchOptions = {
@@ -2240,7 +2322,7 @@ export async function main(): Promise<void> {
       const response = await rateLimitedFetch(`${currentUrl}/config`, {
         headers: { 'User-Agent': `searxng-cli/${VERSION}` },
       });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      assertSelfTest(response.ok, `HTTP ${response.status}`);
     });
 
     await test('Instance Discovery', async () => {
@@ -2250,118 +2332,107 @@ export async function main(): Promise<void> {
     await test('Search Functionality', async () => {
       const options = { ...defaultTestOptions, query: 'test' };
       const url = buildUrl(options);
-      const response = await fetchWithRetry(url, options, 2);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = (await response.json()) as SearchResponse;
-      if (!data.results || !Array.isArray(data.results)) throw new Error('Invalid response format');
+      const data = await fetchSearchResponse(url, options, 2);
+      assertSelfTest(data.results && Array.isArray(data.results), 'Invalid response format');
     });
 
     await test('TOON Format Output', async () => {
       const options = { ...defaultTestOptions, query: 'nodejs' };
       const url = buildUrl(options);
-      const response = await fetchWithRetry(url, options, 2);
-      const data = (await response.json()) as SearchResponse;
+      const data = await fetchSearchResponse(url, options, 2);
       const output = formatToonOutput(data, options);
       const parsed = decodeToon(output) as { q?: string; results?: unknown[] };
-      if (!parsed || typeof parsed !== 'object') throw new Error('TOON decode failed');
-      if (parsed.q !== options.query) throw new Error('TOON q mismatch');
-      if (!Array.isArray(parsed.results)) throw new Error('TOON results must be an array');
+      assertSelfTest(parsed && typeof parsed === 'object', 'TOON decode failed');
+      assertSelfTest(parsed.q === options.query, 'TOON q mismatch');
+      assertSelfTest(Array.isArray(parsed.results), 'TOON results must be an array');
     });
 
     await test('JSON Format Output', async () => {
       const options = { ...defaultTestOptions, query: 'test', format: 'json' as const };
       const url = buildUrl(options);
-      const response = await fetchWithRetry(url, options, 2);
-      const data = (await response.json()) as SearchResponse;
+      const data = await fetchSearchResponse(url, options, 2);
       const jsonStr = formatJsonOutput(data, options);
       const parsed = JSON.parse(jsonStr) as { query?: string; results?: unknown[] };
-      if (parsed.query !== options.query) throw new Error('JSON query mismatch');
-      if (!Array.isArray(parsed.results)) throw new Error('JSON results must be an array');
+      assertSelfTest(parsed.query === options.query, 'JSON query mismatch');
+      assertSelfTest(Array.isArray(parsed.results), 'JSON results must be an array');
     });
 
     await test('CSV Format Output', async () => {
       const options = { ...defaultTestOptions, query: 'test', format: 'csv' as const };
       const url = buildUrl(options);
-      const response = await fetchWithRetry(url, options, 2);
-      const data = (await response.json()) as SearchResponse;
+      const data = await fetchSearchResponse(url, options, 2);
       const csv = formatCsvOutput(data, options);
       const rows = csv.split('\n').filter((line) => line.trim().length > 0);
-      if (rows.length === 0) throw new Error('CSV empty output');
-      if (rows[0] !== 'i,title,url,engine,score,text') throw new Error('CSV header mismatch');
+      assertSelfTest(rows.length > 0, 'CSV empty output');
+      assertSelfTest(rows[0] === 'i,title,url,engine,score,text', 'CSV header mismatch');
       for (const row of rows.slice(1)) {
         const cells = splitCsvRow(row);
-        if (cells.length !== 6) throw new Error(`CSV row has ${cells.length} columns`);
+        assertSelfTest(cells.length === 6, `CSV row has ${cells.length} columns`);
       }
     });
 
     await test('YAML Format Output', async () => {
       const options = { ...defaultTestOptions, query: 'test', format: 'yaml' as const };
       const url = buildUrl(options);
-      const response = await fetchWithRetry(url, options, 2);
-      const data = (await response.json()) as SearchResponse;
+      const data = await fetchSearchResponse(url, options, 2);
       const yaml = formatYamlOutput(data, options);
-      if (!yaml.includes("query: 'test'")) throw new Error('YAML query missing');
-      if (!yaml.includes('results:')) throw new Error('YAML results key missing');
-      const itemCount = (yaml.match(/\n  - i: /g) ?? []).length;
+      assertSelfTest(yaml.includes("query: 'test'"), 'YAML query missing');
+      assertSelfTest(yaml.includes('results:'), 'YAML results key missing');
+      const itemCount = (yaml.match(/\n {2}- i: /g) ?? []).length;
       const expectedCount = Math.min(options.limit, data.results?.length ?? 0);
-      if (itemCount !== expectedCount) throw new Error('YAML item count mismatch');
+      assertSelfTest(itemCount === expectedCount, 'YAML item count mismatch');
     });
 
     await test('XML Format Output', async () => {
       const options = { ...defaultTestOptions, query: 'test', format: 'xml' as const };
       const url = buildUrl(options);
-      const response = await fetchWithRetry(url, options, 2);
-      const data = (await response.json()) as SearchResponse;
+      const data = await fetchSearchResponse(url, options, 2);
       const xml = formatXmlOutput(data, options);
-      if (!xml.startsWith('<?xml version="1.0"')) throw new Error('XML declaration missing');
-      if (!xml.includes('<search ')) throw new Error('XML root missing');
-      if (!xml.includes('</search>')) throw new Error('XML closing tag missing');
+      assertSelfTest(xml.startsWith('<?xml version="1.0"'), 'XML declaration missing');
+      assertSelfTest(xml.includes('<search '), 'XML root missing');
+      assertSelfTest(xml.includes('</search>'), 'XML closing tag missing');
       const count = (xml.match(/<result index="/g) ?? []).length;
       const expectedCount = Math.min(options.limit, data.results?.length ?? 0);
-      if (count !== expectedCount) throw new Error('XML result count mismatch');
+      assertSelfTest(count === expectedCount, 'XML result count mismatch');
     });
 
     await test('Markdown Format Output', async () => {
       const options = { ...defaultTestOptions, query: 'test', format: 'markdown' as const };
       const url = buildUrl(options);
-      const response = await fetchWithRetry(url, options, 2);
-      const data = (await response.json()) as SearchResponse;
+      const data = await fetchSearchResponse(url, options, 2);
       const markdown = formatMarkdownOutput(data, options);
       const validation = validateFormattedOutput('markdown', markdown);
-      if (!validation.valid) throw new Error(validation.message);
+      assertSelfTest(validation.valid, validation.message);
     });
 
     await test('Table Format Output', async () => {
       const options = { ...defaultTestOptions, query: 'test', format: 'table' as const };
       const url = buildUrl(options);
-      const response = await fetchWithRetry(url, options, 2);
-      const data = (await response.json()) as SearchResponse;
+      const data = await fetchSearchResponse(url, options, 2);
       const table = formatTableOutput(data, options);
       const validation = validateFormattedOutput('table', table);
-      if (!validation.valid) throw new Error(validation.message);
+      assertSelfTest(validation.valid, validation.message);
     });
 
     await test('Text Format Output', async () => {
       const options = { ...defaultTestOptions, query: 'test', format: 'text' as const };
       const url = buildUrl(options);
-      const response = await fetchWithRetry(url, options, 2);
-      const data = (await response.json()) as SearchResponse;
+      const data = await fetchSearchResponse(url, options, 2);
       const text = formatTextOutput(data, options);
       const validation = validateFormattedOutput('text', text);
-      if (!validation.valid) throw new Error(validation.message);
+      assertSelfTest(validation.valid, validation.message);
     });
 
     await test('HTML Report Output', async () => {
       const options = { ...defaultTestOptions, query: 'test', format: 'html-report' as const };
       const url = buildUrl(options);
-      const response = await fetchWithRetry(url, options, 2);
-      const data = (await response.json()) as SearchResponse;
+      const data = await fetchSearchResponse(url, options, 2);
       const html = formatHtmlReportOutput(data, options);
       const validation = validateFormattedOutput('html-report', html);
-      if (!validation.valid) throw new Error(validation.message);
+      assertSelfTest(validation.valid, validation.message);
     });
 
-    await test('Cache Write', async () => {
+    await test('Cache Write', () => {
       const testQuery = 'cache-test-' + Date.now();
       const testOpts = {
         query: testQuery,
@@ -2379,10 +2450,10 @@ export async function main(): Promise<void> {
       };
       setCachedResult(testQuery, testOpts as SearchOptions, testData);
       const cached = getCachedResult(testQuery, testOpts as SearchOptions);
-      if (!cached) throw new Error('Cache write failed');
+      assertSelfTest(cached, 'Cache write failed');
     });
 
-    await test('Cache Read', async () => {
+    await test('Cache Read', () => {
       const testQuery = 'cache-read-' + Date.now();
       const testOpts = {
         query: testQuery,
@@ -2400,45 +2471,43 @@ export async function main(): Promise<void> {
       };
       setCachedResult(testQuery, testOpts as SearchOptions, testData);
       const cached = getCachedResult(testQuery, testOpts as SearchOptions);
-      if (!cached || !cached._cached) throw new Error('Cache read failed or missing _cached flag');
+      assertSelfTest(cached?._cached, 'Cache read failed or missing _cached flag');
     });
 
-    await test('Cache Stats', async () => {
+    await test('Cache Stats', () => {
       const stats = getCacheStats();
-      if (typeof stats.entries !== 'number') throw new Error('Invalid cache stats');
-      if (!stats.persistent) throw new Error('Persistent cache not enabled');
+      assertSelfTest(typeof stats.entries === 'number', 'Invalid cache stats');
+      assertSelfTest(stats.persistent, 'Persistent cache not enabled');
     });
 
-    await test('Result Deduplication', async () => {
+    await test('Result Deduplication', () => {
       const results = [
         { url: 'https://example.com/1', title: 'Test 1' },
         { url: 'https://example.com/1', title: 'Test 1 Duplicate' },
         { url: 'https://example.com/2', title: 'Test 2' },
       ];
       const deduped = deduplicateResults(results);
-      if (deduped.length !== 2) throw new Error(`Expected 2 results, got ${deduped.length}`);
+      assertSelfTest(deduped.length === 2, `Expected 2 results, got ${deduped.length}`);
     });
 
-    await test('Query Expansion', async () => {
+    await test('Query Expansion', () => {
       const expanded = expandQuery('!gh nodejs repo');
-      if (expanded.engines !== 'github') throw new Error('Query expansion failed for !gh');
+      assertSelfTest(expanded.engines === 'github', 'Query expansion failed for !gh');
     });
 
-    await test('URL Building', async () => {
+    await test('URL Building', () => {
       const options = { ...defaultTestOptions, query: 'test query', engines: 'google,bing' };
       const url = buildUrl(options);
-      if (!url.toString().includes('engines=google%2Cbing'))
-        throw new Error('URL engines param missing');
-      if (!url.toString().includes('q=test+query')) throw new Error('URL query param missing');
+      assertSelfTest(url.toString().includes('engines=google%2Cbing'), 'URL engines param missing');
+      assertSelfTest(url.toString().includes('q=test+query'), 'URL query param missing');
     });
 
     await test('Infobox & Suggestions in TOON', async () => {
       const options = { ...defaultTestOptions, query: 'javascript', compact: false };
       const url = buildUrl(options);
-      const response = await fetchWithRetry(url, options, 2);
-      const data = (await response.json()) as SearchResponse;
+      const data = await fetchSearchResponse(url, options, 2);
       const output = formatToonOutput(data, options);
-      if (!output.includes('q:')) throw new Error('Missing q field in TOON output');
+      assertSelfTest(output.includes('q:'), 'Missing q field in TOON output');
     });
 
     console.log();
@@ -2561,10 +2630,8 @@ export async function main(): Promise<void> {
         console.log(colorize('No presets found.', 'dim'));
       } else {
         entries.forEach(([name, preset], index) => {
-          const createdAt =
-            typeof preset.createdAt === 'string'
-              ? preset.createdAt
-              : String((preset as Record<string, unknown>).createdAt ?? 'unknown');
+          const rawCreatedAt = (preset as Record<string, unknown>).createdAt;
+          const createdAt = typeof rawCreatedAt === 'string' ? rawCreatedAt : 'unknown';
           console.log(`  ${String(index + 1).padStart(2)}. ${name} (${createdAt})`);
         });
       }
@@ -2579,11 +2646,7 @@ export async function main(): Promise<void> {
       console.error(colorize(`Error: Preset "${options.preset}" not found`, 'red'));
       process.exit(1);
     }
-    applyPresetToOptions(
-      options,
-      preset as Record<string, unknown>,
-      getExplicitPresetOverrideKeys(args)
-    );
+    applyPresetToOptions(options, preset, getExplicitPresetOverrideKeys(args));
     if (options.verbose && !options.silent) {
       console.error(colorize(`✓ Loaded preset: ${options.preset}`, 'green'));
     }

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as nodefs from 'fs';
+import * as zlib from 'zlib';
 import {
   getCacheKey,
   getCacheStats,
@@ -21,83 +22,12 @@ import {
   importCache,
   loadCacheSync,
   saveCacheSync,
+  getSemanticCachedResult,
 } from '@/cache/index';
 import { CACHE_FILE } from '@/config/index';
 import { LRUCache } from '@/classes/index';
-import type { SearchOptions, SearchResponse } from '@/types/index';
-
-const createMockOptions = (overrides: Partial<SearchOptions> = {}): SearchOptions => ({
-  query: 'test query',
-  format: 'toon',
-  engines: null,
-  lang: null,
-  page: 1,
-  safeSearch: 0,
-  timeRange: null,
-  category: null,
-  limit: 10,
-  timeout: 15000,
-  verbose: false,
-  output: null,
-  unescape: true,
-  autoformat: true,
-  score: false,
-  interactive: false,
-  noCache: false,
-  retries: 2,
-  open: null,
-  stats: false,
-  raw: false,
-  filter: null,
-  batch: null,
-  bookmark: null,
-  export: null,
-  quick: false,
-  summary: false,
-  dedup: true,
-  sort: false,
-  group: null,
-  config: null,
-  showInfo: false,
-  runTest: false,
-  preset: null,
-  savePreset: null,
-  listPresets: false,
-  compare: null,
-  cluster: null,
-  suggestions: false,
-  pipe: false,
-  stream: false,
-  jsonl: false,
-  rank: false,
-  multiSearch: null,
-  domainFilter: null,
-  excludeDomain: null,
-  minScore: null,
-  hasImage: false,
-  dateAfter: null,
-  dateBefore: null,
-  theme: 'default',
-  compact: false,
-  metadata: false,
-  urlsOnly: false,
-  titlesOnly: false,
-  autocomplete: false,
-  proxy: null,
-  insecure: false,
-  health: false,
-  watch: false,
-  silent: false,
-  pretty: false,
-  confirm: false,
-  agent: false,
-  analyze: false,
-  cacheStatus: false,
-  extract: null,
-  sentiment: false,
-  structured: false,
-  ...overrides,
-});
+import { createTestSearchOptions as createMockOptions } from '../helpers/search-options';
+import type { SearchResponse } from '@/types/index';
 
 const createMockResponse = (overrides: Partial<SearchResponse> = {}): SearchResponse => ({
   query: 'test query',
@@ -195,6 +125,20 @@ describe('Cache Module', () => {
       const key2 = getCacheKey('test', options2);
       expect(key1).toBe(key2);
     });
+
+    it('normalizes blank params and all option fallbacks', () => {
+      const options = Object.assign(createMockOptions(), {
+        category: undefined,
+        lang: undefined,
+        page: undefined,
+        engines: undefined,
+        timeRange: undefined,
+        safeSearch: undefined,
+        searxngParams: { ' ': 'ignored', theme: 'simple' },
+      });
+      const key = decodeURIComponent(getCacheKey('fallback', options));
+      expect(key).toBe('v2:fallback:general:en:1:default:all:0:theme=simple');
+    });
   });
 
   describe('getCachedResult and setCachedResult', () => {
@@ -228,6 +172,32 @@ describe('Cache Module', () => {
       expect(getCachedResult('query1', options)?.query).toBe('query1');
       expect(getCachedResult('query2', options)?.query).toBe('query2');
     });
+
+    it('rejects expired exact entries and returns semantic-compatible matches', () => {
+      const options = createMockOptions();
+      const key = getCacheKey('typescript guide', options);
+      resultCache.set(key, { timestamp: Date.now() - 1000, data: createMockResponse() });
+      expect(getCachedResult('typescript guide', options, 10)).toBeNull();
+      expect(getCachedResult('typescript guide', options, Infinity)?._cached).toBe(true);
+      const semantic = getSemanticCachedResult('typescript guide', options, 0, Infinity);
+      expect(semantic).toMatchObject({ _cached: true, _semantic: true });
+      expect(getSemanticCachedResult('different', options, 1, Infinity)).toBeNull();
+      expect(getSemanticCachedResult('typescript guide', options, 0, 10)).toBeNull();
+    });
+
+    it('supports legacy semantic keys and rejects incompatible metadata', () => {
+      const data = createMockResponse();
+      resultCache.set('legacy query:general:en:1:default:all', {
+        timestamp: Date.now(),
+        data,
+      });
+      resultCache.set('short-key', { timestamp: Date.now(), data });
+      resultCache.set('v2:short', { timestamp: Date.now(), data });
+      expect(getSemanticCachedResult('legacy query', createMockOptions(), 0)).not.toBeNull();
+      expect(
+        getSemanticCachedResult('legacy query', createMockOptions({ category: 'news' }), 0)
+      ).toBeNull();
+    });
   });
 
   describe('getCacheStats', () => {
@@ -255,6 +225,45 @@ describe('Cache Module', () => {
       const afterStats = getCacheStats();
 
       expect(afterStats.entries).toBe(beforeStats.entries + 2);
+    });
+
+    it('reports persisted size and oldest/newest observations', () => {
+      resultCache.set('old', { timestamp: Date.now() - 10_000, data: createMockResponse() });
+      resultCache.set('new', { timestamp: Date.now(), data: createMockResponse() });
+      resultCache.set('mid', { timestamp: Date.now() - 5000, data: createMockResponse() });
+      resultCache.set('zero', { timestamp: 0, data: createMockResponse() });
+      saveCacheSync();
+      expect(getCacheStats()).toMatchObject({
+        fileExists: true,
+        oldestEntry: expect.any(String),
+        newestEntry: expect.any(String),
+      });
+    });
+
+    it('reports bounded, disabled, uncompressed, finite-age, and stat-error profiles', () => {
+      const path = `/tmp/cache-stats-${process.pid}`;
+      nodefs.writeFileSync(path, 'data');
+      expect(
+        getCacheStats({
+          cacheSize: 10,
+          persistent: false,
+          compression: false,
+          maxAge: 5000,
+          cacheFile: path,
+        })
+      ).toMatchObject({
+        maxSize: 10,
+        utilization: '0.0%',
+        persistent: false,
+        compressed: false,
+        maxAge: '5s',
+      });
+      expect(
+        getCacheStats({ cacheFile: path }, () => {
+          throw new Error('stat failed');
+        }).fileSize
+      ).toBe(0);
+      nodefs.unlinkSync(path);
     });
   });
 
@@ -293,6 +302,19 @@ describe('Cache Module', () => {
       const { entries } = listCacheEntries(5, 0);
       expect(entries.length).toBeLessThanOrEqual(5);
     });
+
+    it('parses legacy, short, and empty-field v2 keys with offsets', () => {
+      const entry = { timestamp: Date.now(), data: { query: 'q' } as SearchResponse };
+      resultCache.set('legacy:query:news:de:2:bing:day', entry);
+      resultCache.set('short', entry);
+      resultCache.set('v2:q:::::::', entry);
+      const listed = listCacheEntries(2, 1);
+      expect(listed.entries).toHaveLength(2);
+      expect(listed.total).toBe(3);
+      expect(listed.entries[0]?.resultCount).toBe(0);
+      resultCache.set(':general:en:1:default:all', entry);
+      expect(listCacheEntries().entries.some((item) => item.query.startsWith(':'))).toBe(true);
+    });
   });
 
   describe('searchCache', () => {
@@ -326,6 +348,14 @@ describe('Cache Module', () => {
       setCachedResult('theme lookup', options, createMockResponse());
       const results = searchCache('theme=simple');
       expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('uses zero results for cache records without result arrays', () => {
+      resultCache.set('plain', {
+        timestamp: Date.now(),
+        data: { query: 'plain' } as SearchResponse,
+      });
+      expect(searchCache('plain')[0]?.resultCount).toBe(0);
     });
   });
 
@@ -372,6 +402,27 @@ describe('Cache Module', () => {
       const allOutput = consoleLogSpy.mock.calls.map((c) => c[0]).join('\n');
       expect(allOutput).toContain('Entries');
     });
+
+    it('renders bounded and fully populated status variants', () => {
+      showCacheStatus({
+        entries: 2,
+        maxSize: 10,
+        utilization: '20.0%',
+        persistent: false,
+        compressed: false,
+        maxAge: '5s',
+        file: '/tmp/cache',
+        fileExists: true,
+        fileSize: '1 KB',
+        oldestEntry: '10s ago',
+        newestEntry: '1s ago',
+      });
+      const output = consoleLogSpy.mock.calls.flat().join('\n');
+      expect(output).toContain('2/10');
+      expect(output).toContain('Oldest entry');
+      expect(output).toContain('Size: 1 KB');
+      expect(output).toContain('Disabled');
+    });
   });
 
   describe('showCacheList', () => {
@@ -405,6 +456,7 @@ describe('Cache Module', () => {
       }
       showCacheList(2, 0);
       expect(consoleLogSpy).toHaveBeenCalled();
+      expect(consoleLogSpy.mock.calls.flat().join('\n')).toContain('more entries');
     });
   });
 
@@ -455,6 +507,19 @@ describe('Cache Module', () => {
       const allOutput = consoleLogSpy.mock.calls.map((c) => c[0]).join('\n');
       expect(allOutput).toContain('Max Size');
     });
+
+    it('shows bounded, disabled, and uncompressed configuration', () => {
+      showCacheHelp({
+        cacheSize: 10,
+        persistent: false,
+        compression: false,
+        cacheFile: '/tmp/custom-cache',
+      });
+      const output = consoleLogSpy.mock.calls.flat().join('\n');
+      expect(output).toContain('10 entries');
+      expect(output).toContain('Persistent: No');
+      expect(output).toContain('Compressed: No');
+    });
   });
 
   describe('getCacheEntry', () => {
@@ -474,9 +539,11 @@ describe('Cache Module', () => {
     });
 
     it('should return null for out-of-bounds index', () => {
-      clearCache();
-      const entry = getCacheEntry(999);
-      expect(entry).toBeNull();
+      setCachedResult('first', createMockOptions(), createMockResponse());
+      setCachedResult('second', createMockOptions(), createMockResponse());
+      const entry = getCacheEntry(2);
+      expect(entry).not.toBeNull();
+      expect(getCacheEntry(999)).toBeNull();
     });
   });
 
@@ -501,6 +568,36 @@ describe('Cache Module', () => {
       expect(allOutput).toContain('inspect-test');
     });
 
+    it('shows optional counts, fallback fields, and preview overflow', () => {
+      const results = Array.from({ length: 4 }, (_, index) => ({
+        title: index === 0 ? undefined : `Result ${index}`,
+        url: index === 1 ? undefined : `https://example.com/${index}`,
+      }));
+      setCachedResult(
+        'rich-entry',
+        createMockOptions(),
+        createMockResponse({
+          results: results as unknown as SearchResponse['results'],
+          suggestions: ['one'],
+          answers: ['answer'],
+        })
+      );
+      inspectCacheEntry(1);
+      const output = consoleLogSpy.mock.calls.flat().join('\n');
+      expect(output).toContain('and 1 more');
+      expect(output).toContain('Suggestions: 1');
+      expect(output).toContain('Answers: 1');
+    });
+
+    it('shows zero counts when optional response collections are absent', () => {
+      resultCache.set('empty', {
+        timestamp: Date.now(),
+        data: { query: 'empty' } as SearchResponse,
+      });
+      inspectCacheEntry(1);
+      expect(consoleLogSpy.mock.calls.flat().join('\n')).toContain('Results: 0');
+    });
+
     it('should show not found for invalid index', () => {
       clearCache();
       inspectCacheEntry(999);
@@ -522,7 +619,9 @@ describe('Cache Module', () => {
     });
 
     it('should return false for non-existent index', () => {
-      clearCache();
+      setCachedResult('first', createMockOptions(), createMockResponse());
+      setCachedResult('second', createMockOptions(), createMockResponse());
+      expect(deleteCacheEntry(2)).toBe(true);
       const deleted = deleteCacheEntry(999);
       expect(deleted).toBe(false);
     });
@@ -533,8 +632,8 @@ describe('Cache Module', () => {
 
     afterEach(() => {
       try {
-        if (require('fs').existsSync(tmpExportFile)) {
-          require('fs').unlinkSync(tmpExportFile);
+        if (nodefs.existsSync(tmpExportFile)) {
+          nodefs.unlinkSync(tmpExportFile);
         }
       } catch {
         // ignore
@@ -580,6 +679,17 @@ describe('Cache Module', () => {
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
+
+    it('imports raw maps, overwrites when merge is disabled, and reports invalid JSON', () => {
+      const key = getCacheKey('raw', createMockOptions());
+      nodefs.writeFileSync(
+        tmpExportFile,
+        JSON.stringify({ [key]: { timestamp: Date.now(), data: createMockResponse() } })
+      );
+      expect(importCache(tmpExportFile, false)).toMatchObject({ success: true, imported: 1 });
+      nodefs.writeFileSync(tmpExportFile, '{broken');
+      expect(importCache(tmpExportFile)).toMatchObject({ success: false });
+    });
   });
 
   describe('loadCacheSync and saveCacheSync', () => {
@@ -617,23 +727,48 @@ describe('Cache Module', () => {
       expect(count).toBe(0);
     });
 
-    it('should handle zlib decompression error', () => {
-      // Mock zlib to throw error
-      const zlib = require('zlib');
-      const spy = vi.spyOn(zlib, 'inflateSync').mockImplementation(() => {
-        throw new Error('zlib error');
-      });
+    it('supports disabled, plain, compressed-fallback, expiry, oversized, and error profiles', () => {
+      const base = `/tmp/searxng-cache-${process.pid}-${Date.now()}`;
+      const data = {
+        key: { timestamp: Date.now(), data: createMockResponse() },
+        old: { timestamp: Date.now() - 10_000, data: createMockResponse() },
+      };
+      expect(loadCacheSync({ persistent: false, cacheFile: base })).toBe(0);
+      saveCacheSync({ persistent: false, cacheFile: base });
+      expect(nodefs.existsSync(base)).toBe(false);
 
-      clearCache();
-      // Write garbage that is not JSON and not valid base64-compressed data
-      nodefs.writeFileSync(CACHE_FILE, 'not-json-and-not-base64');
-
-      // Clear in-memory cache
       resultCache.clear();
+      resultCache.set('key', data.key);
+      saveCacheSync({ compression: false, cacheFile: base });
+      resultCache.clear();
+      expect(loadCacheSync({ compression: false, cacheFile: base, maxAge: Infinity })).toBe(1);
 
-      const count = loadCacheSync();
-      expect(count).toBe(0);
-      spy.mockRestore();
+      nodefs.writeFileSync(base, JSON.stringify(data));
+      resultCache.clear();
+      expect(loadCacheSync({ compression: true, cacheFile: base, maxAge: 1000 })).toBe(1);
+
+      nodefs.writeFileSync(base, zlib.deflateSync(JSON.stringify(data)).toString('base64'));
+      resultCache.clear();
+      expect(loadCacheSync({ compression: true, cacheFile: base, maxAge: Infinity })).toBe(2);
+      resultCache.clear();
+      expect(loadCacheSync({ compression: true, cacheFile: base, maxAge: 1000 })).toBe(1);
+
+      nodefs.writeFileSync(base, Buffer.alloc(5 * 1024 * 1024 + 1));
+      delete process.env.DEBUG;
+      expect(loadCacheSync({ cacheFile: base })).toBe(0);
+      process.env.DEBUG = '1';
+      expect(loadCacheSync({ cacheFile: base })).toBe(0);
+
+      nodefs.unlinkSync(base);
+      nodefs.mkdirSync(base);
+      delete process.env.DEBUG;
+      expect(loadCacheSync({ cacheFile: base })).toBe(0);
+      process.env.DEBUG = '1';
+      expect(loadCacheSync({ cacheFile: base })).toBe(0);
+      saveCacheSync({ cacheFile: base });
+      delete process.env.DEBUG;
+      nodefs.rmSync(base, { recursive: true });
+      if (nodefs.existsSync(`${base}.tmp`)) nodefs.unlinkSync(`${base}.tmp`);
     });
   });
 

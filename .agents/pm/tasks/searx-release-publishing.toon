@@ -6,13 +6,15 @@ status: closed
 priority: 0
 tags[5]: bun,github-actions,npm,provenance,release
 created_at: "2026-07-21T17:24:36.247Z"
-updated_at: "2026-07-21T17:43:28.865Z"
+updated_at: "2026-07-21T22:32:10.556Z"
 deadline: "2026-07-23T17:24:36.247Z"
 closed_at: "2026-07-21T17:43:28.006Z"
 author: codex-root
+estimated_minutes: 30
 acceptance_criteria: No existing changelog data is lost; release only occurs for release-relevant changes; exact package version is verified through npm and Bun
 definition_of_ready: "Live pm, changelog, tags, package registry, GitHub secrets, and pm-cli workflow state inspected"
 parent: searx-auto-release
+reviewer: repository-owner
 risk: high
 confidence: 90
 sprint: 2026-07-release-automation

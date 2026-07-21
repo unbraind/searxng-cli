@@ -1,3 +1,6 @@
+/**
+ * Global settings, onboarding, history, bookmarks, presets, suggestions, and instance-capability persistence under the CLI data directory.
+ */
 import * as fs from 'fs';
 import * as readline from 'readline';
 import { spawn } from 'child_process';
@@ -25,7 +28,6 @@ import {
   getValidEngines,
   VALID_CATEGORIES,
   getInstanceInfo,
-  COLOR_THEMES,
 } from '../config';
 import { colorize, truncate } from '../utils';
 import { isGhAuthenticated, hasStarredRepo, starRepo, REPO_URL } from '../utils/github';
@@ -43,6 +45,9 @@ import type {
   GithubStarPromptSource,
 } from '../types';
 
+/**
+ *
+ */
 export function ensureConfigDir(): void {
   if (!fs.existsSync(CONFIG_DIR)) {
     fs.mkdirSync(CONFIG_DIR, { recursive: true });
@@ -55,6 +60,9 @@ function writeJsonFileIfMissing(filePath: string, data: unknown): void {
   }
 }
 
+/**
+ *
+ */
 export function bootstrapGlobalDataFiles(): void {
   ensureConfigDir();
   try {
@@ -90,6 +98,9 @@ export function bootstrapGlobalDataFiles(): void {
   }
 }
 
+/**
+ *
+ */
 export function loadConfig(): AppConfig {
   ensureConfigDir();
   try {
@@ -116,6 +127,10 @@ export function loadConfig(): AppConfig {
   };
 }
 
+/**
+ *
+ * @param config
+ */
 export function saveConfig(config: AppConfig): void {
   ensureConfigDir();
   try {
@@ -125,6 +140,9 @@ export function saveConfig(config: AppConfig): void {
   }
 }
 
+/**
+ *
+ */
 export function loadHistory(): HistoryEntry[] {
   ensureConfigDir();
   try {
@@ -138,6 +156,10 @@ export function loadHistory(): HistoryEntry[] {
   return [];
 }
 
+/**
+ *
+ * @param history
+ */
 export function saveHistory(history: HistoryEntry[]): void {
   ensureConfigDir();
   const config = loadConfig();
@@ -150,6 +172,10 @@ export function saveHistory(history: HistoryEntry[]): void {
   }
 }
 
+/**
+ *
+ * @param query
+ */
 export function addToHistory(query: string): void {
   const config = loadConfig();
   if (!config.saveHistory) return;
@@ -158,6 +184,9 @@ export function addToHistory(query: string): void {
   saveHistory(history);
 }
 
+/**
+ *
+ */
 export function loadBookmarks(): BookmarkEntry[] {
   ensureConfigDir();
   try {
@@ -171,6 +200,10 @@ export function loadBookmarks(): BookmarkEntry[] {
   return [];
 }
 
+/**
+ *
+ * @param bookmarks
+ */
 export function saveBookmarks(bookmarks: BookmarkEntry[]): void {
   ensureConfigDir();
   try {
@@ -180,6 +213,10 @@ export function saveBookmarks(bookmarks: BookmarkEntry[]): void {
   }
 }
 
+/**
+ *
+ * @param result
+ */
 export function addBookmark(result: SearchResult): number {
   const bookmarks = loadBookmarks();
   bookmarks.push({ ...result, bookmarkedAt: new Date().toISOString() });
@@ -192,6 +229,9 @@ interface Preset {
   [key: string]: unknown;
 }
 
+/**
+ *
+ */
 export function loadPresets(): Record<string, Preset> {
   ensureConfigDir();
   try {
@@ -205,6 +245,10 @@ export function loadPresets(): Record<string, Preset> {
   return {};
 }
 
+/**
+ *
+ * @param presets
+ */
 export function savePresets(presets: Record<string, Preset>): void {
   ensureConfigDir();
   try {
@@ -214,6 +258,11 @@ export function savePresets(presets: Record<string, Preset>): void {
   }
 }
 
+/**
+ *
+ * @param name
+ * @param options
+ */
 export function addPreset(name: string, options: Record<string, unknown>): number {
   const presets = loadPresets();
   presets[name] = { ...options, createdAt: new Date().toISOString() };
@@ -221,6 +270,9 @@ export function addPreset(name: string, options: Record<string, unknown>): numbe
   return Object.keys(presets).length;
 }
 
+/**
+ *
+ */
 export function loadSuggestions(): Suggestions {
   ensureConfigDir();
   try {
@@ -234,6 +286,10 @@ export function loadSuggestions(): Suggestions {
   return { popular: [], recent: [] };
 }
 
+/**
+ *
+ * @param suggestions
+ */
 export function saveSuggestions(suggestions: Suggestions): void {
   ensureConfigDir();
   try {
@@ -243,6 +299,10 @@ export function saveSuggestions(suggestions: Suggestions): void {
   }
 }
 
+/**
+ *
+ * @param query
+ */
 export function updateSuggestions(query: string): void {
   const suggestions = loadSuggestions();
   suggestions.recent = suggestions.recent.filter((q) => q !== query).slice(0, 49);
@@ -265,14 +325,38 @@ interface EnginesCacheData {
   info: InstanceInfo;
 }
 
+/**
+ *
+ */
 export interface InstanceCapabilities {
   instance: InstanceInfo;
   categories: string[];
   languages: string[];
-  engines: Array<{ name: string; categories: string[]; language: string; paging: boolean }>;
+  engines: {
+    name: string;
+    shortcut: string;
+    categories: string[];
+    enabled: boolean;
+    language: string;
+    paging: boolean;
+    safesearch: boolean;
+    timeRangeSupport: boolean;
+    timeout: number | null;
+  }[];
   plugins: string[];
+  defaults: {
+    autocomplete: string;
+    language: string;
+    locale: string;
+    theme: string;
+    safeSearch: number;
+  };
 }
 
+/**
+ *
+ * @param refresh
+ */
 export async function discoverInstance(refresh = false): Promise<void> {
   ensureConfigDir();
 
@@ -291,7 +375,7 @@ export async function discoverInstance(refresh = false): Promise<void> {
   }
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(controller.abort.bind(controller), 10000);
     const searxngUrl = getSearxngUrl();
     const response = await rateLimitedFetch(`${searxngUrl}/config`, {
       signal: controller.signal,
@@ -300,7 +384,7 @@ export async function discoverInstance(refresh = false): Promise<void> {
     clearTimeout(timeoutId);
     if (response.ok) {
       const config = (await response.json()) as {
-        engines?: Array<{ name: string; disabled?: boolean }>;
+        engines?: { name: string; disabled?: boolean }[];
         categories?: string[];
         instance_name?: string;
         version?: string;
@@ -313,13 +397,13 @@ export async function discoverInstance(refresh = false): Promise<void> {
       let engines = getValidEngines();
       let categories = [...VALID_CATEGORIES];
 
-      if (config.engines && Array.isArray(config.engines)) {
+      if (Array.isArray(config.engines)) {
         engines = config.engines
-          .filter((e) => e && e.name && !e.disabled)
+          .filter((e) => e.name && !e.disabled)
           .map((e) => e.name)
           .sort();
       }
-      if (config.categories && Array.isArray(config.categories)) {
+      if (Array.isArray(config.categories)) {
         categories = config.categories.filter((c) => c && !c.includes('_')).sort();
       }
 
@@ -359,6 +443,9 @@ export async function discoverInstance(refresh = false): Promise<void> {
   }
 }
 
+/**
+ *
+ */
 export async function fetchInstanceCapabilities(): Promise<InstanceCapabilities> {
   const searxngUrl = getSearxngUrl();
   const response = await rateLimitedFetch(`${searxngUrl}/config`, {
@@ -369,16 +456,27 @@ export async function fetchInstanceCapabilities(): Promise<InstanceCapabilities>
   }
 
   const config = (await response.json()) as {
-    engines?: Array<{
+    engines?: {
       name: string;
       categories?: string[];
       language?: string;
       paging?: boolean;
       disabled?: boolean;
-    }>;
+      enabled?: boolean;
+      shortcut?: string;
+      safesearch?: boolean;
+      time_range_support?: boolean;
+      timeout?: number;
+    }[];
     categories?: string[];
-    search?: { languages?: string[] };
+    search?: { languages?: string[]; default_lang?: string };
+    locales?: Record<string, string>;
     plugin?: Record<string, unknown>;
+    plugins?: { name?: string; enabled?: boolean }[];
+    autocomplete?: string;
+    default_locale?: string;
+    default_theme?: string;
+    safe_search?: number;
     instance_name?: string;
     version?: string;
     contact_url?: string;
@@ -388,12 +486,17 @@ export async function fetchInstanceCapabilities(): Promise<InstanceCapabilities>
   };
 
   const engines = (config.engines ?? [])
-    .filter((engine) => engine && engine.name && !engine.disabled)
+    .filter((engine) => engine.name && !engine.disabled)
     .map((engine) => ({
       name: engine.name,
+      shortcut: engine.shortcut ?? '',
       categories: Array.isArray(engine.categories) ? engine.categories : [],
+      enabled: engine.enabled !== false,
       language: engine.language ?? 'all',
       paging: Boolean(engine.paging),
+      safesearch: Boolean(engine.safesearch),
+      timeRangeSupport: Boolean(engine.time_range_support),
+      timeout: typeof engine.timeout === 'number' ? engine.timeout : null,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -402,13 +505,18 @@ export async function fetchInstanceCapabilities(): Promise<InstanceCapabilities>
     : [];
   const languages = Array.isArray(config.search?.languages)
     ? config.search.languages.filter((language) => typeof language === 'string')
-    : [];
-  const plugins = config.plugin
-    ? Object.entries(config.plugin)
-        .filter((entry) => Boolean(entry[1]))
-        .map((entry) => entry[0])
+    : Object.keys(config.locales ?? {}).sort();
+  const plugins = Array.isArray(config.plugins)
+    ? config.plugins
+        .filter((plugin) => plugin?.name)
+        .map((plugin) => `${plugin.name}:${plugin.enabled === false ? 'disabled' : 'enabled'}`)
         .sort()
-    : [];
+    : config.plugin
+      ? Object.entries(config.plugin)
+          .filter((entry) => Boolean(entry[1]))
+          .map((entry) => entry[0])
+          .sort()
+      : [];
 
   return {
     instance: {
@@ -425,9 +533,20 @@ export async function fetchInstanceCapabilities(): Promise<InstanceCapabilities>
     languages,
     engines,
     plugins,
+    defaults: {
+      autocomplete: config.autocomplete ?? '',
+      language: config.search?.default_lang ?? '',
+      locale: config.default_locale ?? '',
+      theme: config.default_theme ?? 'simple',
+      safeSearch: config.safe_search ?? 0,
+    },
   };
 }
 
+/**
+ *
+ * @param limit
+ */
 export function showSearchHistory(limit = 20): void {
   const history = loadHistory();
   if (history.length === 0) {
@@ -443,6 +562,9 @@ export function showSearchHistory(limit = 20): void {
   console.log(colorize(`\nTotal: ${history.length}`, 'dim'));
 }
 
+/**
+ *
+ */
 export function showBookmarks(): void {
   const bookmarks = loadBookmarks();
   if (bookmarks.length === 0) {
@@ -456,7 +578,15 @@ export function showBookmarks(): void {
   console.log(colorize(`\nTotal: ${bookmarks.length}`, 'dim'));
 }
 
-export function manageConfig(action: string): void {
+/**
+ *
+ * @param action
+ * @param launchEditor
+ */
+export function manageConfig(
+  action: string,
+  launchEditor: (command: string, args: string[], options: { stdio: 'inherit' }) => unknown = spawn
+): void {
   const config = loadConfig();
   if (action === 'show' || !action) {
     console.log(colorize('\nConfiguration:', 'cyan,bold'));
@@ -469,7 +599,7 @@ export function manageConfig(action: string): void {
   }
   if (action === 'edit') {
     const editor = process.env.EDITOR ?? 'nano';
-    spawn(editor, [CONFIG_FILE], { stdio: 'inherit' });
+    launchEditor(editor, [CONFIG_FILE], { stdio: 'inherit' });
     return;
   }
   if (action === 'reset') {
@@ -625,6 +755,9 @@ function parseSearxngParamsQuery(raw: string): Record<string, string> | null {
   return params;
 }
 
+/**
+ *
+ */
 export function getDefaultSettings(): Settings {
   return {
     searxngUrl: DEFAULT_SEARXNG_URL,
@@ -649,6 +782,9 @@ export function getDefaultSettings(): Settings {
   };
 }
 
+/**
+ *
+ */
 export function applyLocalAgentDefaults(): Settings {
   const now = new Date().toISOString();
   const current = loadSettings();
@@ -670,6 +806,9 @@ export function applyLocalAgentDefaults(): Settings {
   return updated;
 }
 
+/**
+ *
+ */
 export function loadSettings(): Settings {
   ensureConfigDir();
   bootstrapGlobalDataFiles();
@@ -681,8 +820,6 @@ export function loadSettings(): Settings {
       merged.searxngUrl = normalizeSearxngUrl(merged.searxngUrl) ?? DEFAULT_SEARXNG_URL;
       merged.defaultFormat = normalizeOutputFormat(merged.defaultFormat);
       merged.defaultSearxngParams = normalizeSearxngParams(merged.defaultSearxngParams);
-      merged.forceLocalRouting = merged.forceLocalRouting !== false;
-      merged.forceLocalAgentRouting = merged.forceLocalAgentRouting !== false;
       merged.githubStarPrompt = normalizeGithubStarPrompt(merged.githubStarPrompt);
       return merged;
     }
@@ -709,6 +846,11 @@ export function loadSettings(): Settings {
   return getDefaultSettings();
 }
 
+/**
+ *
+ * @param existingRl
+ * @param source
+ */
 export async function promptForStar(
   existingRl?: readline.Interface,
   source: GithubStarPromptSource = 'setup'
@@ -762,7 +904,7 @@ export async function promptForStar(
   }
 
   const rl =
-    existingRl ||
+    existingRl ??
     readline.createInterface({
       input: process.stdin,
       output: process.stdout,
@@ -804,6 +946,10 @@ export async function promptForStar(
   }
 }
 
+/**
+ *
+ * @param settings
+ */
 export function saveSettings(settings: Settings): void {
   ensureConfigDir();
   try {
@@ -815,18 +961,22 @@ export function saveSettings(settings: Settings): void {
       githubStarPrompt: normalizeGithubStarPrompt(settings.githubStarPrompt),
     };
     fs.writeFileSync(SETTINGS_FILE, JSON.stringify(normalizedSettings, null, 2));
-    if (normalizedSettings.searxngUrl) {
-      setSearxngUrl(normalizedSettings.searxngUrl);
-    }
+    setSearxngUrl(normalizedSettings.searxngUrl);
   } catch (e) {
     console.error(colorize(`Warning: Could not save settings: ${(e as Error).message}`, 'yellow'));
   }
 }
 
+/**
+ *
+ */
 export function isSetupComplete(): boolean {
   return fs.existsSync(SETUP_COMPLETE_FILE);
 }
 
+/**
+ *
+ */
 export function markSetupComplete(): void {
   ensureConfigDir();
   try {
@@ -836,13 +986,17 @@ export function markSetupComplete(): void {
   }
 }
 
+/**
+ *
+ * @param url
+ */
 export async function testConnection(
   url: string
 ): Promise<{ success: boolean; latency: number; error?: string }> {
   const start = Date.now();
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(controller.abort.bind(controller), 10000);
     const response = await fetch(`${url}/config`, {
       headers: { 'User-Agent': `searxng-cli/${VERSION}` },
       signal: controller.signal,
@@ -862,6 +1016,10 @@ export async function testConnection(
   }
 }
 
+/**
+ *
+ * @param source
+ */
 export async function runSetupWizard(source: GithubStarPromptSource = 'setup'): Promise<Settings> {
   const existingSettings = fs.existsSync(SETTINGS_FILE) ? loadSettings() : null;
 
@@ -1150,7 +1308,10 @@ export async function runSetupWizard(source: GithubStarPromptSource = 'setup'): 
   return settings;
 }
 
-export async function showSettings(): Promise<void> {
+/**
+ *
+ */
+export function showSettings(): void {
   const settings = loadSettings();
 
   console.log(colorize('\n╔════════════════════════════════════════════════════════════╗', 'cyan'));
@@ -1221,6 +1382,11 @@ export async function showSettings(): Promise<void> {
   console.log('  searxng --setup                  Run full setup wizard');
 }
 
+/**
+ *
+ * @param key
+ * @param value
+ */
 export function updateSetting(key: string, value: string): boolean {
   const settings = loadSettings();
   const validThemes = ['default', 'ocean', 'forest', 'sunset', 'mono'];
@@ -1274,7 +1440,7 @@ export function updateSetting(key: string, value: string): boolean {
       break;
     case 'engines':
     case 'defaultEngines':
-      settings.defaultEngines = value || null;
+      settings.defaultEngines = value.length > 0 ? value : null;
       break;
     case 'timeout':
     case 'defaultTimeout':

@@ -1,3 +1,6 @@
+/**
+ * Reusable stateful primitives for connection circuit breaking, request deduplication, and runtime performance measurements.
+ */
 import {
   CIRCUIT_BREAKER_THRESHOLD,
   CIRCUIT_BREAKER_RESET_TIME,
@@ -5,6 +8,9 @@ import {
 } from '../config';
 import type { CircuitBreakerStatus, PerformanceMetricsData } from '../types';
 
+/**
+ *
+ */
 export class CircuitBreaker {
   private threshold: number;
   private resetTime: number;
@@ -56,6 +62,9 @@ export class CircuitBreaker {
   }
 }
 
+/**
+ *
+ */
 export class RequestDeduplicator<T> {
   private windowMs: number;
   private requests: Map<string, { promise: Promise<T>; timestamp: number }>;
@@ -86,9 +95,10 @@ export class RequestDeduplicator<T> {
     const key = this.getKey(url, options);
     this.requests.set(key, { promise, timestamp: Date.now() });
 
-    promise.finally(() => {
-      setTimeout(() => this.requests.delete(key), this.windowMs);
-    });
+    void promise.then(
+      () => setTimeout(() => this.requests.delete(key), this.windowMs),
+      () => setTimeout(() => this.requests.delete(key), this.windowMs)
+    );
   }
 
   clear(): void {
@@ -100,6 +110,9 @@ export class RequestDeduplicator<T> {
   }
 }
 
+/**
+ *
+ */
 export class PerformanceMetrics {
   private metrics = {
     totalRequests: 0,
@@ -165,6 +178,9 @@ export class PerformanceMetrics {
   }
 }
 
+/**
+ *
+ */
 export class LRUCache<T> {
   private maxSize: number;
   private cache: Map<string, T>;
@@ -186,9 +202,9 @@ export class LRUCache<T> {
   set(key: string, value: T): void {
     if (this.cache.has(key)) this.cache.delete(key);
     if (this.maxSize > 0 && this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      if (firstKey !== undefined) {
+      for (const firstKey of this.cache.keys()) {
         this.cache.delete(firstKey);
+        break;
       }
     }
     this.cache.set(key, value);
@@ -223,6 +239,9 @@ export class LRUCache<T> {
   }
 }
 
+/**
+ *
+ */
 export class SmartDeduplicator {
   private seenHashes: Map<string, number>;
 

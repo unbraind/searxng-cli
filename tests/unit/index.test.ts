@@ -2,80 +2,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'fs';
 import { formatAndOutput, ensureCacheLoaded, resetCacheLoaded, performSearch } from '@/index';
 import { setCachedResult, clearCache } from '@/cache/index';
-import type { SearchResponse, SearchOptions } from '@/types/index';
-
-const createMockOptions = (overrides: Partial<SearchOptions> = {}): SearchOptions => ({
-  query: 'test query',
-  format: 'toon',
-  engines: null,
-  lang: null,
-  page: 1,
-  safeSearch: 0,
-  timeRange: null,
-  category: null,
-  limit: 10,
-  timeout: 15000,
-  verbose: false,
-  output: null,
-  unescape: true,
-  autoformat: true,
-  score: false,
-  interactive: false,
-  noCache: true,
-  retries: 2,
-  open: null,
-  stats: false,
-  raw: false,
-  filter: null,
-  batch: null,
-  bookmark: null,
-  export: null,
-  quick: false,
-  summary: false,
-  dedup: true,
-  sort: false,
-  group: null,
-  config: null,
-  showInfo: false,
-  runTest: false,
-  preset: null,
-  savePreset: null,
-  listPresets: false,
-  compare: null,
-  cluster: null,
-  suggestions: false,
-  pipe: false,
-  stream: false,
-  jsonl: false,
-  rank: false,
-  multiSearch: null,
-  domainFilter: null,
-  excludeDomain: null,
-  minScore: null,
-  hasImage: false,
-  dateAfter: null,
-  dateBefore: null,
-  theme: 'default',
-  compact: false,
-  metadata: false,
-  urlsOnly: false,
-  titlesOnly: false,
-  autocomplete: false,
-  proxy: null,
-  insecure: false,
-  health: false,
-  watch: false,
-  silent: false,
-  pretty: false,
-  confirm: false,
-  agent: false,
-  analyze: false,
-  cacheStatus: false,
-  extract: null,
-  sentiment: false,
-  structured: false,
-  ...overrides,
-});
+import { createTestSearchOptions as createMockOptions } from '../helpers/search-options';
+import type { SearchResponse } from '@/types/index';
+import * as validation from '@/formatters/validation';
 
 const createMockResponse = (overrides: Partial<SearchResponse> = {}): SearchResponse => ({
   query: 'test query',
@@ -438,6 +367,211 @@ describe('Index Module - formatAndOutput', () => {
     const output = consoleLogSpy.mock.calls[0]?.[0] as string;
     expect(() => JSON.parse(output)).not.toThrow();
   });
+
+  it('covers content fetching, embeddings, and title fallbacks', async () => {
+    const stderrDescriptor = Object.getOwnPropertyDescriptor(process.stderr, 'isTTY');
+    Object.defineProperty(process.stderr, 'isTTY', { value: true, configurable: true });
+    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
+      new Response('<html><body><main>Fetched article text</main></body></html>', {
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+      })
+    );
+    try {
+      const fetched = await formatAndOutput(
+        createMockResponse({ results: [{ title: 'Article', url: 'https://example.com/article' }] }),
+        createMockOptions({ fetchContent: true, exportEmbeddings: true, dedup: false })
+      );
+      expect(fetched.results?.[0]).toBeDefined();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Fetching'));
+
+      await formatAndOutput(
+        createMockResponse({
+          results: [
+            { link: 'https://example.com/link-only' },
+            {},
+          ] as unknown as SearchResponse['results'],
+        }),
+        createMockOptions({ titlesOnly: true, limit: 0, dedup: false, unescape: true })
+      );
+      expect(consoleLogSpy.mock.calls.flat().join('\n')).toContain('No title');
+    } finally {
+      fetchSpy.mockRestore();
+      if (stderrDescriptor) Object.defineProperty(process.stderr, 'isTTY', stderrDescriptor);
+    }
+  });
+
+  it('covers silent URL fallbacks and unlimited title/url slices', async () => {
+    const data = createMockResponse({
+      results: [
+        { title: 'One', link: 'https://example.com/link' },
+        { title: 'Two' },
+      ] as unknown as SearchResponse['results'],
+    });
+    await formatAndOutput(data, createMockOptions({ silent: true, limit: 0, dedup: false }));
+    expect(consoleLogSpy).toHaveBeenCalledWith('https://example.com/link');
+    expect(consoleLogSpy).toHaveBeenCalledWith('');
+
+    await formatAndOutput(
+      createMockResponse(),
+      createMockOptions({ titlesOnly: true, limit: 0, dedup: false })
+    );
+    await formatAndOutput(
+      createMockResponse(),
+      createMockOptions({ urlsOnly: true, limit: 2, dedup: false })
+    );
+  });
+
+  it('validates JSONL and regular output and supports system prompts', async () => {
+    await formatAndOutput(
+      createMockResponse(),
+      createMockOptions({
+        jsonl: true,
+        validateOutput: true,
+        verbose: true,
+        silent: false,
+        dedup: false,
+      })
+    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('validated'));
+
+    await formatAndOutput(
+      createMockResponse({ results: [] }),
+      createMockOptions({ jsonl: true, validateOutput: false, dedup: false })
+    );
+    await formatAndOutput(
+      createMockResponse(),
+      createMockOptions({
+        format: 'jsonl',
+        jsonl: false,
+        validateOutput: true,
+        verbose: true,
+        systemPrompt: 'Use only these sources.',
+      })
+    );
+    expect(consoleLogSpy.mock.calls.flat().join('\n')).toContain('<system_prompt>');
+
+    const validationSpy = vi.spyOn(validation, 'validateFormattedOutput').mockReturnValueOnce({
+      valid: false,
+      message: 'forced invalid output',
+    });
+    await expect(
+      formatAndOutput(
+        createMockResponse(),
+        createMockOptions({ format: 'json', validateOutput: true })
+      )
+    ).rejects.toThrow('Output validation failed');
+    validationSpy.mockRestore();
+  });
+
+  it('covers remaining formatter and citation branches', async () => {
+    await formatAndOutput(createMockResponse(), createMockOptions({ format: 'html' }));
+    await formatAndOutput(createMockResponse(), createMockOptions({ citation: true }));
+    await formatAndOutput(
+      createMockResponse({ results: undefined }),
+      createMockOptions({ domainFilter: 'example.com', dedup: false })
+    );
+    expect(consoleLogSpy).toHaveBeenCalled();
+  });
+
+  it('covers nullable formatter inputs and quiet validation variants', async () => {
+    const fallbackResults = [
+      { link: 'https://example.com/link-only' },
+      {},
+    ] as unknown as SearchResponse['results'];
+    await formatAndOutput(
+      createMockResponse({ results: fallbackResults }),
+      createMockOptions({ urlsOnly: true, limit: 0, dedup: false })
+    );
+    await formatAndOutput(
+      createMockResponse({ results: undefined }),
+      createMockOptions({ metadata: true, compact: true, dedup: false })
+    );
+    await formatAndOutput(
+      createMockResponse({ results: undefined }),
+      createMockOptions({ cluster: 'domain', dedup: false })
+    );
+    await formatAndOutput(
+      createMockResponse(),
+      createMockOptions({ analyze: true, agent: true, format: 'toon' })
+    );
+    await formatAndOutput(
+      createMockResponse(),
+      createMockOptions({ analyze: true, agent: false, compact: true })
+    );
+    await formatAndOutput(
+      createMockResponse(),
+      createMockOptions({
+        jsonl: true,
+        validateOutput: true,
+        verbose: true,
+        silent: true,
+        dedup: false,
+      })
+    );
+    await formatAndOutput(
+      createMockResponse(),
+      createMockOptions({
+        format: 'json',
+        validateOutput: true,
+        verbose: true,
+        silent: true,
+      })
+    );
+    await formatAndOutput(
+      createMockResponse({ results: [] }),
+      createMockOptions({
+        jsonl: true,
+        validateOutput: true,
+        verbose: true,
+        silent: true,
+        dedup: false,
+      })
+    );
+    await formatAndOutput(
+      createMockResponse({ results: undefined }),
+      createMockOptions({ analyze: true, agent: false, compact: false, dedup: false })
+    );
+    await formatAndOutput(
+      createMockResponse({ results: [] }),
+      createMockOptions({
+        format: 'json',
+        validateOutput: true,
+        verbose: true,
+        silent: true,
+        dedup: false,
+      })
+    );
+    await formatAndOutput(
+      createMockResponse(),
+      createMockOptions({ format: 'unknown' as 'json', pretty: true })
+    );
+  });
+
+  it('covers quiet content fetching and offline-first output', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
+      new Response('<html><body>content</body></html>', {
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+      })
+    );
+    await formatAndOutput(
+      createMockResponse({ results: [{ title: 'Page', url: 'https://example.com' }] }),
+      createMockOptions({ fetchContent: true, silent: true, dedup: false })
+    );
+    fetchSpy.mockRestore();
+
+    clearCache();
+    const result = await performSearch(
+      createMockOptions({
+        query: `quiet-offline-${Date.now()}`,
+        offlineFirst: true,
+        noCache: false,
+        silent: true,
+      })
+    );
+    expect(result?.results).toEqual([]);
+  });
 });
 
 describe('Index Module - ensureCacheLoaded', () => {
@@ -532,6 +666,130 @@ describe('Index Module - performSearch', () => {
     const result = await performSearch(opts);
     expect(result).not.toBeNull();
     expect(result?._cached).toBe(true);
+  });
+
+  it('reports exact and semantic cache hits without blocking on network refreshes', async () => {
+    clearCache();
+    const exactOptions = createMockOptions({
+      query: 'exact verbose cache',
+      noCache: false,
+      verbose: true,
+      retries: 0,
+    });
+    setCachedResult(
+      exactOptions.query,
+      exactOptions,
+      createMockResponse({ query: exactOptions.query })
+    );
+    const fetchSpy = vi.spyOn(global, 'fetch');
+    expect(await performSearch(exactOptions)).not.toBeNull();
+    expect(consoleErrorSpy.mock.calls.flat().join('\n')).toContain('CACHE HIT');
+
+    clearCache();
+    const seedOptions = createMockOptions({
+      query: 'typescript guide',
+      noCache: false,
+      retries: 0,
+    });
+    setCachedResult(
+      seedOptions.query,
+      seedOptions,
+      createMockResponse({ query: seedOptions.query })
+    );
+    const semanticOptions = createMockOptions({
+      query: 'typescript guides',
+      noCache: false,
+      verbose: true,
+      retries: 0,
+    });
+    expect(await performSearch(semanticOptions)).not.toBeNull();
+    expect(consoleErrorSpy.mock.calls.flat().join('\n')).toContain('semantic cached result');
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it('returns an explicit empty response for offline-first cache misses', async () => {
+    clearCache();
+    const result = await performSearch(
+      createMockOptions({
+        query: `offline-miss-${Date.now()}`,
+        offlineFirst: true,
+        noCache: false,
+        silent: false,
+      })
+    );
+    expect(result?.results).toEqual([]);
+    expect(result?.timing).toBe('offline');
+    expect(consoleErrorSpy.mock.calls.flat().join('\n')).toContain('Offline-first');
+  });
+
+  it('auto-refines an empty broad search exactly once', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      const body = url.includes('one+two+three+four+five+six+seven')
+        ? { results: [] }
+        : createMockResponse();
+      return Promise.resolve(
+        new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      );
+    });
+    const options = createMockOptions({
+      query: 'one two three four five six seven',
+      autoRefine: true,
+      noCache: true,
+      retries: 0,
+      silent: false,
+    });
+    const result = await performSearch(options);
+    expect(
+      result,
+      JSON.stringify({ calls: fetchSpy.mock.calls.length, errors: consoleErrorSpy.mock.calls })
+    ).not.toBeNull();
+    expect(options.query).toBe('one two three four five');
+    expect(options.autoRefine).toBe(false);
+    fetchSpy.mockRestore();
+  });
+
+  it('keeps stop-word-only auto-refinement stable and supports quiet refinement', async () => {
+    const stableFetch = vi.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ results: [] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+    const stable = createMockOptions({
+      query: 'the and',
+      autoRefine: true,
+      noCache: true,
+      retries: 0,
+      silent: false,
+    });
+    expect(await performSearch(stable)).not.toBeNull();
+    expect(stable.query).toBe('the and');
+    stableFetch.mockRestore();
+
+    const quietFetch = vi.spyOn(global, 'fetch').mockImplementation(async (input) => {
+      const isBroad = String(input).includes('one+two+three+four+five+six');
+      return Promise.resolve(
+        new Response(JSON.stringify(isBroad ? { results: [] } : createMockResponse()), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      );
+    });
+    const quiet = createMockOptions({
+      query: 'one two three four five six',
+      autoRefine: true,
+      noCache: true,
+      retries: 0,
+      silent: true,
+    });
+    expect(await performSearch(quiet)).not.toBeNull();
+    expect(quiet.query).toBe('one two three four five');
+    quietFetch.mockRestore();
   });
 
   it('should fetch fresh results when noCache=true', async () => {

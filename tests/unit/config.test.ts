@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import {
   getSearxngUrl,
   setSearxngUrl,
@@ -29,6 +32,13 @@ import {
   TOON_SPEC_VERSION,
   CACHE_MAX_AGE,
   LRU_CACHE_SIZE,
+  loadSearxngUrlFromSettings,
+  getInitialSearxngUrl,
+  getRuntimeProfile,
+  resolveConfiguredInteger,
+  resolveVersion,
+  getJsonIndent,
+  resolveConfigDirectory,
 } from '@/config/index';
 
 describe('Config Module', () => {
@@ -88,11 +98,94 @@ describe('Config Module', () => {
 
   describe('reloadSearxngUrl', () => {
     it('should reload the URL from settings/env', () => {
-      const beforeUrl = getSearxngUrl();
       reloadSearxngUrl();
       const afterUrl = getSearxngUrl();
       expect(typeof afterUrl).toBe('string');
       expect(afterUrl.startsWith('http')).toBe(true);
+    });
+  });
+
+  describe('configuration source resolution', () => {
+    it('resolves the global configuration directory', () => {
+      expect(resolveConfigDirectory('/custom', '/home/test')).toBe('/custom');
+      expect(resolveConfigDirectory(undefined, '/home/test')).toBe('/home/test/.searxng-cli');
+    });
+
+    it('reads a normalized URL from a settings file', () => {
+      const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'searxng-config-'));
+      const settingsFile = path.join(directory, 'settings.json');
+      fs.writeFileSync(settingsFile, JSON.stringify({ searxngUrl: 'searx.local:8080/' }));
+      expect(loadSearxngUrlFromSettings(settingsFile)).toBe('http://searx.local:8080');
+      fs.rmSync(directory, { recursive: true });
+    });
+
+    it('ignores absent, malformed, and non-string settings URLs', () => {
+      const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'searxng-config-'));
+      const settingsFile = path.join(directory, 'settings.json');
+      expect(loadSearxngUrlFromSettings(settingsFile)).toBeNull();
+      fs.writeFileSync(settingsFile, '{');
+      expect(loadSearxngUrlFromSettings(settingsFile)).toBeNull();
+      fs.writeFileSync(settingsFile, JSON.stringify({ searxngUrl: 42 }));
+      expect(loadSearxngUrlFromSettings(settingsFile)).toBeNull();
+      fs.writeFileSync(settingsFile, JSON.stringify(null));
+      expect(loadSearxngUrlFromSettings(settingsFile)).toBeNull();
+      fs.rmSync(directory, { recursive: true });
+    });
+
+    it('prefers an environment URL, then settings, then the local default', () => {
+      const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'searxng-config-'));
+      const settingsFile = path.join(directory, 'settings.json');
+      fs.writeFileSync(settingsFile, JSON.stringify({ searxngUrl: 'settings.local:8080' }));
+      expect(getInitialSearxngUrl('env.local:8080', settingsFile)).toBe('http://env.local:8080');
+      expect(getInitialSearxngUrl(undefined, settingsFile)).toBe('http://settings.local:8080');
+      fs.rmSync(directory, { recursive: true });
+      expect(getInitialSearxngUrl(undefined, settingsFile)).toBe('http://localhost:8080');
+    });
+  });
+
+  describe('runtime profiles', () => {
+    it('provides tuned local and remote profiles', () => {
+      expect(getRuntimeProfile(true)).toMatchObject({
+        defaultTimeout: 15000,
+        maxRetries: 2,
+        rateLimitDelay: 0,
+      });
+      expect(getRuntimeProfile(false)).toMatchObject({
+        defaultTimeout: 30000,
+        maxRetries: 3,
+        rateLimitDelay: 30,
+      });
+    });
+
+    it('resolves integer overrides and JSON indentation', () => {
+      expect(resolveConfiguredInteger('25', 10)).toBe(25);
+      expect(resolveConfiguredInteger('0', 10)).toBe(10);
+      expect(resolveConfiguredInteger(undefined, 10)).toBe(10);
+      expect(getJsonIndent(true)).toBe(2);
+      expect(getJsonIndent(false)).toBe(0);
+      expect(getJsonIndent(undefined)).toBe(0);
+    });
+  });
+
+  describe('version resolution', () => {
+    it('prefers npm metadata and valid package manifests', () => {
+      expect(resolveVersion('1.2.3', '/missing', '/missing')).toBe('1.2.3');
+      const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'searxng-version-'));
+      fs.writeFileSync(
+        path.join(directory, 'package.json'),
+        JSON.stringify({ version: ' 2.3.4 ' })
+      );
+      expect(resolveVersion('', directory, '/missing')).toBe('2.3.4');
+      fs.rmSync(directory, { recursive: true });
+    });
+
+    it('skips invalid candidates and returns a development fallback', () => {
+      const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'searxng-version-'));
+      fs.writeFileSync(path.join(directory, 'package.json'), '{');
+      expect(resolveVersion('', directory, path.join(directory, 'missing'))).toBe('0.0.0-dev');
+      fs.writeFileSync(path.join(directory, 'package.json'), JSON.stringify({ version: ' ' }));
+      expect(resolveVersion('', directory, path.join(directory, 'missing'))).toBe('0.0.0-dev');
+      fs.rmSync(directory, { recursive: true });
     });
   });
 
@@ -225,7 +318,7 @@ describe('Config Module', () => {
 
     it('should change primary color when theme changes', () => {
       setTheme('default');
-      const defaultPrimary = getThemeColor('primary');
+      getThemeColor('primary');
       setTheme('forest');
       const forestPrimary = getThemeColor('primary');
       expect(typeof forestPrimary).toBe('string');
@@ -233,7 +326,7 @@ describe('Config Module', () => {
 
     it('should not change for invalid theme', () => {
       setTheme('default');
-      setTheme('invalid-theme' as 'default');
+      setTheme('invalid-theme' as never);
       expect(getTheme()).toBe('default');
     });
 
@@ -349,8 +442,14 @@ describe('Config Module', () => {
     });
 
     it('should return null for invalid URL', () => {
+      expect(normalizeSearxngUrl(null)).toBeNull();
+      expect(normalizeSearxngUrl('   ')).toBeNull();
       expect(normalizeSearxngUrl('')).toBeNull();
       expect(normalizeSearxngUrl('://invalid')).toBeNull();
+    });
+
+    it('should preserve HTTPS URLs', () => {
+      expect(normalizeSearxngUrl('https://example.com/')).toBe('https://example.com');
     });
   });
 });

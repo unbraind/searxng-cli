@@ -1,3 +1,6 @@
+/**
+ * Small synchronous GitHub CLI adapter used by setup onboarding to inspect authentication and repository star state.
+ */
 import { execSync } from 'child_process';
 
 export const REPO = 'unbraind/searxng-cli';
@@ -24,8 +27,13 @@ export function hasStarredRepo(): boolean {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     });
-    const { viewerHasStarred } = JSON.parse(output);
-    return !!viewerHasStarred;
+    const parsed: unknown = JSON.parse(output);
+    return Boolean(
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'viewerHasStarred' in parsed &&
+      (parsed as { viewerHasStarred?: unknown }).viewerHasStarred
+    );
   } catch {
     return false;
   }

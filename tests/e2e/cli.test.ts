@@ -297,7 +297,7 @@ const runAndParseJson = async (args: string[], attempts = 2): Promise<Record<str
     const output = await runCLIStdout(args);
     try {
       return JSON.parse(output) as Record<string, unknown>;
-    } catch (error) {
+    } catch {
       const payload = extractFirstJsonObject(output);
       try {
         return JSON.parse(payload) as Record<string, unknown>;
@@ -620,7 +620,7 @@ describe('E2E CLI Tests', () => {
     'should respect --limit',
     async () => {
       const output = await runCLI(parseArgs('"test search" --limit 2 --toon'));
-      const match = output.match(/n:\s*(\d+)/);
+      const match = /n:\s*(\d+)/.exec(output);
       expect(match).not.toBeNull();
       if (match) {
         expect(parseInt(match[1], 10)).toBeLessThanOrEqual(2);
@@ -766,7 +766,7 @@ describe('E2E CLI Tests', () => {
   );
 
   it(
-    'should force agent mode searches to the local SearXNG URL',
+    'should keep agent mode searches on the configured SearXNG URL',
     async () => {
       await runCLI(['--set-url', 'https://example.com']);
       try {
@@ -774,7 +774,7 @@ describe('E2E CLI Tests', () => {
           parseArgs('"agent local route test" --agent --verbose --limit 1')
         );
         const combined = `${output.stdout}\n${output.stderr}`;
-        expect(combined).toContain(`URL: ${DEFAULT_LOCAL_URL}/search?`);
+        expect(combined).toContain('URL: https://example.com/search?');
       } finally {
         await runCLI(['--set-url', expectedLocalUrl]);
       }
@@ -783,7 +783,7 @@ describe('E2E CLI Tests', () => {
   );
 
   it(
-    'should force multi-search agent mode searches to the local SearXNG URL',
+    'should keep multi-search agent mode searches on the configured SearXNG URL',
     async () => {
       await runCLI(['--set-url', 'https://example.com']);
       try {
@@ -797,7 +797,7 @@ describe('E2E CLI Tests', () => {
           '--no-cache',
         ]);
         const combined = `${output.stdout}\n${output.stderr}`;
-        expect(combined).toContain(`URL: ${DEFAULT_LOCAL_URL}/search?`);
+        expect(combined).toContain('URL: https://example.com/search?');
       } finally {
         await runCLI(['--set-url', expectedLocalUrl]);
       }
@@ -1222,7 +1222,7 @@ describe('E2E CLI Tests', () => {
       expect(typeof data.success).toBe('boolean');
       expect(Array.isArray(data.checks)).toBe(true);
       expect(typeof data.total).toBe('number');
-      const firstCheck = (data.checks as Array<Record<string, unknown>>)[0];
+      const firstCheck = (data.checks as Record<string, unknown>[])[0];
       expect(typeof firstCheck?.id).toBe('string');
       expect(typeof firstCheck?.ok).toBe('boolean');
       expect(typeof firstCheck?.pass).toBe('boolean');
@@ -1238,7 +1238,7 @@ describe('E2E CLI Tests', () => {
       expect(data.format).toBe('format-verification');
       expect(data.success).toBe(true);
       expect(Array.isArray(data.formats)).toBe(true);
-      const formats = data.formats as Array<{ format: string; valid: boolean }>;
+      const formats = data.formats as { format: string; valid: boolean }[];
       expect(formats.length).toBeGreaterThanOrEqual(14);
       expect(formats.every((entry) => entry.valid)).toBe(true);
     },

@@ -96,7 +96,7 @@ Location: `~/.searxng-cli/config.json`
 | `searxngUrl` | string | "http://localhost:8080" | SearXNG instance URL |
 | `defaultLimit` | number | 10 | Default number of results |
 | `defaultSearxngParams` | object | `{}` | Default passthrough query params sent to SearXNG |
-| `forceLocalAgentRouting` | boolean | `true` | Force `--agent`/`--agent-json`/`--agent-ci` to local SearXNG URL |
+| `forceLocalAgentRouting` | boolean | `true` | Force `--agent`/`--agent-json`/`--agent-ci` to the configured `searxngUrl` (including LAN URLs) |
 | `defaultFormat` | string | "toon" | Default output format |
 | `defaultTimeout` | number | 15000 | Request timeout (ms) |
 | `autoUnescape` | boolean | true | Auto-unescape HTML entities |
@@ -158,6 +158,14 @@ searxng --theme ocean "query"
 ```
 
 ## Adaptive Settings
+
+### JSON-disabled instances
+
+SearXNG administrators may disable JSON, CSV, or RSS API formats. A request for a disabled format
+correctly receives HTTP 403 from SearXNG. The CLI requests JSON for its typed transport first and,
+on that specific response, automatically retries as HTML and maps results, suggestions, answers,
+corrections, pagination, and engine errors into the same `SearchResponse` contract. CLI output format
+selection remains independent: TOON is still the default even when the upstream transport was HTML.
 
 SearXNG CLI automatically adjusts settings based on instance type:
 

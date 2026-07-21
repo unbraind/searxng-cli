@@ -12,18 +12,18 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
       include: ['src/**/*.ts'],
-      exclude: ['src/searxng-cli.ts', 'src/types/**'],
-      all: true,
+      exclude: ['src/types/**'],
       thresholds: {
-        statements: 70,
-        branches: 58,
-        functions: 82,
-        lines: 72,
+        100: true,
+        perFile: true,
       },
     },
     testTimeout: 30000,
     hookTimeout: 10000,
-    fileParallelism: true,
+    // Several suites intentionally mutate process-wide CLI configuration and network adapters.
+    // Serial files keep those acceptance surfaces isolated and prevent worker teardown races.
+    fileParallelism: false,
+    maxWorkers: 1,
     deps: {
       interopDefault: true,
     },

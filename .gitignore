@@ -10,6 +10,7 @@ dist/
 # Coverage
 coverage/
 coverage.txt
+report/
 
 # IDE
 .idea/
@@ -47,4 +48,5 @@ backup/
 .agents/pm/runtime/
 .agents/pm/search/
 .agents/pm/locks/
+.agents/pm/checkpoints/
 # pm-cli:runtime-cache:end

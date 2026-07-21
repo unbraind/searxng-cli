@@ -6,7 +6,7 @@ status: closed
 priority: 1
 tags[4]: package,release,tests,verification
 created_at: "2026-07-16T16:58:06.353Z"
-updated_at: "2026-07-16T17:24:08.415Z"
+updated_at: "2026-07-21T22:32:09.353Z"
 deadline: "2026-07-21T16:58:06.353Z"
 closed_at: "2026-07-16T17:22:15.881Z"
 author: codex-root
@@ -14,6 +14,7 @@ estimated_minutes: 90
 acceptance_criteria: All documented verification commands pass on the final local head; Packed package works from an isolated temporary consumer
 definition_of_ready: "Dependency, CI, and audit changes are complete."
 parent: searx-recovery-plan
+reviewer: repository-owner
 risk: medium
 confidence: 95
 sprint: 2026-07-recovery

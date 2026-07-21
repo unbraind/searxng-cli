@@ -26,7 +26,7 @@ What this validates:
 ## Environment Overrides
 
 ```bash
-SEARXNG_URL=http://localhost:8080 bun run test:e2e:searxng
+SEARXNG_URL=http://192.168.1.183:38522 bun run test:e2e:searxng
 CMD_TIMEOUT=60s bun run test:e2e:searxng
 E2E_QUERY="release verification query" bun run test:e2e:searxng
 ```
@@ -37,6 +37,11 @@ Supported env vars:
 - `CMD_TIMEOUT`: per-command timeout (default: `120s`)
 - `TIMEOUT_BIN`: timeout command name (default: `timeout`)
 - `E2E_QUERY`: query string used for smoke checks
+
+The live gate is capability-aware: it requests JSON first, then automatically retries the same
+canonical query as HTML when an instance administrator has disabled JSON output. Both response
+paths are normalized into the same typed result and formatter contracts. A healthy search with zero
+results remains valid; `unresponsive_engines` retains the upstream failure evidence for diagnostics.
 
 ## Release Gate
 

@@ -51,7 +51,9 @@ describe('GitHub star prompt flow', () => {
       question: vi.fn((_: string, cb: (answer: string) => void) => cb('')),
       close: vi.fn(),
     };
-    vi.mocked(readline.createInterface).mockReturnValue(mockInterface as any);
+    vi.mocked(readline.createInterface).mockReturnValue(
+      mockInterface as unknown as ReturnType<typeof readline.createInterface>
+    );
 
     vi.mocked(github.isGhAuthenticated).mockReturnValue(true);
     vi.mocked(github.hasStarredRepo).mockReturnValue(false);
@@ -106,7 +108,9 @@ describe('GitHub star prompt flow', () => {
       question: vi.fn((_: string, cb: (answer: string) => void) => cb('n')),
       close: vi.fn(),
     };
-    vi.mocked(readline.createInterface).mockReturnValue(mockInterface as any);
+    vi.mocked(readline.createInterface).mockReturnValue(
+      mockInterface as unknown as ReturnType<typeof readline.createInterface>
+    );
 
     vi.mocked(github.isGhAuthenticated).mockReturnValue(true);
     vi.mocked(github.hasStarredRepo).mockReturnValue(false);
@@ -123,7 +127,9 @@ describe('GitHub star prompt flow', () => {
       question: vi.fn((_: string, cb: (answer: string) => void) => cb('y')),
       close: vi.fn(),
     };
-    vi.mocked(readline.createInterface).mockReturnValue(mockInterface as any);
+    vi.mocked(readline.createInterface).mockReturnValue(
+      mockInterface as unknown as ReturnType<typeof readline.createInterface>
+    );
 
     vi.mocked(github.isGhAuthenticated).mockReturnValue(true);
     vi.mocked(github.hasStarredRepo).mockReturnValue(false);
@@ -162,5 +168,19 @@ describe('GitHub star prompt flow', () => {
 
     expect(readline.createInterface).not.toHaveBeenCalled();
     expect(loadSettings().githubStarPrompt).toBeNull();
+  });
+
+  it('does not close a caller-owned readline interface', async () => {
+    const mockInterface = {
+      question: vi.fn((_: string, cb: (answer: string) => void) => cb('n')),
+      close: vi.fn(),
+    };
+    vi.mocked(github.isGhAuthenticated).mockReturnValue(true);
+    vi.mocked(github.hasStarredRepo).mockReturnValue(false);
+    await promptForStar(
+      mockInterface as unknown as ReturnType<typeof readline.createInterface>,
+      'setup'
+    );
+    expect(mockInterface.close).not.toHaveBeenCalled();
   });
 });

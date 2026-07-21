@@ -6,7 +6,7 @@ status: closed
 priority: 1
 tags[5]: audit,docs,packaging,quality,security
 created_at: "2026-07-16T16:58:05.702Z"
-updated_at: "2026-07-16T17:19:01.135Z"
+updated_at: "2026-07-21T22:32:09.366Z"
 deadline: "2026-07-20T16:58:05.702Z"
 closed_at: "2026-07-16T17:19:00.621Z"
 author: codex-root
@@ -14,6 +14,7 @@ estimated_minutes: 180
 acceptance_criteria: Actionable source/security/documentation findings are fixed or explicitly tracked; Secret history scan and package content inspection pass
 definition_of_ready: Repository file inventory and high-risk pattern scan collected.
 parent: searx-recovery-plan
+reviewer: repository-owner
 risk: high
 confidence: 80
 sprint: 2026-07-recovery

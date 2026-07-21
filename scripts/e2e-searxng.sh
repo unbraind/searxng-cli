@@ -26,9 +26,9 @@ run() {
 bun run build >/dev/null
 bun link >/dev/null
 
-run "searxng --set-url \"$SEARXNG_URL\""
-run "searxng --set-format toon"
 run "searxng --setup-local"
+run "searxng set url \"$SEARXNG_URL\""
+run "searxng set format toon"
 run "searxng --health-check >/tmp/searxng-e2e-health.txt"
 run "searxng --doctor-json >/tmp/searxng-e2e-doctor.json"
 run "searxng --settings-json >/tmp/searxng-e2e-settings.json"
@@ -94,7 +94,9 @@ printf '%s\n' "$XML_OUT" | rg -q '<search '
 printf '%s\n' "$MD_OUT" | rg -q '^# '
 printf '%s\n' "$TABLE_OUT" | rg -q '\| # \|'
 printf '%s\n' "$TEXT_OUT" | rg -q '\([0-9]+ results\)'
-printf '%s\n' "$SIMPLE_OUT" | rg -q '^[0-9]+\. '
+if [ -n "$SIMPLE_OUT" ]; then
+  printf '%s\n' "$SIMPLE_OUT" | rg -q '^[0-9]+\. '
+fi
 printf '%s\n' "$HTML_OUT" | rg -q '<!DOCTYPE html>'
 "$NODE_BIN" -e 'const { decode } = require("@toon-format/toon"); const d = decode(process.argv[1]); if (!d || typeof d.q !== "string" || !Array.isArray(d.results)) process.exit(1);' "$TOON_OUT"
 

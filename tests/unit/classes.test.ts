@@ -72,6 +72,7 @@ describe('CircuitBreaker', () => {
       await new Promise((resolve) => setTimeout(resolve, 60));
       expect(fastBreaker.canExecute()).toBe(true);
       expect(fastBreaker.getStatus().state).toBe('HALF_OPEN');
+      expect(fastBreaker.canExecute()).toBe(true);
     });
   });
 
@@ -107,6 +108,18 @@ describe('RequestDeduplicator', () => {
       const result = deduplicator.dedupe('http://example.com', {});
       expect(result).toBe(promise);
     });
+
+    it('should stop deduplicating after the configured window', () => {
+      vi.spyOn(Date, 'now').mockReturnValueOnce(100).mockReturnValueOnce(201);
+      deduplicator.set(
+        'http://example.com',
+        { headers: { accept: 'text/plain' } },
+        Promise.resolve('ok')
+      );
+      expect(
+        deduplicator.dedupe('http://example.com', { headers: { accept: 'text/plain' } })
+      ).toBeNull();
+    });
   });
 
   describe('clear', () => {
@@ -116,6 +129,26 @@ describe('RequestDeduplicator', () => {
       deduplicator.clear();
       expect(deduplicator.size).toBe(0);
     });
+  });
+
+  it('should remove rejected requests after the deduplication window', async () => {
+    vi.useFakeTimers();
+    const rejected = Promise.reject(new Error('request failed'));
+    deduplicator.set('http://example.com/rejected', {}, rejected);
+    await expect(rejected).rejects.toThrow('request failed');
+    await vi.runAllTimersAsync();
+    expect(deduplicator.size).toBe(0);
+    vi.useRealTimers();
+  });
+
+  it('should remove fulfilled requests after the deduplication window', async () => {
+    vi.useFakeTimers();
+    const fulfilled = Promise.resolve('done');
+    deduplicator.set('http://example.com/fulfilled', {}, fulfilled);
+    await fulfilled;
+    await vi.runAllTimersAsync();
+    expect(deduplicator.size).toBe(0);
+    vi.useRealTimers();
   });
 });
 
@@ -157,6 +190,15 @@ describe('PerformanceMetrics', () => {
   });
 
   describe('getStats', () => {
+    it('should report stable zero-value rates before any request', () => {
+      expect(metrics.getStats()).toMatchObject({
+        avgLatency: 0,
+        minLatency: 0,
+        successRate: '0%',
+        cacheHitRate: '0%',
+      });
+    });
+
     it('should calculate success rate', () => {
       metrics.recordRequest(true, 100);
       metrics.recordRequest(true, 100);
@@ -217,6 +259,22 @@ describe('LRUCache', () => {
       cache.set('key4', 'value4');
       expect(cache.get('key1')).toBe('value1');
       expect(cache.get('key2')).toBeNull();
+    });
+
+    it('should update existing entries without evicting and allow an unlimited cache', () => {
+      cache.set('key1', 'first');
+      cache.set('key1', 'second');
+      expect(cache.get('key1')).toBe('second');
+
+      const unlimited = new LRUCache<string>(0);
+      for (let index = 0; index < 101; index++) unlimited.set(String(index), String(index));
+      expect(unlimited.size).toBe(101);
+    });
+
+    it('should treat an explicitly stored undefined value as absent', () => {
+      const undefinedCache = new LRUCache<string | undefined>();
+      undefinedCache.set('undefined', undefined);
+      expect(undefinedCache.get('undefined')).toBeNull();
     });
   });
 
@@ -288,6 +346,13 @@ describe('SmartDeduplicator', () => {
   });
 
   describe('isDuplicate', () => {
+    it('should hash link fallbacks, missing values, case-insensitively, and truncate titles', () => {
+      expect(deduplicator.hashResult({ link: 'HTTPS://EXAMPLE.COM', title: 'A'.repeat(120) })).toBe(
+        `https://example.com:${'a'.repeat(100)}`
+      );
+      expect(deduplicator.hashResult({})).toBe(':');
+    });
+
     it('should return false for new results', () => {
       expect(deduplicator.isDuplicate({ url: 'http://example.com/1', title: 'Test' })).toBe(false);
     });
@@ -323,6 +388,12 @@ describe('SmartDeduplicator', () => {
       expect(deduplicator.size).toBe(0);
 
       global.Date.now = realDateNow;
+    });
+
+    it('should retain recent items', () => {
+      deduplicator.isDuplicate({ url: 'http://example.com/recent', title: 'Recent' });
+      deduplicator.cleanup();
+      expect(deduplicator.size).toBe(1);
     });
   });
 

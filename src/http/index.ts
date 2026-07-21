@@ -1,9 +1,11 @@
+/**
+ * Resilient HTTP transport with retry, rate limiting, compression, health tracking, and connection lifecycle management.
+ */
 import * as http from 'http';
 import * as https from 'https';
 import { URL } from 'url';
 import * as zlib from 'zlib';
 import {
-  SEARXNG_URL,
   getSearxngUrl,
   VERSION,
   IS_LOCAL_INSTANCE,
@@ -27,29 +29,40 @@ import type { ConnectionHealth, SearchOptions } from '../types';
 
 const compressionEnabled = ENABLE_COMPRESSION && !process.env.NO_COMPRESSION;
 
-export async function compressData(data: string): Promise<string> {
-  if (!compressionEnabled || typeof data !== 'string') return data;
+/**
+ *
+ * @param data
+ * @param enabled
+ * @param deflate
+ */
+export async function compressData(
+  data: string,
+  enabled = compressionEnabled,
+  deflate: (input: string, callback: zlib.CompressCallback) => void = zlib.deflate
+): Promise<string> {
+  if (!enabled || typeof data !== 'string') return data;
   return new Promise((resolve) => {
-    zlib.deflate(data, (err, buffer) => {
+    deflate(data, (err, buffer) => {
       if (err) resolve(data);
       else resolve(buffer.toString('base64'));
     });
   });
 }
 
-export async function decompressData(data: string): Promise<string> {
-  if (!compressionEnabled || typeof data !== 'string') return data;
-  try {
-    const buffer = Buffer.from(data, 'base64');
-    return new Promise((resolve) => {
-      zlib.inflate(buffer, (err, inflated) => {
-        if (err) resolve(data);
-        else resolve(inflated.toString('utf8'));
-      });
+/**
+ *
+ * @param data
+ * @param enabled
+ */
+export async function decompressData(data: string, enabled = compressionEnabled): Promise<string> {
+  if (!enabled || typeof data !== 'string') return data;
+  const buffer = Buffer.from(data, 'base64');
+  return new Promise((resolve) => {
+    zlib.inflate(buffer, (err, inflated) => {
+      if (err) resolve(data);
+      else resolve(inflated.toString('utf8'));
     });
-  } catch {
-    return data;
-  }
+  });
 }
 
 export const httpAgent = new http.Agent({
@@ -67,7 +80,7 @@ export const httpsAgent = new https.Agent({
   rejectUnauthorized: true,
 });
 
-let connectionHealth: ConnectionHealth = {
+const connectionHealth: ConnectionHealth = {
   healthy: true,
   lastCheck: 0,
   latency: 0,
@@ -78,6 +91,10 @@ let connectionHealth: ConnectionHealth = {
   consecutiveFailures: 0,
 };
 
+/**
+ *
+ * @param latency
+ */
 export function updateLatencyStats(latency: number): void {
   connectionHealth.totalRequests++;
   connectionHealth.lastTenLatencies.push(latency);
@@ -88,30 +105,63 @@ export function updateLatencyStats(latency: number): void {
   connectionHealth.avgLatency = Math.round(sum / connectionHealth.lastTenLatencies.length);
 }
 
+/**
+ *
+ */
 export function resetHealthStats(): void {
   connectionHealth.consecutiveFailures = 0;
   connectionHealth.errorCount = 0;
 }
 
+/** Reset all connection-health observations while preserving the shared state object. */
+export function resetConnectionHealth(): void {
+  Object.assign(connectionHealth, {
+    healthy: true,
+    lastCheck: 0,
+    latency: 0,
+    errorCount: 0,
+    totalRequests: 0,
+    avgLatency: 0,
+    lastTenLatencies: [],
+    consecutiveFailures: 0,
+  });
+}
+
+/**
+ *
+ */
 export function incrementFailureCount(): void {
   connectionHealth.consecutiveFailures++;
   connectionHealth.errorCount++;
 }
 
+/**
+ *
+ */
 export function isHealthy(): boolean {
   return (
     connectionHealth.healthy && connectionHealth.consecutiveFailures < CIRCUIT_BREAKER_THRESHOLD
   );
 }
 
-export function getAdaptiveTimeout(): number {
-  if (!ADAPTIVE_TIMEOUT_ENABLED || !IS_LOCAL_INSTANCE) return DEFAULT_TIMEOUT;
+/**
+ * @param adaptiveEnabled
+ * @param localInstance
+ */
+export function getAdaptiveTimeout(
+  adaptiveEnabled = ADAPTIVE_TIMEOUT_ENABLED,
+  localInstance = IS_LOCAL_INSTANCE
+): number {
+  if (!adaptiveEnabled || !localInstance) return DEFAULT_TIMEOUT;
   const avgLatency = connectionHealth.avgLatency || 500;
   const multiplier = connectionHealth.consecutiveFailures > 3 ? 2 : 1;
   const baseTimeout = Math.max(avgLatency * 8, 5000);
   return Math.min(baseTimeout * multiplier, 30000);
 }
 
+/**
+ *
+ */
 export function getConnectionHealth(): ConnectionHealth {
   return { ...connectionHealth };
 }
@@ -123,11 +173,19 @@ export const performanceMetrics = new PerformanceMetrics();
 let lastRequestTime = 0;
 let requestCount = 0;
 
+/**
+ *
+ */
 export interface FetchOptions extends RequestInit {
   timeout?: number;
   agent?: http.Agent | https.Agent;
 }
 
+/**
+ *
+ * @param url
+ * @param options
+ */
 export async function rateLimitedFetch(
   url: string | URL,
   options: FetchOptions = {}
@@ -160,6 +218,9 @@ export async function rateLimitedFetch(
   return fetch(url.toString(), fetchOptions);
 }
 
+/**
+ *
+ */
 export async function checkConnectionHealth(): Promise<boolean> {
   const now = Date.now();
   if (now - connectionHealth.lastCheck < HEALTH_CHECK_INTERVAL) {
@@ -169,7 +230,9 @@ export async function checkConnectionHealth(): Promise<boolean> {
   const start = Date.now();
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), CONNECTION_TIMEOUT);
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, CONNECTION_TIMEOUT);
     const response = await rateLimitedFetch(`${getSearxngUrl()}/config`, {
       signal: controller.signal,
       headers: { 'User-Agent': `searxng-cli/${VERSION}` },
@@ -192,35 +255,47 @@ export async function checkConnectionHealth(): Promise<boolean> {
   }
 }
 
-export async function warmupConnection(): Promise<void> {
-  if (!ENABLE_WARMUP || !IS_LOCAL_INSTANCE) return;
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), WARMUP_TIMEOUT);
-    const endpoints = ['/config', '/search?q=warmup&format=json'];
-    const baseUrl = getSearxngUrl();
-    await Promise.allSettled(
-      endpoints.map((ep) =>
-        rateLimitedFetch(`${baseUrl}${ep}`, {
-          signal: controller.signal,
-          agent: httpAgent,
-          headers: { 'User-Agent': `searxng-cli/${VERSION}` },
-        }).catch(() => {
-          // Ignore warmup errors
-        })
-      )
-    );
-    clearTimeout(timeoutId);
-  } catch {
-    // Ignore warmup errors
-  }
+/**
+ * @param enabled
+ * @param localInstance
+ */
+export async function warmupConnection(
+  enabled = ENABLE_WARMUP,
+  localInstance = IS_LOCAL_INSTANCE
+): Promise<void> {
+  if (!enabled || !localInstance) return;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(controller.abort.bind(controller), WARMUP_TIMEOUT);
+  const endpoints = ['/config', '/search?q=warmup&format=json'];
+  const baseUrl = getSearxngUrl();
+  await Promise.allSettled(
+    endpoints.map((ep) =>
+      rateLimitedFetch(`${baseUrl}${ep}`, {
+        signal: controller.signal,
+        agent: httpAgent,
+        headers: { 'User-Agent': `searxng-cli/${VERSION}` },
+      }).catch(() => {
+        // Ignore warmup errors
+      })
+    )
+  );
+  clearTimeout(timeoutId);
 }
 
+/**
+ *
+ * @param url
+ * @param options
+ * @param retries
+ * @param attempt
+ * @param localInstance
+ */
 export async function fetchWithRetry(
   url: URL,
   options: SearchOptions,
   retries = MAX_RETRIES,
-  attempt = 0
+  attempt = 0,
+  localInstance = IS_LOCAL_INSTANCE
 ): Promise<Response> {
   const adaptiveTimeout = getAdaptiveTimeout();
   const requestedTimeout = options.timeout || DEFAULT_TIMEOUT;
@@ -228,7 +303,7 @@ export async function fetchWithRetry(
     ? Math.max(requestedTimeout, adaptiveTimeout)
     : adaptiveTimeout;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), effectiveTimeout);
+  const timeoutId = setTimeout(controller.abort.bind(controller), effectiveTimeout);
   const startTime = Date.now();
   try {
     const response = await rateLimitedFetch(url.toString(), {
@@ -263,7 +338,7 @@ export async function fetchWithRetry(
         errMsg.includes('ECONNREFUSED') ||
         errMsg.includes('timeout'));
     if (shouldRetry) {
-      const baseDelay = IS_LOCAL_INSTANCE ? RETRY_DELAY / 5 : RETRY_DELAY;
+      const baseDelay = localInstance ? RETRY_DELAY / 5 : RETRY_DELAY;
       const backoffDelay = calculateBackoff(attempt, baseDelay);
       if (options.verbose || !options.silent) {
         console.error(
@@ -274,21 +349,30 @@ export async function fetchWithRetry(
         );
       }
       await sleep(backoffDelay);
-      return fetchWithRetry(url, options, retries - 1, attempt + 1);
+      return fetchWithRetry(url, options, retries - 1, attempt + 1, localInstance);
     }
     throw error;
   }
 }
 
+/**
+ *
+ */
 export function destroyAgents(): void {
   httpAgent.destroy();
   httpsAgent.destroy();
 }
 
+/**
+ *
+ */
 export function getRequestCount(): number {
   return requestCount;
 }
 
+/**
+ *
+ */
 export function getLastRequestTime(): number {
   return lastRequestTime;
 }

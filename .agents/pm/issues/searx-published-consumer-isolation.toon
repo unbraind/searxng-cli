@@ -6,7 +6,7 @@ status: closed
 priority: 0
 tags[5]: bun,npm,recovery,regression,release
 created_at: "2026-07-21T18:34:27.322Z"
-updated_at: "2026-07-21T18:35:55.119Z"
+updated_at: "2026-07-21T22:32:32.425Z"
 deadline: "2026-07-22T18:34:29.978Z"
 closed_at: "2026-07-21T18:35:52.713Z"
 author: codex-release-agent
@@ -30,6 +30,8 @@ affected_version: v2026.7.21 release verification
 component: release
 regression: true
 customer_impact: Publication succeeds but workflow recovery cannot create the GitHub Release until exact-version verification is isolated.
+comments[1]{created_at,author,text}:
+  "2026-07-21T22:32:32.412Z",codex-root,"Historical delivery evidence is preserved by the item title, parent lineage, release metadata, generated changelog, and repository verification gates."
 files[3]{path,scope,note}:
   .github/workflows/release.yml,project,Run recovery-compatible exact-version checks under runner temporary storage
   scripts/release/verify-published-release.mjs,project,Isolate local exact-version verification from the source checkout
