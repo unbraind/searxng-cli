@@ -1,0 +1,40 @@
+id: searx-auto-release-clean-tree
+title: Keep Auto Release runner output outside the checkout
+description: Prevent workflow output capture from violating the release pipeline clean-worktree precondition.
+type: Issue
+status: closed
+priority: 0
+tags[3]: github-actions,regression,release
+created_at: "2026-07-21T18:18:55.364Z"
+updated_at: "2026-07-21T18:20:43.722Z"
+deadline: "2026-07-22T18:18:56.958Z"
+closed_at: "2026-07-21T18:19:28.493Z"
+author: codex-release-agent
+estimated_minutes: 20
+acceptance_criteria: Dry-run dispatch passes the clean-worktree guard; Release contract test prevents checkout-local output capture; No tag or package is created by dry-run mode
+definition_of_ready: Failed protected-environment run identifies the checkout-local output file as the only precondition violation.
+parent: searx-repo-health-2026
+reviewer: repository-owner
+risk: medium
+confidence: 100
+sprint: 2026-07-release-automation
+release: next
+reporter: codex-release-agent
+severity: high
+environment: GitHub Actions Auto Release runner
+repro_steps: Dispatch Auto Release with push=false and dry_run=true; the release pipeline exits at its initial clean-worktree guard.
+resolution: "Workflow output capture now occurs outside the checkout, preserving the release pipeline clean-worktree precondition."
+expected_result: The protected Auto Release dry run reaches and completes the full release pipeline.
+actual_result: "Local lint, six release contracts, and containerized Actionlint pass; protected workflow verification will run after merge."
+affected_version: auto-release initial deployment
+component: release
+regression: true
+customer_impact: Automated releases cannot proceed until the runner output path is moved.
+files[2]{path,scope,note}:
+  .github/workflows/auto-release.yml,project,Move release output capture to runner temporary storage
+  tests/unit/release-automation.test.ts,project,Prevent checkout-local tee regression
+tests[2]{command,scope,timeout_seconds}:
+  "bun run test:release",project,180
+  "docker run --rm -v \"$PWD:/repo:ro\" -w /repo rhysd/actionlint:latest -color .github/workflows/auto-release.yml",project,120
+close_reason: "Moved Auto Release output capture to RUNNER_TEMP and added a regression assertion; lint, six release contract tests, and containerized Actionlint pass."
+body: The protected-environment dry run showed that the shell opened release-result.json inside the checkout before the pipeline checked git status. Store the capture under RUNNER_TEMP instead.
