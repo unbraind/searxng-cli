@@ -37,7 +37,9 @@ describe('release automation', () => {
   it('keeps the legacy changelog preamble in pm-generated output', () => {
     const changelog = readFileSync('CHANGELOG.md', 'utf8');
     const generator = readFileSync('scripts/release/generate-changelog.mjs', 'utf8');
-    expect(changelog).toContain('All notable changes to this project will be documented in this file.');
+    expect(changelog).toContain(
+      'All notable changes to this project will be documented in this file.'
+    );
     expect(changelog).toContain('https://keepachangelog.com/en/1.0.0/');
     expect(generator).toContain('pm');
     expect(generator).toContain('baseline.preamble');
