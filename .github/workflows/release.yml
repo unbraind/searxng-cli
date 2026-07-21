@@ -51,7 +51,20 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
       - run: bun audit
-      - run: bun run release:dry-run
+      - name: Run tag release gates
+        run: |
+          set -euo pipefail
+          # The preceding step validates the immutable tag/package pair. The
+          # pre-tag version:check intentionally predicts the next version and
+          # therefore must not run after this tag already exists.
+          bun run version:audit
+          bun run lint
+          bun run secrets:history
+          bun run clean
+          bun run build
+          bun run test:unit
+          bun run smoke:package
+          npm pack --dry-run >/dev/null
       - run: bun run changelog:pm:check
       - run: bun run changelog:preservation:check
       - run: npm pack --dry-run
