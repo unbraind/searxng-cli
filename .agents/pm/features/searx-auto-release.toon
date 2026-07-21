@@ -6,7 +6,7 @@ status: closed
 priority: 0
 tags[6]: automation,bun,changelog,github-actions,npm,release
 created_at: "2026-07-21T17:24:34.395Z"
-updated_at: "2026-07-21T17:43:33.569Z"
+updated_at: "2026-07-21T17:58:03.138Z"
 deadline: "2026-07-23T17:24:34.395Z"
 closed_at: "2026-07-21T17:43:32.728Z"
 author: codex-root
@@ -22,9 +22,10 @@ expected_result: Release-relevant changes automatically produce a verified calen
 actual_result: "Implementation, generated 40-item changelog, 31-entry preservation baseline, workflows, recovery docs, unit/E2E/package/audit/actionlint gates, and isolated full pipeline dry run all pass."
 dependencies[1]{id,kind,created_at,author,source_kind}:
   searx-security-modernization,related,"2026-07-21T17:24:34.395Z",codex-root,null
-comments[2]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-07-21T17:24:34.395Z",codex-root,Work is governed by the lossless changelog and exact-version publishing acceptance gates.
   "2026-07-21T17:43:31.591Z",codex-root,"Completed all three child tasks. Verified actionlint v1.7.12, five release contract tests, 622 unit tests, 60 E2E tests, zero audit findings, npx and bunx package smoke, and isolated clean-clone v2026.7.21 dry run."
+  "2026-07-21T17:58:03.137Z",codex-release-agent,"Delivery PR #37 is open at exact head 763a950. GitHub checks passed for Node quality, Bun quality, package smoke, secret scanning, semantic title, and CodeQL. The PR remains draft because protected release credentials require repository-owner configuration."
 notes[2]{created_at,author,text}:
   "2026-07-21T17:24:34.395Z",codex-root,Publish once to npm and verify the same package through both npm and Bun consumers.
   "2026-07-21T17:43:31.591Z",codex-root,Production scheduling becomes active when this workflow reaches master and the release environment contains RELEASE_PAT plus the existing NPM_TOKEN.
