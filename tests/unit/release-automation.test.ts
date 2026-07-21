@@ -54,6 +54,17 @@ describe('release automation', () => {
     expect(scanner).toContain('searxng-private-endpoint-findings-filtered.txt');
   });
 
+  it('runs coverage through Node even when Bun owns script execution', () => {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as {
+      scripts: Record<string, string>;
+    };
+    const coverageScript = readFileSync('scripts/test-coverage.sh', 'utf8');
+    expect(pkg.scripts['test:unit']).toBe('bash scripts/test-coverage.sh');
+    expect(coverageScript).toContain('node ./node_modules/vitest/vitest.mjs');
+    expect(coverageScript).not.toContain('/usr/bin/node');
+    expect(coverageScript).toContain('[[ "${PATH%%:*}" == /tmp/bun-node-* ]]');
+  });
+
   it('publishes once to npm and verifies npm and Bun consumers', () => {
     const workflow = readFileSync('.github/workflows/release.yml', 'utf8');
     expect(workflow).toContain('"v*.*.*"');

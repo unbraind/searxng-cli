@@ -15,7 +15,7 @@
     "start": "node dist/searxng-cli.js",
     "dev": "bun src/searxng-cli.ts",
     "test": "bash scripts/test-coverage.sh",
-    "test:unit": "vitest run tests/unit --coverage",
+    "test:unit": "bash scripts/test-coverage.sh",
     "test:e2e": "vitest run tests/e2e",
     "test:watch": "vitest",
     "test:coverage": "bash scripts/test-coverage.sh",
