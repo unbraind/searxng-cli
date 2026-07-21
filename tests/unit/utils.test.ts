@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   colorize,
   truncate,
@@ -51,6 +51,15 @@ describe('Utils Module', () => {
       process.stdout.isTTY = originalIsTTY;
       vi.unstubAllEnvs();
     });
+
+    it('should ignore unknown color names', () => {
+      vi.stubEnv('NO_COLOR', '');
+      const originalIsTTY = process.stdout.isTTY;
+      process.stdout.isTTY = true;
+      expect(colorize('test', 'unknown')).toContain('test');
+      process.stdout.isTTY = originalIsTTY;
+      vi.unstubAllEnvs();
+    });
   });
 
   describe('truncate', () => {
@@ -87,6 +96,14 @@ describe('Utils Module', () => {
     it('should normalize whitespace', () => {
       expect(stripHtml('Hello   World')).toBe('Hello World');
     });
+
+    it('should remove non-content elements', () => {
+      expect(
+        stripHtml(
+          '<main>Visible</main><script>hidden()</script><style>.hidden{}</style><template>x</template>'
+        )
+      ).toBe('Visible');
+    });
   });
 
   describe('unescapeHtml', () => {
@@ -104,6 +121,10 @@ describe('Utils Module', () => {
 
     it('should handle multiple entities', () => {
       expect(unescapeHtml('&lt;div&gt;Hello&amp;World&lt;/div&gt;')).toBe('<div>Hello&World</div>');
+    });
+
+    it('should preserve unknown entities', () => {
+      expect(unescapeHtml('&unknown;')).toBe('&unknown;');
     });
   });
 
@@ -185,6 +206,14 @@ describe('Utils Module', () => {
       const result = wrapText('short text', 100);
       expect(result).toBe('short text');
     });
+
+    it('should keep an overlong first word intact', () => {
+      expect(wrapText('overlong next', 3)).toBe('overlong\nnext');
+    });
+
+    it('should handle a whitespace-only string', () => {
+      expect(wrapText(' ', 3)).toBe('');
+    });
   });
 
   describe('highlightTerms', () => {
@@ -195,6 +224,11 @@ describe('Utils Module', () => {
     it('should highlight matching terms', () => {
       const result = highlightTerms('Hello World Test', 'world', 'yellow');
       expect(result).toContain('World');
+    });
+
+    it('should ignore short search terms and return empty input unchanged', () => {
+      expect(highlightTerms('', 'meaningful')).toBe('');
+      expect(highlightTerms('an example', 'an')).toBe('an example');
     });
   });
 
@@ -317,6 +351,10 @@ describe('Utils Module', () => {
     it('should serialize bigint values as strings', () => {
       const out = safeJsonStringify({ x: BigInt(42) });
       expect(JSON.parse(out)).toEqual({ x: '42' });
+    });
+
+    it('should fall back to JSON null when JSON.stringify returns undefined', () => {
+      expect(safeJsonStringify(undefined)).toBe('null');
     });
   });
 

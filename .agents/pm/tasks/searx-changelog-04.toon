@@ -6,14 +6,16 @@ status: closed
 priority: 2
 tags[4]: changed,changelog,historical,release-2026.3.6-3
 created_at: "2026-07-21T17:27:24.418Z"
-updated_at: "2026-07-21T17:44:47.215Z"
+updated_at: "2026-07-21T22:32:10.803Z"
 deadline: "2026-07-23T17:27:24.418Z"
 closed_at: "2026-07-21T17:27:24.418Z"
 assignee: codex-root
 author: codex-root
+estimated_minutes: 30
 acceptance_criteria: The exact original changelog statement is retained by pm-changelog generation.
 definition_of_ready: Original CHANGELOG.md statement and corresponding release tag inspected.
 parent: searx-changelog-migration
+reviewer: repository-owner
 risk: low
 confidence: 100
 sprint: historical-backfill

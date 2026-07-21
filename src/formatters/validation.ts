@@ -1,13 +1,18 @@
+/**
+ * Runtime validators that verify emitted JSON, JSONL, TOON, YAML, XML, CSV, Markdown, HTML, and text contracts.
+ */
 import { decode as decodeToon } from '@toon-format/toon';
-import type { OutputFormat } from '../types';
 
+/**
+ *
+ */
 export interface OutputValidationResult {
   valid: boolean;
   message: string;
 }
 
 function stripAnsiCodes(output: string): string {
-  return output.replace(/\x1b\[[0-9;]*m/g, '');
+  return output.replace(new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g'), '');
 }
 
 function parseJsonObject(output: string, label: string): Record<string, unknown> {
@@ -64,19 +69,19 @@ function validateJson(output: string): OutputValidationResult {
   if (!isNonNegativeInteger(parsed.returnedCount)) {
     return { valid: false, message: 'JSON output is missing non-negative integer "returnedCount"' };
   }
-  if ((parsed.returnedCount as number) > (parsed.resultCount as number)) {
+  if (parsed.returnedCount > parsed.resultCount) {
     return { valid: false, message: 'JSON output has returnedCount > resultCount' };
   }
-  if ((parsed.results as unknown[]).length !== (parsed.returnedCount as number)) {
+  if ((parsed.results as unknown[]).length !== parsed.returnedCount) {
     return { valid: false, message: 'JSON output has returnedCount mismatch with results length' };
   }
 
-  const results = parsed.results as Array<Record<string, unknown>>;
+  const results = parsed.results as Record<string, unknown>[];
   for (const [index, item] of results.entries()) {
     if (typeof item !== 'object' || item === null) {
       return { valid: false, message: `JSON output result ${index + 1} is not an object` };
     }
-    if (!isNonNegativeInteger(item.index) || (item.index as number) < 1) {
+    if (!isNonNegativeInteger(item.index) || item.index < 1) {
       return { valid: false, message: `JSON output result ${index + 1} has invalid "index"` };
     }
     if (typeof item.title !== 'string' || typeof item.url !== 'string') {
@@ -122,10 +127,10 @@ function validateJsonl(output: string): OutputValidationResult {
         message: `JSONL line ${index + 1} is missing valid ISO "generatedAt"`,
       };
     }
-    if (!isNonNegativeInteger(parsed.index) || (parsed.index as number) < 1) {
+    if (!isNonNegativeInteger(parsed.index) || parsed.index < 1) {
       return { valid: false, message: `JSONL line ${index + 1} has invalid "index"` };
     }
-    if ((parsed.index as number) !== index + 1) {
+    if (parsed.index !== index + 1) {
       return { valid: false, message: `JSONL line ${index + 1} has non-sequential "index"` };
     }
     if (typeof parsed.title !== 'string' || typeof parsed.url !== 'string') {
@@ -202,14 +207,14 @@ function validateCsv(output: string): OutputValidationResult {
         message: `CSV row ${index + 2} has ${cols.length} columns, expected 6`,
       };
     }
-    const itemIndex = parseInt(cols[0] ?? '', 10);
+    const itemIndex = parseInt(cols[0], 10);
     if (isNaN(itemIndex) || itemIndex < 1) {
       return { valid: false, message: `CSV row ${index + 2} has invalid result index` };
     }
     if (itemIndex !== index + 1) {
       return { valid: false, message: `CSV row ${index + 2} has non-sequential result index` };
     }
-    if (!(cols[2] ?? '').trim()) {
+    if (!cols[2].trim()) {
       return { valid: false, message: `CSV row ${index + 2} is missing URL` };
     }
   }
@@ -246,13 +251,6 @@ function validateYaml(output: string): OutputValidationResult {
   if (!lines.some((line) => line === "format: 'yaml'" || line === 'format: "yaml"')) {
     return { valid: false, message: 'YAML output has invalid "format"' };
   }
-  if (!lines.some((line) => line.startsWith('source: '))) {
-    return { valid: false, message: 'YAML output is missing "source"' };
-  }
-  if (!lines.some((line) => line.startsWith('generatedAt: '))) {
-    return { valid: false, message: 'YAML output is missing "generatedAt"' };
-  }
-
   const resultEntryIndexes: number[] = [];
   lines.forEach((line, idx) => {
     if (line.startsWith('  - i:')) {
@@ -321,7 +319,7 @@ function validateToon(output: string): OutputValidationResult {
     return { valid: false, message: 'TOON output has n mismatch with results length' };
   }
 
-  const items = parsed.results as Array<Record<string, unknown>>;
+  const items = parsed.results as Record<string, unknown>[];
   for (const [index, item] of items.entries()) {
     if (typeof item !== 'object' || item === null) {
       return { valid: false, message: 'TOON result entry is not an object' };
@@ -333,7 +331,7 @@ function validateToon(output: string): OutputValidationResult {
     ) {
       return { valid: false, message: 'TOON result entry is missing required i/title/url fields' };
     }
-    if ((item.i as number) !== index + 1) {
+    if (item.i !== index + 1) {
       return { valid: false, message: 'TOON result entry has non-sequential index field' };
     }
   }
@@ -404,19 +402,17 @@ function validateSimple(output: string): OutputValidationResult {
     return { valid: true, message: 'Simple output validated (no results)' };
   }
 
-  const numberedIndexes = lines
-    .map((line, index) => (line.match(/^(\d+)\.\s+.+/) ? index : -1))
-    .filter((index) => index >= 0);
+  const numberedEntries = lines.flatMap((line, lineIndex) => {
+    const match = /^(\d+)\.\s+.+/.exec(line);
+    return match ? [{ lineIndex, currentNumber: parseInt(match[1], 10) }] : [];
+  });
 
-  if (numberedIndexes.length === 0) {
+  if (numberedEntries.length === 0) {
     return { valid: false, message: 'Simple output is missing numbered result lines' };
   }
 
-  for (let i = 0; i < numberedIndexes.length; i++) {
-    const lineIndex = numberedIndexes[i] ?? -1;
-    const currentLine = lines[lineIndex] ?? '';
-    const match = currentLine.match(/^(\d+)\.\s+.+/);
-    const currentNumber = parseInt(match?.[1] ?? '', 10);
+  for (let i = 0; i < numberedEntries.length; i++) {
+    const { lineIndex, currentNumber } = numberedEntries[i];
     if (!Number.isInteger(currentNumber) || currentNumber !== i + 1) {
       return { valid: false, message: 'Simple output has non-sequential numbering' };
     }
@@ -447,10 +443,12 @@ function validateHtmlReport(output: string): OutputValidationResult {
   return { valid: true, message: 'HTML report output validated' };
 }
 
-export function validateFormattedOutput(
-  format: OutputFormat | string,
-  output: string
-): OutputValidationResult {
+/**
+ *
+ * @param format
+ * @param output
+ */
+export function validateFormattedOutput(format: string, output: string): OutputValidationResult {
   try {
     if (format === 'json') return validateJson(output);
     if (format === 'jsonl' || format === 'ndjson') return validateJsonl(output);

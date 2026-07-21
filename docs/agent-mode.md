@@ -17,7 +17,7 @@ The SearXNG CLI is highly optimized for integration into AI agents, Language Mod
    Features like `--pretty`, human-readable spinners, ANSI color codes, and extra newlines are aggressively suppressed to keep the payload machine-readable and concise.
 
 5. **Local Instance Routing Safety**
-   Agent mode forces searches through the local SearXNG instance `http://localhost:8080`, even if a different URL was previously configured. This protects autonomous agents from silently drifting to remote endpoints. This guard is controlled by persistent setting `forceLocalAgentRouting` (default `true`), and can be managed with:
+   Agent mode forces searches through the `searxngUrl` saved in `~/.searxng-cli/settings.json`, including private-LAN instances such as `http://192.168.1.183:38522`. It never replaces that configured route with a hard-coded localhost address. This protects autonomous agents from silently drifting to remote endpoints. The guard is controlled by persistent setting `forceLocalAgentRouting` (default `true`), and can be managed with:
    `searxng --set-force-local-agent-routing on|off`.
    For stricter policies, enable `forceLocalRouting` to pin all searches (not just `--agent`) to the configured `searxngUrl`:
    `searxng --set-force-local-routing on|off`.
@@ -33,6 +33,9 @@ The SearXNG CLI is highly optimized for integration into AI agents, Language Mod
 
 9. **Strict Exit Codes for Automation**
    Use `--strict` (or `--fail-on-empty`) to make automation deterministic: the CLI exits with status `2` when no results are returned, which is useful for CI/CD gates and retry logic in agent orchestration.
+
+10. **Capability-Aware Transport**
+    SearXNG returns HTTP 403 when its administrator disables JSON API output. Agent searches automatically retry as HTML and normalize the response into the same typed TOON/JSON contract, including upstream engine timeout evidence.
 
 ## Example Usage
 

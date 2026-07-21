@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { decode as decodeToon } from '@toon-format/toon';
 import {
   formatJsonOutput,
+  formatJsonlOutput,
   formatCsvOutput,
   formatMarkdownOutput,
   formatRawOutput,
@@ -11,86 +12,18 @@ import {
   formatSimpleOutput,
   formatQuickOutput,
   formatSummaryOutput,
+  formatCitationOutput,
+  formatResult,
 } from '@/formatters/index';
 import {
   formatToonOutput,
+  formatToonOutputFull,
   formatXmlOutput,
   formatHtmlReportOutput,
+  normalizeNumber,
 } from '@/formatters-advanced/index';
-import type { SearchResponse, SearchOptions } from '@/types/index';
-
-const createMockOptions = (overrides: Partial<SearchOptions> = {}): SearchOptions => ({
-  query: 'test query',
-  format: 'toon',
-  engines: null,
-  lang: null,
-  page: 1,
-  safeSearch: 0,
-  timeRange: null,
-  category: null,
-  limit: 10,
-  timeout: 15000,
-  verbose: false,
-  output: null,
-  unescape: true,
-  autoformat: true,
-  score: false,
-  interactive: false,
-  noCache: false,
-  retries: 2,
-  open: null,
-  stats: false,
-  raw: false,
-  filter: null,
-  batch: null,
-  bookmark: null,
-  export: null,
-  quick: false,
-  summary: false,
-  dedup: true,
-  sort: false,
-  group: null,
-  config: null,
-  showInfo: false,
-  runTest: false,
-  preset: null,
-  savePreset: null,
-  listPresets: false,
-  compare: null,
-  cluster: null,
-  suggestions: false,
-  pipe: false,
-  stream: false,
-  jsonl: false,
-  rank: false,
-  multiSearch: null,
-  domainFilter: null,
-  excludeDomain: null,
-  minScore: null,
-  hasImage: false,
-  dateAfter: null,
-  dateBefore: null,
-  theme: 'default',
-  compact: false,
-  metadata: false,
-  urlsOnly: false,
-  titlesOnly: false,
-  autocomplete: false,
-  proxy: null,
-  insecure: false,
-  health: false,
-  watch: false,
-  silent: false,
-  pretty: false,
-  confirm: false,
-  agent: false,
-  analyze: false,
-  cacheStatus: false,
-  extract: null,
-  sentiment: false,
-  structured: false,
-  ...overrides,
-});
+import { createTestSearchOptions as createMockOptions } from '../helpers/search-options';
+import type { SearchResponse, SearchResult } from '@/types/index';
 
 const createMockResponse = (overrides: Partial<SearchResponse> = {}): SearchResponse => ({
   query: 'test query',
@@ -117,6 +50,58 @@ const createMockResponse = (overrides: Partial<SearchResponse> = {}): SearchResp
 });
 
 describe('Formatters Module', () => {
+  describe('formatResult', () => {
+    it('formats fallback fields, metadata, and transformed content', () => {
+      const output = formatResult(
+        {
+          title: '&lt;b&gt;Result&lt;/b&gt;',
+          url: '',
+          link: 'https://example.com/fallback',
+          engines: ['one', 'two', 'three', 'four'],
+          score: 0.75,
+          publishedDate: '2026-07-21T00:00:00.000Z',
+          abstract: '<p>Result content</p>',
+        },
+        0,
+        createMockOptions({ query: 'result', unescape: true, autoformat: true, score: true })
+      );
+      expect(output).toContain('Result');
+      expect(output).toContain('[one,two,three...]');
+      expect(output).toContain('score:0.75');
+      expect(output).toContain('Result content');
+    });
+
+    it('supports direct engine, nonnumeric score, raw text, and empty metadata', () => {
+      expect(
+        formatResult(
+          {
+            title: undefined,
+            url: undefined,
+            engine: 'direct',
+            score: 'high' as unknown as number,
+            snippet: 'raw snippet',
+          } as unknown as SearchResult,
+          1,
+          createMockOptions({ query: '', unescape: false, autoformat: false, score: true })
+        )
+      ).toContain('score:high');
+      expect(
+        formatResult(
+          { title: 'Plain', url: 'https://example.com' },
+          0,
+          createMockOptions({ score: false, unescape: false, autoformat: false })
+        )
+      ).not.toContain('score:');
+      expect(
+        formatResult(
+          { title: 'Engines', url: 'https://example.com', engines: ['one', 'two'] },
+          0,
+          createMockOptions({ score: false })
+        )
+      ).toContain('[one,two]');
+    });
+  });
+
   describe('formatJsonOutput', () => {
     let consoleLogSpy: ReturnType<typeof vi.spyOn>;
 
@@ -163,7 +148,7 @@ describe('Formatters Module', () => {
       const data = createMockResponse({ answers: ['The answer is 42'] });
       const options = createMockOptions();
       const output = formatJsonOutput(data, options);
-      const parsed = JSON.parse(output) as { answers: Array<{ answer: string }> };
+      const parsed = JSON.parse(output) as { answers: { answer: string }[] };
       expect(parsed.answers[0]?.answer).toBe('The answer is 42');
     });
 
@@ -174,7 +159,7 @@ describe('Formatters Module', () => {
       const options = createMockOptions();
       const output = formatJsonOutput(data, options);
       const parsed = JSON.parse(output) as {
-        answers: Array<{ answer: string; url?: string | null }>;
+        answers: { answer: string; url?: string | null }[];
       };
       expect(parsed.answers[0]?.answer).toBe('Computed answer');
       expect(parsed.answers[0]?.url).toBe('https://example.com');
@@ -208,6 +193,112 @@ describe('Formatters Module', () => {
       const options = createMockOptions({ limit: 1 });
       const output = formatJsonOutput(data, options);
       expect(output).toContain('Test Result 1');
+    });
+
+    it('filters against content and URL and normalizes optional result fields', () => {
+      const data = createMockResponse({
+        _cached: true,
+        _cacheAge: 10,
+        timing: '5ms',
+        corrections: ['corrected'],
+        unresponsive_engines: ['timeout'],
+        results: [
+          {
+            title: undefined,
+            url: undefined,
+            link: 'https://content.example',
+            content: 'needle content',
+            engines: ['fallback'],
+            img_src: 'image.png',
+          } as unknown as SearchResult,
+          { title: 'URL only', url: 'https://needle.example' },
+          { title: 'Abstract mapping', url: 'https://abstract.example', abstract: 'abstract' },
+          { title: undefined, url: undefined } as unknown as SearchResult,
+        ],
+      });
+      const contentMatch = JSON.parse(
+        formatJsonOutput(data, createMockOptions({ filter: 'needle content', limit: 0 }))
+      ) as { results: SearchResult[]; cached: boolean };
+      expect(contentMatch.results[0]).toMatchObject({
+        url: 'https://content.example',
+        content: 'needle content',
+        engine: 'fallback',
+        thumbnail: 'image.png',
+      });
+      expect(contentMatch.cached).toBe(true);
+      expect(
+        JSON.parse(formatJsonOutput(data, createMockOptions({ filter: 'needle.example' }))).results
+      ).toHaveLength(1);
+      expect(
+        JSON.parse(
+          formatJsonOutput(createMockResponse({ results: undefined }), createMockOptions())
+        ).results
+      ).toEqual([]);
+      const absentOptionals = JSON.parse(
+        formatJsonOutput(
+          createMockResponse({
+            number_of_results: undefined,
+            answers: [
+              { answer: undefined, url: undefined } as unknown as { answer: string; url?: string },
+            ],
+            suggestions: undefined,
+            corrections: undefined,
+            unresponsive_engines: undefined,
+            results: [{ title: undefined, url: undefined } as unknown as SearchResult],
+          }),
+          createMockOptions({ searxngParams: undefined })
+        )
+      ) as { results: SearchResult[]; answers: { answer: string; url: null }[] };
+      expect(absentOptionals.results[0]).toMatchObject({ url: '', content: '', engine: null });
+      expect(absentOptionals.answers[0]).toEqual({ answer: '', url: null });
+      expect(
+        JSON.parse(
+          formatJsonOutput(
+            createMockResponse({ answers: undefined, results: undefined }),
+            createMockOptions()
+          )
+        )
+      ).toMatchObject({ answers: [], results: [] });
+    });
+  });
+
+  describe('formatJsonlOutput', () => {
+    it('emits sequential JSON records with fallbacks and unlimited mode', () => {
+      const output = formatJsonlOutput(
+        createMockResponse({
+          _cached: true,
+          _cacheAge: 5,
+          results: [
+            {
+              title: undefined,
+              url: undefined,
+              link: 'https://example.com',
+              abstract: 'abstract',
+              engines: ['engine'],
+              img_src: 'thumb',
+            } as unknown as SearchResult,
+            { title: undefined, url: undefined } as unknown as SearchResult,
+          ],
+        }),
+        createMockOptions({ limit: 0 })
+      );
+      expect(JSON.parse(output.split('\n')[0] ?? '')).toMatchObject({
+        index: 1,
+        url: 'https://example.com',
+        content: 'abstract',
+        engine: 'engine',
+        thumbnail: 'thumb',
+        cached: true,
+      });
+      expect(JSON.parse(output.split('\n')[1] ?? '')).toMatchObject({
+        title: '',
+        url: '',
+        content: '',
+        engine: null,
+      });
+      expect(
+        formatJsonlOutput(createMockResponse({ results: undefined }), createMockOptions())
+      ).toBe('');
     });
   });
 
@@ -247,6 +338,20 @@ describe('Formatters Module', () => {
       const output = formatSimpleOutput(data, options);
       expect(output).toBe('');
     });
+
+    it('should support unlimited missing results and fields', () => {
+      expect(
+        formatSimpleOutput(
+          createMockResponse({
+            results: [{ title: undefined, url: undefined } as unknown as SearchResult],
+          }),
+          createMockOptions({ limit: 0 })
+        )
+      ).toBe('1. \n   ');
+      expect(
+        formatSimpleOutput(createMockResponse({ results: undefined }), createMockOptions())
+      ).toBe('');
+    });
   });
 
   describe('formatCsvOutput', () => {
@@ -274,6 +379,30 @@ describe('Formatters Module', () => {
       const lines = output.split('\n').filter((l) => l.trim());
       expect(lines.length).toBe(2);
     });
+
+    it('normalizes missing values, newlines, links, engine lists, and unlimited output', () => {
+      const output = formatCsvOutput(
+        createMockResponse({
+          results: [
+            {
+              title: ' line\nvalue ',
+              url: undefined,
+              link: 'https://example.com',
+              engines: ['fallback'],
+              abstract: 'abstract',
+            } as unknown as SearchResult,
+            { title: undefined, url: undefined } as unknown as SearchResult,
+          ],
+        }),
+        createMockOptions({ limit: 0 })
+      );
+      expect(output).toContain('"line value"');
+      expect(output).toContain('"fallback"');
+      expect(output).toContain('2,"","","","",""');
+      expect(formatCsvOutput(createMockResponse({ results: undefined }), createMockOptions())).toBe(
+        'i,title,url,engine,score,text'
+      );
+    });
   });
 
   describe('formatMarkdownOutput', () => {
@@ -290,6 +419,20 @@ describe('Formatters Module', () => {
       const options = createMockOptions();
       const output = formatMarkdownOutput(data, options);
       expect(output).toContain('> 2 results');
+    });
+
+    it('supports unlimited missing-valued and empty results', () => {
+      expect(
+        formatMarkdownOutput(
+          createMockResponse({
+            results: [{ title: undefined, url: undefined } as unknown as SearchResult],
+          }),
+          createMockOptions({ limit: 0 })
+        )
+      ).toContain('[No title]()');
+      expect(
+        formatMarkdownOutput(createMockResponse({ results: undefined }), createMockOptions())
+      ).toContain('> 0 results');
     });
   });
 
@@ -316,6 +459,42 @@ describe('Formatters Module', () => {
       expect(output).toContain('answers:');
       expect(output).toContain('suggestions:');
     });
+
+    it('escapes scalar types and supports object answers and result fallbacks', () => {
+      const output = formatYamlOutput(
+        createMockResponse({
+          _cached: true,
+          timing: "line\n'quoted'",
+          results: [
+            {
+              title: undefined,
+              url: undefined,
+              link: 'https://example.com',
+              snippet: 'snippet',
+              engines: ['engine'],
+              score: 0,
+            } as unknown as SearchResult,
+            { title: undefined, url: undefined } as unknown as SearchResult,
+          ],
+          answers: [{ answer: undefined, url: undefined } as unknown as { answer: string }],
+          suggestions: undefined,
+        }),
+        createMockOptions({ limit: 0 })
+      );
+      expect(output).toContain("timing: 'line\\n''quoted''' ".trim());
+      expect(output).toContain('score: 0');
+      expect(output).toContain('url: null');
+      expect(output).toContain('engine: null');
+      expect(
+        formatYamlOutput(createMockResponse({ results: undefined }), createMockOptions())
+      ).toContain('returnedCount: 0');
+      expect(
+        formatYamlOutput(
+          createMockResponse({ results: undefined, answers: undefined, suggestions: undefined }),
+          createMockOptions()
+        )
+      ).toContain('answers:\nsuggestions:');
+    });
   });
 
   describe('formatTableOutput', () => {
@@ -327,6 +506,23 @@ describe('Formatters Module', () => {
       expect(output).toContain('google');
       expect(output).toContain('0.9');
     });
+
+    it('supports unlimited fallback and missing table fields', () => {
+      const output = formatTableOutput(
+        createMockResponse({
+          results: [
+            { title: undefined, url: '', engines: ['fallback'] } as unknown as SearchResult,
+            { title: '', url: '' },
+          ],
+        }),
+        createMockOptions({ limit: 0 })
+      );
+      expect(output).toContain('fallback');
+      expect(output).toContain('-');
+      expect(
+        formatTableOutput(createMockResponse({ results: undefined }), createMockOptions())
+      ).toContain('0 results');
+    });
   });
 
   describe('formatTextOutput', () => {
@@ -336,6 +532,20 @@ describe('Formatters Module', () => {
       const output = formatTextOutput(data, options);
       expect(output).toContain('test query (2 results)');
       expect(output).toContain('1. Test Result 1');
+    });
+
+    it('supports unlimited missing and empty text results', () => {
+      expect(
+        formatTextOutput(
+          createMockResponse({
+            results: [{ title: undefined, url: undefined } as unknown as SearchResult],
+          }),
+          createMockOptions({ limit: 0 })
+        )
+      ).toContain('1. ');
+      expect(
+        formatTextOutput(createMockResponse({ results: undefined }), createMockOptions())
+      ).toContain('0 results');
     });
   });
 
@@ -347,6 +557,20 @@ describe('Formatters Module', () => {
       expect(output).toContain('test query');
       expect(output).toContain('(2)');
     });
+
+    it('supports unlimited missing and empty quick results', () => {
+      expect(
+        formatQuickOutput(
+          createMockResponse({
+            results: [{ title: undefined, url: undefined } as unknown as SearchResult],
+          }),
+          createMockOptions({ limit: 0 })
+        )
+      ).toContain('1. ');
+      expect(
+        formatQuickOutput(createMockResponse({ results: undefined }), createMockOptions())
+      ).toContain('(0)');
+    });
   });
 
   describe('formatSummaryOutput', () => {
@@ -357,11 +581,59 @@ describe('Formatters Module', () => {
       expect(output).toContain('test query');
       expect(output).toContain('2 results');
     });
+
+    it('supports scoreless, unlimited, missing, and empty summary results', () => {
+      expect(
+        formatSummaryOutput(
+          createMockResponse({
+            results: [{ title: undefined, url: undefined, score: 0 } as unknown as SearchResult],
+          }),
+          createMockOptions({ limit: 0 })
+        )
+      ).not.toContain('(0.0)');
+      expect(
+        formatSummaryOutput(createMockResponse({ results: undefined }), createMockOptions())
+      ).toContain('0 results');
+    });
+  });
+
+  describe('formatCitationOutput', () => {
+    it('formats raw and normalized citations with fallbacks', () => {
+      const data = createMockResponse({
+        results: [
+          {
+            title: undefined,
+            url: undefined,
+            link: 'https://example.com',
+            abstract: '<b>abstract</b>',
+          } as unknown as SearchResult,
+          { title: 'No content', url: 'invalid' },
+          { title: 'Snippet', url: undefined, snippet: 'snippet' } as unknown as SearchResult,
+          { title: 'Empty', url: undefined } as unknown as SearchResult,
+        ],
+      });
+      expect(formatCitationOutput(data, createMockOptions({ limit: 0 }))).toContain(
+        'Content: abstract'
+      );
+      expect(
+        formatCitationOutput(data, createMockOptions({ rawContent: true, limit: 0 }))
+      ).toContain('<b>abstract</b>');
+      expect(
+        formatCitationOutput(createMockResponse({ results: undefined }), createMockOptions())
+      ).toBe('');
+    });
   });
 });
 
 describe('Advanced Formatters Module', () => {
   describe('formatToonOutput', () => {
+    it('normalizes finite numbers and rejects non-finite values', () => {
+      expect(normalizeNumber(-0)).toBe(0);
+      expect(normalizeNumber(1.26)).toBe(1.3);
+      expect(normalizeNumber(Number.NaN)).toBeUndefined();
+      expect(normalizeNumber(Number.POSITIVE_INFINITY)).toBeUndefined();
+    });
+
     it('should output valid TOON format', () => {
       const data = createMockResponse();
       const options = createMockOptions();
@@ -422,7 +694,112 @@ describe('Advanced Formatters Module', () => {
       const options = createMockOptions();
       const output = formatToonOutput(data, options);
       const parsed = decodeToon(output) as { tv?: string };
-      expect(parsed.tv).toBe('3.0');
+      expect(parsed.tv).toBe('3.3');
+    });
+
+    it('should represent the complete optional SearXNG response surface', () => {
+      const data = createMockResponse({
+        _cacheAge: 2500,
+        timing: '12ms',
+        corrections: ['corrected'],
+        infoboxes: [{ infobox: 'Info', content: 'Details' }],
+        unresponsive_engines: ['engine: timeout'],
+        results: [
+          {
+            title: '<b>Agent result</b>',
+            url: 'https://example.com/a/very/long/path/that/is/shortened',
+            abstract: 'Abstract fallback',
+            engines: ['fallback-engine'],
+            score: -0,
+            publishedDate: '2026-07-21T12:00:00.000Z',
+          },
+          {
+            title: 'Invalid URL',
+            url: 'not a valid url',
+            snippet: 'Snippet fallback',
+            score: Number.NaN,
+          },
+          { title: 'Root path', url: 'https://second.example/' },
+        ],
+        answers: [{ answer: 'Object answer' }, {} as { answer: string }],
+      });
+      const output = formatToonOutputFull(
+        data,
+        createMockOptions({
+          limit: 0,
+          engines: 'brave',
+          category: 'general',
+          timeRange: 'week',
+          verbose: true,
+        })
+      );
+      const parsed = decodeToon(output) as Record<string, unknown>;
+      expect(parsed).toMatchObject({
+        ca: '3s',
+        lat: '12ms',
+        e: 'brave',
+        cat: 'general',
+        t: 'week',
+        corrections: ['corrected'],
+        unresponsive_engines: ['engine: timeout'],
+      });
+      expect(parsed.infobox).toEqual({ title: 'Info', content: 'Details' });
+
+      const agentOutput = formatToonOutput(data, createMockOptions({ agent: true, limit: 0 }));
+      expect(agentOutput).toContain('example.com/a/very/long/path/that');
+      expect(agentOutput).toContain('not a valid url');
+      expect(agentOutput).not.toContain('infobox');
+    });
+
+    it('omits empty optional metadata', () => {
+      const output = formatToonOutput(
+        createMockResponse({
+          results: [{ title: '', url: '', content: '', engines: [], score: undefined }],
+          answers: [],
+          suggestions: [],
+          corrections: [],
+          infoboxes: [
+            { infobox: 1, content: 2 } as unknown as { infobox: string; content: string },
+          ],
+          number_of_results: 0,
+          unresponsive_engines: [],
+        }),
+        createMockOptions({ limit: 1, verbose: true })
+      );
+      const parsed = decodeToon(output) as { results: Record<string, unknown>[] };
+      expect(parsed.results[0]).toEqual({ i: 1, title: '', url: '' });
+      expect(
+        decodeToon(
+          formatToonOutput(
+            createMockResponse({
+              results: undefined,
+              infoboxes: [undefined] as unknown as SearchResponse['infoboxes'],
+            }),
+            createMockOptions()
+          )
+        )
+      ).toMatchObject({ n: 0, results: [] });
+      const missingValues = formatToonOutput(
+        createMockResponse({
+          results: [{ title: undefined, url: undefined } as unknown as SearchResult],
+        }),
+        createMockOptions({ agent: true })
+      );
+      expect(
+        (decodeToon(missingValues) as unknown as { results: SearchResult[] }).results[0]
+      ).toMatchObject({
+        title: '',
+        url: '',
+      });
+      const missingNonAgentValues = formatToonOutput(
+        createMockResponse({
+          results: [{ title: 'Missing URL', url: undefined } as unknown as SearchResult],
+        }),
+        createMockOptions()
+      );
+      expect(
+        (decodeToon(missingNonAgentValues) as unknown as { results: SearchResult[] }).results[0]
+      ).toMatchObject({ url: '' });
     });
   });
 
@@ -456,6 +833,30 @@ describe('Advanced Formatters Module', () => {
       const output = formatXmlOutput(data, options);
       expect(output).toContain('</search>');
     });
+
+    it('should support unlimited empty and fallback-valued XML results', () => {
+      const output = formatXmlOutput(
+        createMockResponse({
+          results: [
+            {
+              title: '',
+              link: 'https://example.com/link',
+              abstract: 'abstract',
+              engines: ['fallback'],
+            } as unknown as SearchResult,
+            { snippet: 'snippet' } as unknown as SearchResult,
+          ],
+        }),
+        createMockOptions({ query: '<query & "quoted">', limit: 0 })
+      );
+      expect(output).toContain('query="&lt;query &amp; &quot;quoted&quot;&gt;"');
+      expect(output).toContain('<url>https://example.com/link</url>');
+      expect(output).toContain('<engine>fallback</engine>');
+      expect(output).toContain('<score></score>');
+      expect(
+        formatXmlOutput(createMockResponse({ results: undefined }), createMockOptions())
+      ).toContain('<results>\n</results>');
+    });
   });
 
   describe('formatHtmlReportOutput', () => {
@@ -474,6 +875,20 @@ describe('Advanced Formatters Module', () => {
       const output = formatHtmlReportOutput(data, options);
       expect(output).toContain('class="r"');
       expect(output).toContain('class="u"');
+    });
+
+    it('should support unlimited results without optional content', () => {
+      const output = formatHtmlReportOutput(
+        createMockResponse({
+          results: [{ title: undefined, url: undefined } as unknown as SearchResult],
+        }),
+        createMockOptions({ query: '<unsafe>', limit: 0 })
+      );
+      expect(output).toContain('&lt;unsafe&gt;');
+      expect(output).not.toContain('class="s"');
+      expect(
+        formatHtmlReportOutput(createMockResponse({ results: undefined }), createMockOptions())
+      ).toContain('0 results');
     });
   });
 });

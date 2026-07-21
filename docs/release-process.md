@@ -141,6 +141,25 @@ bun run release:dry-run
 bun run test:release
 ```
 
+## Pull request review closeout
+
+After every pushed revision, request the configured AI reviews and wait for the exact-head checks
+to finish. Then capture a complete, machine-readable inventory:
+
+```bash
+bun run reviews:inventory -- --pr 123 > /tmp/searxng-pr-123-reviews.json
+jq '.headRefOid, .counts, .reviewThreads[] | select(.isResolved == false)' \
+  /tmp/searxng-pr-123-reviews.json
+```
+
+The inventory includes conversation comments, submitted reviews, paginated inline review threads,
+edited timestamps, reaction totals, resolution state, and check results. Compare `headRefOid` with
+the pushed commit before closeout. Read every entry, react to every bot contribution, and reply in
+the original inline thread with the fix, evidence, or explicit rationale. Re-run the inventory after
+those acknowledgements and immediately before merge so newly added or edited feedback cannot be
+missed. The script is intentionally read-only: reactions, replies, and resolutions remain explicit
+review decisions rather than unattended bulk mutations.
+
 ## Manual dispatch and recovery
 
 Dry-run Auto Release:

@@ -36,6 +36,8 @@ A powerful TypeScript command-line search client for SearXNG instances with TOON
 - **Connection Resilience** - Circuit breaker, adaptive timeouts, request retries
 - **Built with Bun** - Fast development and runtime using Bun
 - **Global Settings** - Settings saved to `~/.searxng-cli/settings.json`
+- **Capability-Aware Transport** - Uses JSON when enabled and automatically normalizes SearXNG HTML when an administrator disables JSON API output
+- **Configured Agent Routing** - Agent and MCP searches stay pinned to the `searxngUrl` saved in global settings, including private-LAN services
 - **Global SearXNG Params** - Persist default passthrough params with single-key or bulk commands
 - **SearXNG Feature Parity** - Use `--param`, `--params-json`, and `--params-file` to pass any upstream SearXNG query parameter
 
@@ -356,7 +358,7 @@ Edit `~/.searxng-cli/settings.json`:
 TOON (Token-Oriented Object Notation) is the default output format, optimized for LLM consumption:
 
 ```
-tv: 3.0
+tv: 3.3
 v: 2026.3.4
 q: search query
 n: 10

@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Complete local SearXNG feature parity and agent-ready CLI delivery ([searx-feature-parity-plan](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/plans/searx-feature-parity-plan.toon))
 - Automate change-aware releases with generated project history ([searx-auto-release](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/features/searx-auto-release.toon))
 - Added conservative global coverage thresholds so test-coverage regressions fail the quality gate. ([searx-pkax](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/tasks/searx-pkax.toon))
 
@@ -19,6 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Configure RELEASE_PAT for protected automated release pushes ([searx-release-pat-secret](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-release-pat-secret.toon))
+- Refresh invalid npm publishing credentials ([searx-npm-token-refresh](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-npm-token-refresh.toon))
 - Verify published consumers outside the source checkout ([searx-published-consumer-isolation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-published-consumer-isolation.toon))
 - Validate tag releases without requiring the next version ([searx-tag-release-validation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-tag-release-validation.toon))
 - Keep Auto Release runner output outside the checkout ([searx-auto-release-clean-tree](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-auto-release-clean-tree.toon))

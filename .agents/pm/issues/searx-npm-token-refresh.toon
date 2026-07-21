@@ -2,13 +2,13 @@ id: searx-npm-token-refresh
 title: Refresh invalid npm publishing credentials
 description: Restore a valid npm automation token for the package publishing scope without exposing any credential or workstation detail.
 type: Issue
-status: blocked
+status: closed
 priority: 0
-tags[4]: blocked,credentials,npm,release
+tags[3]: credentials,npm,release
 created_at: "2026-07-21T17:53:24.271Z"
-updated_at: "2026-07-21T17:54:29.928Z"
+updated_at: "2026-07-21T22:31:23.259Z"
 deadline: "2026-07-28T17:54:29.902Z"
-assignee: repository-owner
+closed_at: "2026-07-21T22:31:07.768Z"
 author: codex-release-agent
 estimated_minutes: 30
 acceptance_criteria: "A replacement credential passes npm whoami; The validated credential is stored in the protected release environment; A release verifies npm, npx, and bunx installation"
@@ -19,15 +19,19 @@ risk: high
 confidence: 100
 sprint: 2026-07-release-automation
 release: next
-blocked_reason: Available candidate npm credentials are rejected by the registry with E401 Unauthorized.
+unblock_note: release environment now contains refreshed NPM_TOKEN and exact consumer verification succeeds
 reporter: codex-release-agent
 severity: high
 environment: Sanitized local authentication check against the public npm registry.
 repro_steps: Load each candidate credential into NODE_AUTH_TOKEN independently and run npm whoami without logging the value.
+resolution: Credential refreshed and protected publication verified
 expected_result: A replacement automation credential authenticates successfully and is stored in the protected release environment.
-actual_result: Both candidate credentials failed authentication; the existing protected secret was left unchanged.
+actual_result: Release workflow run 29858189757 succeeded; npm metadata and isolated npx plus bunx consumers all verify version 2026.7.21.
 affected_version: repository configuration 2026-07-21
 component: release
 regression: false
-customer_impact: Automated package publication cannot be proven with the supplied local credential until it is refreshed.
+customer_impact: Automated npm publication is operational and verified.
+comments[1]{created_at,author,text}:
+  "2026-07-21T22:31:06.947Z",codex-root,"Verified release-environment NPM_TOKEN updated 2026-07-21T18:07:17Z. Release workflow run 29858189757 succeeded; npm reports searxng-cli@2026.7.21 with integrity metadata; isolated npx and bunx both execute version 2026.7.21 against the configured local service."
+close_reason: "Publishing credential is configured and proven by successful release run 29858189757 plus npm, npx, and bunx consumer verification."
 body: "Two locally available candidate npm tokens were tested independently on 2026-07-21. npm rejected both with E401. No token value, fragment, local path, username, host detail, or credential metadata was stored."

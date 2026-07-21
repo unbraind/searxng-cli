@@ -1,5 +1,7 @@
+/**
+ * Command-line argument contracts, global option parsing, help rendering, browser integration, and interactive progress output.
+ */
 import * as fs from 'fs';
-import * as readline from 'readline';
 import { spawn } from 'child_process';
 import {
   SEARXNG_URL,
@@ -8,33 +10,36 @@ import {
   isLocalInstance,
   DEFAULT_TIMEOUT,
   MAX_RETRIES,
-  RATE_LIMIT_DELAY,
   LRU_CACHE_SIZE,
   ENGINE_GROUPS,
   VALID_CATEGORIES,
   VALID_TIME_RANGES,
   VALID_FORMATS,
   VALID_SAFE_LEVELS,
-  CONFIG_DIR,
   setTheme,
   COLOR_THEMES,
 } from '../config';
-import { colorize, truncate, formatDuration } from '../utils';
+import { colorize, formatDuration } from '../utils';
 import { resultCache } from '../cache';
-import { circuitBreaker, getConnectionHealth } from '../http';
+import { getConnectionHealth } from '../http';
 import { loadConfig, loadSettings } from '../storage';
-import type { SearchOptions, OutputFormat, SafeSearchLevel, TimeRange, ColorTheme } from '../types';
+import type {
+  SearchOptions,
+  OutputFormat,
+  SafeSearchLevel,
+  TimeRange,
+  ColorTheme,
+  AppConfig,
+  Settings,
+  ConnectionHealth,
+} from '../types';
 
 const IS_PIPE_MODE = !process.stdout.isTTY;
 
 function assignSearxngParams(options: SearchOptions, params: Record<string, string>): void {
-  if (!options.searxngParams) {
-    options.searxngParams = {};
-  }
+  options.searxngParams ??= {};
   for (const [key, value] of Object.entries(params)) {
-    if (key.trim()) {
-      options.searxngParams[key] = value;
-    }
+    options.searxngParams[key] = value;
   }
 }
 
@@ -110,9 +115,17 @@ function parseSearxngParamsObject(raw: string, source: string): Record<string, s
   return normalized;
 }
 
-export function createDefaultOptions(): SearchOptions {
-  const config = loadConfig();
-  const settings = loadSettings();
+/**
+ *
+ * @param config
+ * @param settings
+ * @param pipeMode
+ */
+export function createDefaultOptions(
+  config: AppConfig = loadConfig(),
+  settings: Settings = loadSettings(),
+  pipeMode = IS_PIPE_MODE
+): SearchOptions {
   const defaultSearxngParams =
     settings.defaultSearxngParams && typeof settings.defaultSearxngParams === 'object'
       ? { ...settings.defaultSearxngParams }
@@ -130,8 +143,8 @@ export function createDefaultOptions(): SearchOptions {
     timeout: settings.defaultTimeout ?? config.defaultTimeout ?? DEFAULT_TIMEOUT,
     verbose: false,
     output: null,
-    unescape: settings.autoUnescape ?? config.autoUnescape !== false,
-    autoformat: settings.autoFormat ?? config.autoFormat !== false,
+    unescape: settings.autoUnescape ?? config.autoUnescape,
+    autoformat: settings.autoFormat ?? config.autoFormat,
     score: settings.showScores ?? config.showScores ?? false,
     interactive: false,
     noCache: false,
@@ -157,7 +170,7 @@ export function createDefaultOptions(): SearchOptions {
     compare: null,
     cluster: null,
     suggestions: false,
-    pipe: IS_PIPE_MODE,
+    pipe: pipeMode,
     stream: false,
     jsonl: false,
     rank: false,
@@ -206,10 +219,13 @@ export function createDefaultOptions(): SearchOptions {
   };
 }
 
-export function parseArgs(args: string[]): SearchOptions {
-  const config = loadConfig();
-  const settings = loadSettings();
-  const options = createDefaultOptions();
+/**
+ *
+ * @param args
+ * @param config
+ */
+export function parseArgs(args: string[], config: AppConfig = loadConfig()): SearchOptions {
+  const options = createDefaultOptions(config);
 
   let i = 0;
   const queryParts: string[] = [];
@@ -219,7 +235,7 @@ export function parseArgs(args: string[]): SearchOptions {
     arg: string,
     argName: string,
     setter: (value: string) => void,
-    config: { required?: boolean; defaultValue?: string } = { required: true }
+    config: { defaultValue?: string } = {}
   ): void => {
     let value: string | undefined;
     if (arg.includes('=')) {
@@ -233,11 +249,8 @@ export function parseArgs(args: string[]): SearchOptions {
         setter(config.defaultValue);
         return;
       }
-      if (config.required !== false) {
-        console.error(colorize(`Error: Missing value for ${argName}`, 'red'));
-        process.exit(1);
-      }
-      return;
+      console.error(colorize(`Error: Missing value for ${argName}`, 'red'));
+      process.exit(1);
     }
 
     setter(value);
@@ -453,11 +466,12 @@ export function parseArgs(args: string[]): SearchOptions {
       i++;
       continue;
     }
-    if (arg === '--max-tokens') {
+    if (arg === '--max-tokens' || arg.startsWith('--max-tokens=')) {
       parseValue(arg, '--max-tokens', (val) => {
         const num = parseInt(val, 10);
         if (!isNaN(num) && num > 0) options.maxTokens = num;
       });
+      i++;
       continue;
     }
     if (arg === '--agent-json') {
@@ -624,8 +638,10 @@ export function parseArgs(args: string[]): SearchOptions {
       i++;
       continue;
     }
-    if (arg === '--config') {
-      options.config = i + 1 < args.length ? args[++i] : 'show';
+    if (arg === '--config' || arg.startsWith('--config=')) {
+      parseValue(arg, '--config', (value) => (options.config = value), {
+        defaultValue: 'show',
+      });
       i++;
       continue;
     }
@@ -640,16 +656,14 @@ export function parseArgs(args: string[]): SearchOptions {
       if (arg.startsWith('--param=')) {
         raw = arg.split('=').slice(1).join('=');
       } else if (i + 1 < args.length) {
-        raw = args[++i] ?? '';
+        raw = args[++i];
       }
       const parsed = parseSxKeyValue(raw);
       if (!parsed) {
         console.error(colorize(`Error: Invalid --param "${raw}". Expected key=value`, 'red'));
         process.exit(1);
       }
-      if (!options.searxngParams) {
-        options.searxngParams = {};
-      }
+      options.searxngParams ??= {};
       options.searxngParams[parsed.key] = parsed.value;
       i++;
       continue;
@@ -664,7 +678,7 @@ export function parseArgs(args: string[]): SearchOptions {
       if (arg.includes('=')) {
         raw = arg.split('=').slice(1).join('=');
       } else if (i + 1 < args.length) {
-        raw = args[++i] ?? '';
+        raw = args[++i];
       }
       const parsed = parseSxKeyValue(raw);
       if (!parsed) {
@@ -690,7 +704,7 @@ export function parseArgs(args: string[]): SearchOptions {
       if (arg.includes('=')) {
         raw = arg.split('=').slice(1).join('=');
       } else if (i + 1 < args.length) {
-        raw = args[++i] ?? '';
+        raw = args[++i];
       }
       if (!raw.trim()) {
         console.error(colorize('Error: --sx-query requires URL-style params (k=v&k2=v2)', 'red'));
@@ -708,10 +722,6 @@ export function parseArgs(args: string[]): SearchOptions {
     if (arg === '--sx-theme' || arg.startsWith('--sx-theme=')) {
       parseValue(arg, '--sx-theme', (v) => {
         const value = v.trim();
-        if (!value) {
-          console.error(colorize('Error: --sx-theme requires a non-empty value', 'red'));
-          process.exit(1);
-        }
         assignSearxngParams(options, { theme: value });
       });
       i++;
@@ -820,7 +830,7 @@ export function parseArgs(args: string[]): SearchOptions {
       if (arg.startsWith('--params-json=')) {
         raw = arg.split('=').slice(1).join('=');
       } else if (i + 1 < args.length) {
-        raw = args[++i] ?? '';
+        raw = args[++i];
       }
       if (!raw.trim()) {
         console.error(colorize('Error: --params-json requires a JSON object value', 'red'));
@@ -836,7 +846,7 @@ export function parseArgs(args: string[]): SearchOptions {
       if (arg.startsWith('--params-file=')) {
         filePath = arg.split('=').slice(1).join('=');
       } else if (i + 1 < args.length) {
-        filePath = args[++i] ?? '';
+        filePath = args[++i];
       }
       if (!filePath.trim()) {
         console.error(colorize('Error: --params-file requires a file path', 'red'));
@@ -954,7 +964,7 @@ export function parseArgs(args: string[]): SearchOptions {
           const parsed = parseInt(v, 10);
           options.open = Number.isFinite(parsed) ? parsed : 1;
         },
-        { required: false, defaultValue: '1' }
+        { defaultValue: '1' }
       );
       i++;
       continue;
@@ -1064,6 +1074,9 @@ export function parseArgs(args: string[]): SearchOptions {
   return options;
 }
 
+/**
+ *
+ */
 export function showHelp(): void {
   console.log(`SearXNG CLI v${VERSION} - TypeScript search client`);
   console.log();
@@ -1221,34 +1234,59 @@ export function showHelp(): void {
   console.log(`Config: ~/.searxng-cli/settings.json`);
 }
 
-export function showVersion(): void {
+/**
+ *
+ * @param cacheSize
+ * @param local
+ * @param health
+ */
+export function showVersion(
+  cacheSize = LRU_CACHE_SIZE,
+  local = isLocalInstance(),
+  health: ConnectionHealth = getConnectionHealth()
+): void {
   const currentUrl = getSearxngUrl();
-  const health = getConnectionHealth();
-  const cacheLimit = LRU_CACHE_SIZE <= 0 ? 'unlimited' : String(LRU_CACHE_SIZE);
+  const cacheLimit = cacheSize <= 0 ? 'unlimited' : String(cacheSize);
   console.log(`SearXNG CLI v${VERSION}`);
   console.log(`Server: ${currentUrl}`);
-  console.log(`Type: ${isLocalInstance() ? 'local' : 'remote'}`);
+  console.log(`Type: ${local ? 'local' : 'remote'}`);
   console.log(`Cache: ${resultCache.size}/${cacheLimit}`);
   console.log(`Health: ${health.healthy ? 'ok' : 'fail'} (${health.latency}ms)`);
 }
 
-export function openInBrowser(url: string): void {
-  const platform = process.platform;
+/**
+ *
+ * @param url
+ * @param platform
+ * @param launch
+ */
+export function openInBrowser(
+  url: string,
+  platform: NodeJS.Platform = process.platform,
+  launch: (
+    command: string,
+    args: string[],
+    options: { detached: true; stdio: 'ignore' }
+  ) => { unref(): void } = spawn
+): void {
   let cmd: string;
   if (platform === 'darwin') cmd = 'open';
   else if (platform === 'win32') cmd = 'explorer.exe';
   else cmd = 'xdg-open';
-  spawn(cmd, [url], { detached: true, stdio: 'ignore' }).unref();
+  launch(cmd, [url], { detached: true, stdio: 'ignore' }).unref();
 }
 
+/**
+ *
+ * @param text
+ * @param startTime
+ */
 export function showSpinner(text: string, startTime: number): NodeJS.Timeout {
   const spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
   let idx = 0;
   return setInterval(() => {
     const elapsed = Date.now() - startTime;
-    process.stderr.write(
-      `\r${colorize(spinner[idx] ?? '', 'cyan')} ${text} ${formatDuration(elapsed)}`
-    );
+    process.stderr.write(`\r${colorize(spinner[idx], 'cyan')} ${text} ${formatDuration(elapsed)}`);
     idx = (idx + 1) % spinner.length;
   }, 80);
 }

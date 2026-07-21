@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-// @ts-expect-error Native ESM release helper intentionally has no declaration output.
 import {
   calendarVersion,
   isReleaseRelevantPath,
@@ -45,6 +44,31 @@ describe('release automation', () => {
     expect(changelog).toContain('https://keepachangelog.com/en/1.0.0/');
     expect(generator).toContain('pm');
     expect(generator).toContain('baseline.preamble');
+  });
+
+  it('allows only the documented private SearXNG service through history scanning', () => {
+    const scanner = readFileSync('scripts/secret-scan-history.sh', 'utf8');
+    expect(scanner).toContain('192\\.168\\.1\\.183:38522');
+    expect(scanner).toContain('10\\.0\\.0\\.1');
+    expect(scanner).toContain('172\\.31\\.255\\.255');
+    expect(scanner).toContain('searxng-private-endpoint-findings-filtered.txt');
+  });
+
+  it('runs coverage through Node even when Bun owns script execution', () => {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as {
+      scripts: Record<string, string>;
+    };
+    const coverageScript = readFileSync('scripts/test-coverage.sh', 'utf8');
+    expect(pkg.scripts['test:unit']).toBe('bash scripts/test-coverage.sh');
+    expect(coverageScript).toContain('node ./node_modules/vitest/vitest.mjs');
+    expect(coverageScript).not.toContain('/usr/bin/node');
+    expect(coverageScript).toContain('for path_entry in "${path_entries[@]}"');
+    expect(coverageScript).toContain('[[ "$path_entry" != /tmp/bun-node-* ]]');
+  });
+
+  it('runs release acceptance against the governed local SearXNG service by default', () => {
+    const releaseCheck = readFileSync('scripts/release-check.sh', 'utf8');
+    expect(releaseCheck).toContain('LIVE_SEARXNG_URL="${SEARXNG_URL:-http://192.168.1.183:38522}"');
   });
 
   it('publishes once to npm and verifies npm and Bun consumers', () => {

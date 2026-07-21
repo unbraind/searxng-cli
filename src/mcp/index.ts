@@ -1,10 +1,14 @@
+/**
+ * Model Context Protocol server exposing SearXNG search and page-content tools through validated agent-facing schemas.
+ */
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { performSearch } from '../index';
 import { fetchWebpageContent } from '../search';
 import { reloadSearxngUrl } from '../config';
-import type { SearchOptions } from '../types';
+import { createDefaultOptions } from '../cli';
+import type { SearchOptions, SearchResult, TimeRange } from '../types';
 
 export const mcpRuntimeHooks = {
   performSearch,
@@ -12,7 +16,10 @@ export const mcpRuntimeHooks = {
   reloadSearxngUrl,
 };
 
-export async function runMcpServer() {
+/**
+ *
+ */
+export async function runMcpServer(): Promise<void> {
   const server = new Server(
     {
       name: 'searxng-cli-mcp',
@@ -25,7 +32,7 @@ export async function runMcpServer() {
     }
   );
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
+  server.setRequestHandler(ListToolsRequestSchema, () => {
     return {
       tools: [
         {
@@ -85,24 +92,27 @@ export async function runMcpServer() {
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (request.params.name === 'search') {
-      const args = request.params.arguments as any;
+      const args = request.params.arguments ?? {};
       const query = args.query;
 
       if (!query || typeof query !== 'string') {
         throw new Error('Missing or invalid query parameter');
       }
 
-      const { createDefaultOptions } = await import('../cli/index.js');
       const defaultOptions = createDefaultOptions();
 
       const options: SearchOptions = {
         ...defaultOptions,
         query,
         format: 'json',
-        engines: args.engines || null,
-        timeRange: args.timeRange || null,
-        category: args.category || null,
-        limit: args.limit || defaultOptions.limit,
+        engines: typeof args.engines === 'string' ? args.engines : null,
+        timeRange:
+          typeof args.timeRange === 'string' &&
+          ['day', 'week', 'month', 'year'].includes(args.timeRange)
+            ? (args.timeRange as TimeRange)
+            : null,
+        category: typeof args.category === 'string' ? args.category : null,
+        limit: typeof args.limit === 'number' ? args.limit : defaultOptions.limit,
         fetchContent: Boolean(args.fetchContent),
         verbose: false,
         output: null,
@@ -143,7 +153,7 @@ export async function runMcpServer() {
             query: result.query,
             number_of_results: result.number_of_results,
             results:
-              result.results?.map((r: any) => ({
+              result.results?.map((r: SearchResult) => ({
                 title: r.title,
                 url: r.url,
                 snippet: r.content,
@@ -164,13 +174,13 @@ export async function runMcpServer() {
             },
           ],
         };
-      } catch (err: any) {
+      } catch (error: unknown) {
         return {
           isError: true,
           content: [
             {
               type: 'text',
-              text: `Search failed: ${err.message}`,
+              text: `Search failed: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
         };
@@ -178,7 +188,7 @@ export async function runMcpServer() {
     }
 
     if (request.params.name === 'fetch_webpage') {
-      const args = request.params.arguments as any;
+      const args = request.params.arguments ?? {};
       const url = args.url;
 
       if (!url || typeof url !== 'string') {
@@ -209,13 +219,13 @@ export async function runMcpServer() {
             },
           ],
         };
-      } catch (err: any) {
+      } catch (error: unknown) {
         return {
           isError: true,
           content: [
             {
               type: 'text',
-              text: `Fetch failed: ${err.message}`,
+              text: `Fetch failed: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
         };
@@ -227,7 +237,7 @@ export async function runMcpServer() {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.log = function () {};
-  console.info = function () {};
-  console.warn = function () {};
+  console.log = () => undefined;
+  console.info = () => undefined;
+  console.warn = () => undefined;
 }

@@ -1,3 +1,6 @@
+/**
+ * Persistent and in-memory search-cache operations, including unlimited storage, semantic lookup, import, export, and maintenance commands.
+ */
 import * as fs from 'fs';
 import * as zlib from 'zlib';
 import {
@@ -6,7 +9,6 @@ import {
   PERSISTENT_CACHE_ENABLED,
   CACHE_MAX_AGE,
   CACHE_FILE,
-  SMART_DEDUP_ENABLED,
 } from '../config';
 import { colorize, formatDuration, formatBytes, truncate } from '../utils';
 import { LRUCache, SmartDeduplicator } from '../classes';
@@ -24,28 +26,44 @@ import type {
 export const smartDeduplicator = new SmartDeduplicator();
 export const resultCache = new LRUCache<CacheEntry>(LRU_CACHE_SIZE);
 
-export function loadCacheSync(): number {
-  if (!PERSISTENT_CACHE_ENABLED) return 0;
+/** Runtime-independent persistence controls used by cache tests and alternate embeddings. */
+export interface CachePersistenceOptions {
+  persistent?: boolean;
+  compression?: boolean;
+  maxAge?: number;
+  cacheFile?: string;
+  cacheSize?: number;
+}
+
+/**
+ * @param options
+ */
+export function loadCacheSync(options: CachePersistenceOptions = {}): number {
+  const persistent = options.persistent ?? PERSISTENT_CACHE_ENABLED;
+  const compression = options.compression ?? CACHE_COMPRESSION;
+  const maxAge = options.maxAge ?? CACHE_MAX_AGE;
+  const cacheFile = options.cacheFile ?? CACHE_FILE;
+  if (!persistent) return 0;
   try {
-    if (fs.existsSync(CACHE_FILE)) {
-      const stat = fs.statSync(CACHE_FILE);
+    if (fs.existsSync(cacheFile)) {
+      const stat = fs.statSync(cacheFile);
       if (stat.size > 5 * 1024 * 1024) {
         if (process.env.DEBUG) console.error('Cache file too large, skipping load');
         return 0;
       }
-      let cacheData = fs.readFileSync(CACHE_FILE, 'utf8');
-      if (CACHE_COMPRESSION) {
+      let cacheData = fs.readFileSync(cacheFile, 'utf8');
+      if (compression) {
         try {
           const decompressed = zlib.inflateSync(Buffer.from(cacheData, 'base64'));
           cacheData = decompressed.toString('utf8');
         } catch {
           try {
-            const parsed = JSON.parse(cacheData);
+            const parsed: unknown = JSON.parse(cacheData);
             if (typeof parsed === 'object' && parsed !== null) {
               const now = Date.now();
               let loadedCount = 0;
               for (const [key, entry] of Object.entries(parsed as Record<string, CacheEntry>)) {
-                if (CACHE_MAX_AGE === Infinity || now - entry.timestamp <= CACHE_MAX_AGE) {
+                if (maxAge === Infinity || now - entry.timestamp <= maxAge) {
                   resultCache.set(key, entry);
                   loadedCount++;
                 }
@@ -62,7 +80,7 @@ export function loadCacheSync(): number {
       const now = Date.now();
       let loadedCount = 0;
       for (const [key, entry] of Object.entries(cache)) {
-        if (CACHE_MAX_AGE === Infinity || now - entry.timestamp <= CACHE_MAX_AGE) {
+        if (maxAge === Infinity || now - entry.timestamp <= maxAge) {
           resultCache.set(key, entry);
           loadedCount++;
         }
@@ -77,20 +95,26 @@ export function loadCacheSync(): number {
   return 0;
 }
 
-export function saveCacheSync(): void {
-  if (!PERSISTENT_CACHE_ENABLED) return;
+/**
+ * @param options
+ */
+export function saveCacheSync(options: CachePersistenceOptions = {}): void {
+  const persistent = options.persistent ?? PERSISTENT_CACHE_ENABLED;
+  const compression = options.compression ?? CACHE_COMPRESSION;
+  const cacheFile = options.cacheFile ?? CACHE_FILE;
+  if (!persistent) return;
   try {
     const cacheObj: Record<string, CacheEntry> = {};
     for (const [key, value] of resultCache.entries()) {
       cacheObj[key] = value;
     }
     let cacheStr = JSON.stringify(cacheObj, null, 2);
-    if (CACHE_COMPRESSION) {
+    if (compression) {
       cacheStr = zlib.deflateSync(cacheStr).toString('base64');
     }
-    const tempFile = CACHE_FILE + '.tmp';
+    const tempFile = cacheFile + '.tmp';
     fs.writeFileSync(tempFile, cacheStr);
-    fs.renameSync(tempFile, CACHE_FILE);
+    fs.renameSync(tempFile, cacheFile);
   } catch {
     // Ignore save errors
   }
@@ -107,14 +131,12 @@ interface CacheKeyMetadata {
   params: string;
 }
 
-function normalizeCacheParamPairs(
-  params: Record<string, string> | undefined
-): Array<[string, string]> {
+function normalizeCacheParamPairs(params: Record<string, string> | undefined): [string, string][] {
   if (!params) return [];
   return Object.entries(params)
     .filter(([key]) => key.trim().length > 0)
-    .map(([key, value]) => [key.trim(), String(value ?? '')] as [string, string])
-    .sort((a, b) => (a[0] === b[0] ? a[1].localeCompare(b[1]) : a[0].localeCompare(b[0])));
+    .map(([key, value]) => [key.trim(), String(value)] as [string, string])
+    .sort((a, b) => a[0].localeCompare(b[0]));
 }
 
 function serializeCacheParams(params: Record<string, string> | undefined): string {
@@ -152,14 +174,14 @@ function parseCacheKey(key: string): CacheKeyMetadata {
     const parts = key.split(':');
     if (parts.length >= 9) {
       return {
-        query: decodeURIComponent(parts[1] ?? ''),
-        category: decodeURIComponent(parts[2] ?? 'general') || 'general',
-        lang: decodeURIComponent(parts[3] ?? 'en') || 'en',
-        page: decodeURIComponent(parts[4] ?? '1') || '1',
-        engines: decodeURIComponent(parts[5] ?? 'default') || 'default',
-        timeRange: decodeURIComponent(parts[6] ?? 'all') || 'all',
-        safeSearch: decodeURIComponent(parts[7] ?? '0') || '0',
-        params: decodeURIComponent(parts[8] ?? 'none') || 'none',
+        query: decodeURIComponent(parts[1]),
+        category: decodeURIComponent(parts[2]) || 'general',
+        lang: decodeURIComponent(parts[3]) || 'en',
+        page: decodeURIComponent(parts[4]) || '1',
+        engines: decodeURIComponent(parts[5]) || 'default',
+        timeRange: decodeURIComponent(parts[6]) || 'all',
+        safeSearch: decodeURIComponent(parts[7]) || '0',
+        params: decodeURIComponent(parts[8]) || 'none',
       };
     }
     return defaults;
@@ -170,11 +192,11 @@ function parseCacheKey(key: string): CacheKeyMetadata {
     return defaults;
   }
 
-  const timeRange = legacyParts[legacyParts.length - 1] ?? 'all';
-  const engines = legacyParts[legacyParts.length - 2] ?? 'default';
-  const page = legacyParts[legacyParts.length - 3] ?? '1';
-  const lang = legacyParts[legacyParts.length - 4] ?? 'en';
-  const category = legacyParts[legacyParts.length - 5] ?? 'general';
+  const timeRange = legacyParts[legacyParts.length - 1];
+  const engines = legacyParts[legacyParts.length - 2];
+  const page = legacyParts[legacyParts.length - 3];
+  const lang = legacyParts[legacyParts.length - 4];
+  const category = legacyParts[legacyParts.length - 5];
   const queryFromKey = legacyParts.slice(0, legacyParts.length - 5).join(':');
 
   return {
@@ -189,26 +211,49 @@ function parseCacheKey(key: string): CacheKeyMetadata {
   };
 }
 
+/**
+ *
+ * @param query
+ * @param options
+ */
 export function getCacheKey(query: string, options: SearchOptions): string {
   const metadata = getCacheKeyMetadata(query, options);
   return `v2:${encodeURIComponent(metadata.query)}:${encodeURIComponent(metadata.category)}:${encodeURIComponent(metadata.lang)}:${encodeURIComponent(metadata.page)}:${encodeURIComponent(metadata.engines)}:${encodeURIComponent(metadata.timeRange)}:${encodeURIComponent(metadata.safeSearch)}:${encodeURIComponent(metadata.params)}`;
 }
 
-export function getCachedResult(query: string, options: SearchOptions): SearchResponse | null {
+/**
+ *
+ * @param query
+ * @param options
+ * @param maxAge
+ */
+export function getCachedResult(
+  query: string,
+  options: SearchOptions,
+  maxAge = CACHE_MAX_AGE
+): SearchResponse | null {
   const key = getCacheKey(query, options);
   const entry = resultCache.get(key);
   if (entry) {
-    if (CACHE_MAX_AGE === Infinity || Date.now() - entry.timestamp <= CACHE_MAX_AGE) {
+    if (maxAge === Infinity || Date.now() - entry.timestamp <= maxAge) {
       return { ...entry.data, _cached: true, _cacheAge: Date.now() - entry.timestamp };
     }
   }
   return null;
 }
 
+/**
+ *
+ * @param query
+ * @param options
+ * @param minSimilarity
+ * @param maxAge
+ */
 export function getSemanticCachedResult(
   query: string,
   options: SearchOptions,
-  minSimilarity = 0.85
+  minSimilarity = 0.85,
+  maxAge = CACHE_MAX_AGE
 ): SearchResponse | null {
   const queryEmbedding = embedText(query.toLowerCase());
   const requestMeta = getCacheKeyMetadata(query, options);
@@ -239,7 +284,7 @@ export function getSemanticCachedResult(
   }
 
   if (bestMatch) {
-    if (CACHE_MAX_AGE === Infinity || Date.now() - bestMatch.timestamp <= CACHE_MAX_AGE) {
+    if (maxAge === Infinity || Date.now() - bestMatch.timestamp <= maxAge) {
       return {
         ...bestMatch.data,
         _cached: true,
@@ -253,6 +298,12 @@ export function getSemanticCachedResult(
   return null;
 }
 
+/**
+ *
+ * @param query
+ * @param options
+ * @param data
+ */
 export function setCachedResult(query: string, options: SearchOptions, data: SearchResponse): void {
   const key = getCacheKey(query, options);
   resultCache.set(key, { timestamp: Date.now(), data });
@@ -261,17 +312,30 @@ export function setCachedResult(query: string, options: SearchOptions, data: Sea
   }
 }
 
-export function getCacheStats(): CacheStats {
-  const isUnlimited = LRU_CACHE_SIZE <= 0;
+/**
+ *
+ * @param options
+ * @param getFileSize
+ */
+export function getCacheStats(
+  options: CachePersistenceOptions = {},
+  getFileSize: (file: string) => number = (file) => fs.statSync(file).size
+): CacheStats {
+  const cacheSize = options.cacheSize ?? LRU_CACHE_SIZE;
+  const persistent = options.persistent ?? PERSISTENT_CACHE_ENABLED;
+  const compression = options.compression ?? CACHE_COMPRESSION;
+  const maxAge = options.maxAge ?? CACHE_MAX_AGE;
+  const cacheFile = options.cacheFile ?? CACHE_FILE;
+  const isUnlimited = cacheSize <= 0;
   const stats: CacheStats = {
     entries: resultCache.size,
-    maxSize: isUnlimited ? 'unlimited' : LRU_CACHE_SIZE,
-    utilization: isUnlimited ? 'n/a' : ((resultCache.size / LRU_CACHE_SIZE) * 100).toFixed(1) + '%',
-    persistent: PERSISTENT_CACHE_ENABLED,
-    compressed: CACHE_COMPRESSION,
-    maxAge: CACHE_MAX_AGE === Infinity ? 'Endless' : CACHE_MAX_AGE / 1000 + 's',
-    file: CACHE_FILE,
-    fileExists: fs.existsSync(CACHE_FILE),
+    maxSize: isUnlimited ? 'unlimited' : cacheSize,
+    utilization: isUnlimited ? 'n/a' : ((resultCache.size / cacheSize) * 100).toFixed(1) + '%',
+    persistent,
+    compressed: compression,
+    maxAge: maxAge === Infinity ? 'Endless' : maxAge / 1000 + 's',
+    file: cacheFile,
+    fileExists: fs.existsSync(cacheFile),
     fileSize: 0,
     oldestEntry: null,
     newestEntry: null,
@@ -279,7 +343,7 @@ export function getCacheStats(): CacheStats {
 
   if (stats.fileExists) {
     try {
-      stats.fileSize = formatBytes(fs.statSync(CACHE_FILE).size);
+      stats.fileSize = formatBytes(getFileSize(cacheFile));
     } catch {
       // Ignore stat errors
     }
@@ -302,8 +366,11 @@ export function getCacheStats(): CacheStats {
   return stats;
 }
 
-export function showCacheStatus(): void {
-  const stats = getCacheStats();
+/**
+ *
+ * @param stats
+ */
+export function showCacheStatus(stats = getCacheStats()): void {
   console.log(colorize('\n╔════════════════════════════════════════════════════════════╗', 'cyan'));
   console.log(
     colorize('║              Cache Status                                  ║', 'bold,brightGreen')
@@ -333,6 +400,9 @@ export function showCacheStatus(): void {
   console.log();
 }
 
+/**
+ *
+ */
 export function clearCache(): void {
   resultCache.clear();
   smartDeduplicator.clear();
@@ -358,6 +428,11 @@ interface CacheListEntry {
   resultCount: number;
 }
 
+/**
+ *
+ * @param limit
+ * @param offset
+ */
 export function listCacheEntries(
   limit = 50,
   offset = 0
@@ -387,6 +462,11 @@ export function listCacheEntries(
   return { entries, total: resultCache.size };
 }
 
+/**
+ *
+ * @param limit
+ * @param offset
+ */
 export function showCacheList(limit = 50, offset = 0): void {
   const { entries, total } = listCacheEntries(limit, offset);
 
@@ -420,6 +500,10 @@ export function showCacheList(limit = 50, offset = 0): void {
   console.log();
 }
 
+/**
+ *
+ * @param searchTerm
+ */
 export function searchCache(searchTerm: string): CacheListEntry[] {
   const results: CacheListEntry[] = [];
   const term = searchTerm.toLowerCase();
@@ -461,6 +545,10 @@ export function searchCache(searchTerm: string): CacheListEntry[] {
   return results;
 }
 
+/**
+ *
+ * @param searchTerm
+ */
 export function showCacheSearch(searchTerm: string): void {
   const results = searchCache(searchTerm);
 
@@ -490,6 +578,10 @@ export function showCacheSearch(searchTerm: string): void {
   console.log();
 }
 
+/**
+ *
+ * @param index
+ */
 export function getCacheEntry(index: number): (CacheEntry & { key: string }) | null {
   let idx = 0;
   for (const [key, value] of resultCache.entries()) {
@@ -501,6 +593,10 @@ export function getCacheEntry(index: number): (CacheEntry & { key: string }) | n
   return null;
 }
 
+/**
+ *
+ * @param index
+ */
 export function inspectCacheEntry(index: number): void {
   const entry = getCacheEntry(index);
 
@@ -550,6 +646,10 @@ export function inspectCacheEntry(index: number): void {
   console.log();
 }
 
+/**
+ *
+ * @param index
+ */
 export function deleteCacheEntry(index: number): boolean {
   let idx = 0;
   let keyToDelete: string | null = null;
@@ -569,6 +669,10 @@ export function deleteCacheEntry(index: number): boolean {
   return false;
 }
 
+/**
+ *
+ * @param outputFile
+ */
 export function exportCache(outputFile: string): ExportResult {
   try {
     const cacheObj: Record<string, CacheEntry> = {};
@@ -591,6 +695,11 @@ export function exportCache(outputFile: string): ExportResult {
   }
 }
 
+/**
+ *
+ * @param inputFile
+ * @param merge
+ */
 export function importCache(inputFile: string, merge = true): ImportResult {
   try {
     if (!fs.existsSync(inputFile)) {
@@ -619,6 +728,10 @@ export function importCache(inputFile: string, merge = true): ImportResult {
   }
 }
 
+/**
+ *
+ * @param maxAge
+ */
 export function pruneCache(maxAge: number): PruneResult {
   const maxTimestamp = Date.now() - maxAge;
   let pruned = 0;
@@ -637,7 +750,15 @@ export function pruneCache(maxAge: number): PruneResult {
   return { pruned, remaining: resultCache.size };
 }
 
-export function showCacheHelp(): void {
+/**
+ *
+ * @param options
+ */
+export function showCacheHelp(options: CachePersistenceOptions = {}): void {
+  const cacheSize = options.cacheSize ?? LRU_CACHE_SIZE;
+  const persistent = options.persistent ?? PERSISTENT_CACHE_ENABLED;
+  const compression = options.compression ?? CACHE_COMPRESSION;
+  const cacheFile = options.cacheFile ?? CACHE_FILE;
   console.log(colorize('\n╔════════════════════════════════════════════════════════════╗', 'cyan'));
   console.log(
     colorize('║              Cache Management Commands                     ║', 'bold,brightGreen')
@@ -658,9 +779,9 @@ export function showCacheHelp(): void {
   console.log();
   console.log(colorize('CACHE CONFIGURATION:', 'yellow,bold'));
   console.log(`  TTL: Endless (no expiration)`);
-  console.log(`  Max Size: ${LRU_CACHE_SIZE <= 0 ? 'Unlimited' : `${LRU_CACHE_SIZE} entries`}`);
-  console.log(`  Persistent: ${PERSISTENT_CACHE_ENABLED ? 'Yes' : 'No'}`);
-  console.log(`  Compressed: ${CACHE_COMPRESSION ? 'Yes' : 'No'}`);
-  console.log(`  Location: ${CACHE_FILE}`);
+  console.log(`  Max Size: ${cacheSize <= 0 ? 'Unlimited' : `${cacheSize} entries`}`);
+  console.log(`  Persistent: ${persistent ? 'Yes' : 'No'}`);
+  console.log(`  Compressed: ${compression ? 'Yes' : 'No'}`);
+  console.log(`  Location: ${cacheFile}`);
   console.log();
 }
