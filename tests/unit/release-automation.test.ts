@@ -31,6 +31,8 @@ describe('release automation', () => {
     expect(workflow).toContain('persist-credentials: false');
     expect(workflow).toContain('RELEASE_PAT is required');
     expect(workflow).toContain('scripts/release/run-release-pipeline.mjs');
+    expect(workflow).toContain('$RUNNER_TEMP/release-result.json');
+    expect(workflow).not.toContain('tee release-result.json');
     expect(workflow).toContain('gh run watch');
   });
 

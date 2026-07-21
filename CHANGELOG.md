@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Keep Auto Release runner output outside the checkout ([searx-auto-release-clean-tree](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-auto-release-clean-tree.toon))
 - Made the 60-test E2E suite provision and clean up its own mock SearXNG backend by default while preserving `E2E_SEARXNG_URL` for explicit live-instance runs. ([searx-30a6](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-30a6.toon))
 - Updated TOON and MCP tests for their current dependency contracts while preserving runtime behavior. ([searx-drjo](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-drjo.toon))
 - Make the E2E suite self-contained by default ([searx-hermetic-e2e](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-hermetic-e2e.toon))

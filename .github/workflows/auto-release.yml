@@ -84,7 +84,7 @@ jobs:
           args=(--json)
           [[ "${{ steps.mode.outputs.push }}" == "true" ]] && args+=(--push)
           [[ "${{ steps.mode.outputs.dry_run }}" == "true" ]] && args+=(--dry-run)
-          node scripts/release/run-release-pipeline.mjs "${args[@]}" | tee release-result.json
+          node scripts/release/run-release-pipeline.mjs "${args[@]}" | tee "$RUNNER_TEMP/release-result.json"
       - name: Wait for tag publication workflow
         if: steps.mode.outputs.push == 'true' && steps.release.outputs.tag != ''
         env:
