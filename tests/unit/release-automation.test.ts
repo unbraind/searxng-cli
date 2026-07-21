@@ -68,9 +68,7 @@ describe('release automation', () => {
 
   it('runs release acceptance against the governed local SearXNG service by default', () => {
     const releaseCheck = readFileSync('scripts/release-check.sh', 'utf8');
-    expect(releaseCheck).toContain(
-      'LIVE_SEARXNG_URL="${SEARXNG_URL:-http://192.168.1.183:38522}"',
-    );
+    expect(releaseCheck).toContain('LIVE_SEARXNG_URL="${SEARXNG_URL:-http://192.168.1.183:38522}"');
   });
 
   it('publishes once to npm and verifies npm and Bun consumers', () => {
