@@ -1,0 +1,45 @@
+id: searx-changelog-migration
+title: Migrate every existing changelog statement into pm-changelog source data
+description: Preserve every existing released and Unreleased changelog statement as closed pm data and prove generated output loses nothing.
+type: Task
+status: closed
+priority: 0
+tags[4]: changelog,data-preservation,migration,pm-changelog
+created_at: "2026-07-21T17:24:35.367Z"
+updated_at: "2026-07-21T17:43:27.128Z"
+deadline: "2026-07-23T17:24:35.367Z"
+closed_at: "2026-07-21T17:43:26.241Z"
+author: codex-root
+acceptance_criteria: No existing changelog data is lost; release only occurs for release-relevant changes; exact package version is verified through npm and Bun
+definition_of_ready: "Live pm, changelog, tags, package registry, GitHub secrets, and pm-cli workflow state inspected"
+parent: searx-auto-release
+risk: high
+confidence: 90
+sprint: 2026-07-release-automation
+release: next
+resolution: "Backfilled 19 historical entries, retained and corrected 12 pending entries, installed pm-changelog, and added a dual-source preservation gate."
+expected_result: Every original statement remains present in pm and generated CHANGELOG.md with reachable historical release windows.
+actual_result: Preservation reports 31 of 31 entries in both sources; pm-changelog check reports unchanged; legacy 2026.3.4-2 anomaly is explicitly retained in metadata.
+dependencies[1]{id,kind,created_at,author,source_kind}:
+  searx-auto-release,related,"2026-07-21T17:24:35.367Z",codex-root,null
+comments[3]{created_at,author,text}:
+  "2026-07-21T17:24:35.367Z",codex-root,Work is governed by the lossless changelog and exact-version publishing acceptance gates.
+  "2026-07-21T17:40:54.987Z",codex-root,Backfilled 19 historical statements and retained 12 existing pending statement items. Preservation check proves all 31 original entries exist in both pm and generated markdown.
+  "2026-07-21T17:42:56.377Z",codex-root,"Direct workspace bun run changelog:pm:check passed with action=unchanged, changed=false, item_count=40; it is not linked through pm test because the pm sandbox intentionally excludes project node_modules required by the package peer."
+notes[2]{created_at,author,text}:
+  "2026-07-21T17:24:35.367Z",codex-root,Publish once to npm and verify the same package through both npm and Bun consumers.
+  "2026-07-21T17:40:54.987Z",codex-root,The unreachable legacy 2026.3.4-2 heading is preserved as provenance metadata; generation maps its three statements to the real v2026.3.4 tag window.
+learnings[3]{created_at,author,text}:
+  "2026-07-21T17:24:35.367Z",codex-root,GitHub tag pushes made with GITHUB_TOKEN do not trigger downstream push workflows; production uses RELEASE_PAT.
+  "2026-07-21T17:40:54.987Z",codex-root,Two prior pending items had dropped Markdown code spans; the preservation gate detected and corrected explorer.exe and E2E_SEARXNG_URL fidelity.
+  "2026-07-21T17:42:56.377Z",codex-root,Tracker-reading commands need tracker pm_context; package-extension commands additionally require project dependency resolution and should be run directly or in a fully installed isolated clone.
+files[3]{path,scope,note}:
+  CHANGELOG.md,project,Generated release history
+  scripts/release/check-changelog-preservation.mjs,project,Lossless migration gate
+  scripts/release/changelog-baseline.json,project,31-entry pre-migration baseline
+tests[1]{command,scope,timeout_seconds,pm_context_mode}:
+  "bun run changelog:preservation:check",project,180,tracker
+docs[1]{path,scope,note}:
+  docs/release-process.md,project,Maintainer release documentation
+close_reason: All 31 pre-migration changelog statements are represented in pm and retained by generated output.
+body: Preserve every existing released and Unreleased changelog statement as closed pm data and prove generated output loses nothing.

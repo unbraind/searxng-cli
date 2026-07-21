@@ -1,106 +1,170 @@
 # Release Process
 
-This repository has not shipped a public release yet. This document defines the release baseline.
+searxng-cli uses the same change-aware daily release model as pm-cli: a scheduled workflow checks
+for release-relevant commits after the latest tag, generates the changelog from closed `pm` items,
+runs the full release gates, and only then creates and pushes a calendar-versioned release commit
+and tag. The tag starts the publication workflow.
 
-## Version Policy
+## Distribution model
 
-- Version format: `YYYY.M.D` or `YYYY.M.D-N`
-- `N` is the release number for that exact UTC day
-- If there is only one release that day, omit `-N`
-- Date segments and `N` are strict SemVer numeric identifiers (no zero padding)
-- Version scripts compute the next version from existing release tags for today
+The package is published once, to the public npm registry as `searxng-cli`. npm, npx, Bun, and
+bunx all consume that same registry artifact; Bun does not have a separate package registry to
+publish to. A release is complete only after the exact version is visible through `npm view` and
+executes successfully through both `npx` and `bunx`.
 
-Examples:
+Publication uses `npm publish --access public --provenance` on a GitHub-hosted runner with
+`id-token: write`. This follows GitHub's documented npm provenance workflow:
+<https://docs.github.com/en/actions/tutorials/publish-packages/publish-nodejs-packages>.
 
-- `2026.3.4` (first release on 2026-03-04)
-- `2026.3.4-2` (second release on 2026-03-04)
+## Version policy
 
-Commands:
+- First release on a UTC day: `YYYY.M.D`
+- Additional explicitly prepared release on that day: `YYYY.M.D-N`, starting at `-2`
+- Scheduled Auto Release cuts at most one release per UTC day.
+- Month, day, and ordinal are unpadded SemVer numeric identifiers.
+
+The release pipeline computes the version from UTC and reachable `v*` tags. `package.json`, the
+release tag, npm metadata, and GitHub Release must all carry exactly the same version.
+
+## Changelog ownership and preservation
+
+`CHANGELOG.md` is generated data. Its canonical source is the closed item set under `.agents/pm`,
+rendered by the latest installed `pm-changelog` package:
 
 ```bash
-bun run version:sync
+bun run changelog:pm
+bun run changelog:pm:check
+bun run changelog:preservation:check
+```
+
+The migration preserved all 31 statements that existed before generation: 12 pending statements
+and 19 historical statements. The preservation gate checks both sides of the contract:
+
+1. every baseline statement exists as a `pm` item title;
+2. every baseline statement exists in generated `CHANGELOG.md`;
+3. every reachable historical release heading is retained.
+
+The old hand-written file labeled the initial baseline `2026.3.4-2`, although no such tag exists.
+Git history shows those entries were Unreleased at the real `v2026.3.4` tag. Generated history uses
+the real `2026.3.4` release window; the legacy label is retained in the corresponding `pm` item
+notes and `scripts/release/changelog-baseline.json` so that anomaly is not lost.
+
+Do not edit generated changelog text by hand. Add or correct the closed `pm` item, regenerate, and
+run both checks. If classification itself is wrong, fix it in the separately maintained
+`pm-changelog` package and then reinstall that package here.
+
+## Release eligibility
+
+`scripts/release/run-release-pipeline.mjs` exits successfully without mutation when:
+
+- there are no commits after the latest release tag;
+- all changed paths are under `.agents/pm/` (tracker-only closeout must not create a package);
+- a release tag already exists for the current UTC day.
+
+Any product, workflow, documentation, package, or generated changelog change is release-relevant.
+The pipeline requires a clean worktree, regenerates the changelog for the target version, runs the
+preservation gate and `release:dry-run`, then creates `release: <version>` and `v<version>`.
+
+## GitHub workflows
+
+### Auto Release
+
+`.github/workflows/auto-release.yml` runs daily at 02:47 UTC (away from the high-load start of the
+hour) and supports manual dispatch.
+
+- Scheduled runs use `push=true` and `dry_run=false`.
+- Manual runs default to a non-mutating dry run.
+- Production runs fail before release mutation when `RELEASE_PAT` is missing.
+- The workflow waits for the tag-triggered Release run and reports its result.
+- A failed scheduled run opens or updates `Auto Release blocked: scheduled run failed`.
+
+GitHub intentionally does not trigger another push workflow from a push authenticated with the
+repository `GITHUB_TOKEN`. Auto Release therefore uses a narrowly scoped maintainer `RELEASE_PAT`
+for the atomic protected `master` plus tag push. See GitHub's workflow-trigger documentation:
+<https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow>.
+
+### Release
+
+`.github/workflows/release.yml` runs for `v*.*.*` tag pushes and can be manually recovered for an
+existing tag. It:
+
+1. checks out full tag history and verifies tag/package version equality;
+2. installs with the frozen Bun lockfile;
+3. runs dependency audit, release dry run, generated changelog check, preservation check, and pack
+   inspection;
+4. skips `npm publish` only when that exact version is already present (safe recovery);
+5. publishes to npm with provenance;
+6. waits for and verifies the exact version with npm, npx, and bunx;
+7. creates or repairs the matching GitHub Release.
+
+## Required release environment
+
+Create a GitHub Environment named `release` with:
+
+- `NPM_TOKEN`: npm automation/granular token allowed to publish `searxng-cli`;
+- `RELEASE_PAT`: maintainer token allowed to push to protected `master` and create tags.
+
+Keep the workflow permissions minimal. The npm job receives `id-token: write` only for provenance,
+and the PAT is passed only to the atomic git push operation. Do not persist it through checkout or
+dependency installation.
+
+## Local operation
+
+Refresh tag truth before diagnostics:
+
+```bash
+git fetch --tags --force
+```
+
+Validate generated history:
+
+```bash
+bun run changelog:pm
+bun run changelog:pm:check
+bun run changelog:preservation:check
+```
+
+Run the complete non-mutating release path from a clean worktree:
+
+```bash
+bun run release:pipeline:dry-run
+```
+
+The existing lower-level validation remains available:
+
+```bash
 bun run version:check
 bun run version:audit
-```
-
-## Pre-Release Validation
-
-Run this before tagging or publishing:
-
-```bash
 bun run release:dry-run
+bun run test:release
 ```
 
-It runs:
+## Manual dispatch and recovery
 
-- `bun run version:check`
-- `bun run lint`
-- `bun run secrets:history`
-- `bun run build`
-- `bun run test:unit`
-- `bun run smoke:package`
-- `npm pack --dry-run`
-
-## Package Execution Compatibility
-
-The package must work in both launch paths:
+Dry-run Auto Release:
 
 ```bash
-npx searxng --version
-npx searxng-cli --version
-bunx searxng --version
-bunx searxng-cli --version
+gh workflow run auto-release.yml --ref master -f push=false -f dry_run=true
 ```
 
-## CI/CD Overview
-
-- `ci.yml`: Bun and Node quality/test/package smoke validation on push and PR
-- `secret-scan.yml`: full-history gitleaks scan with SARIF upload
-- `codeql.yml`: static code scanning
-- `release.yml`: manual workflow for final validation, optional npm publish, optional draft GitHub release
-
-## Publish Controls
-
-Publishing is explicit and manual:
-
-- Workflow: GitHub Actions `release`
-- Required secret: `NPM_TOKEN`
-- npm publish command: `npm publish --access public --provenance`
-
-## First Public Release Checklist
-
-1. Keep `package.json` version on the first UTC-day release (`YYYY.M.D` with no suffix).
-2. Make the GitHub repository public.
-3. Ensure branch protection requires `ci`, `secret-scan`, and `codeql` checks on `master`.
-4. Ensure the GitHub `release` environment exists and includes secret `NPM_TOKEN`.
-5. Confirm npm package ownership and npm account publish permissions.
-6. Run local preflight:
+After a tag exists, recover publication or GitHub Release creation without moving the tag:
 
 ```bash
-bun run release:dry-run
+gh workflow run release.yml --ref master -f tag=vYYYY.M.D
 ```
 
-7. Trigger GitHub Actions workflow `release` with:
-   - `publish_npm = true`
-   - `create_github_release = true`
+The recovery run detects an already published exact npm version, skips duplicate publication, and
+still repeats npm/npx/bunx verification plus GitHub Release repair.
 
-8. Verify:
-   - npm package install/exec with `npx` and `bunx`
-   - generated draft GitHub release notes
-   - release tag matches package version (`vYYYY.M.D` or `vYYYY.M.D-N`)
-
-## History Safety
-
-Before any rewrite operation:
+## Post-release proof
 
 ```bash
-mkdir -p backup
-git bundle create backup/searxng-cli-pre-rewrite-$(date +%Y%m%d-%H%M%S).bundle --all
+npm view searxng-cli@YYYY.M.D version dist.integrity dist.unpackedSize --json
+npx --yes --package searxng-cli@YYYY.M.D -- searxng --version
+bunx --bun searxng-cli@YYYY.M.D --version
+gh release view vYYYY.M.D --json tagName,name,isDraft,isPrerelease,url
+bun run release:verify-published -- --version YYYY.M.D
 ```
 
-After rewrite:
-
-```bash
-bun run secrets:history
-bun run release:dry-run
-```
+Do not call a release complete from a green publish step alone. Registry metadata and both consumer
+execution paths must agree with the tag.

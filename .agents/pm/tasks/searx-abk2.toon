@@ -1,0 +1,17 @@
+id: searx-abk2
+title: Pinned every GitHub Action to a full commit SHA and enabled repository enforcement for SHA pins.
+description: Pinned all GitHub Actions to full commit SHAs and enabled repository enforcement requiring SHA pins.
+type: Task
+status: closed
+priority: 2
+tags[3]: changelog,ci,security
+created_at: "2026-07-21T17:17:54.713Z"
+updated_at: "2026-07-21T17:44:36.008Z"
+closed_at: "2026-07-21T17:17:54.713Z"
+author: claude-code
+parent: searx-ci-modernization
+resolution: The shipped behavior is preserved as canonical pm-changelog source data.
+expected_result: The original changelog statement remains represented without semantic loss.
+actual_result: The statement exists as a closed pm item and appears in generated CHANGELOG.md under its reachable release window.
+close_reason: Closed at creation via pm create
+body: ""

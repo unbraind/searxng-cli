@@ -1,0 +1,47 @@
+id: searx-release-publishing
+title: Implement guarded auto-release and npm plus Bun delivery verification
+description: "Add release relevance detection, calendar versioning, guarded tag push, npm provenance publication, and exact npx plus bunx verification."
+type: Task
+status: closed
+priority: 0
+tags[5]: bun,github-actions,npm,provenance,release
+created_at: "2026-07-21T17:24:36.247Z"
+updated_at: "2026-07-21T17:43:28.865Z"
+deadline: "2026-07-23T17:24:36.247Z"
+closed_at: "2026-07-21T17:43:28.006Z"
+author: codex-root
+acceptance_criteria: No existing changelog data is lost; release only occurs for release-relevant changes; exact package version is verified through npm and Bun
+definition_of_ready: "Live pm, changelog, tags, package registry, GitHub secrets, and pm-cli workflow state inspected"
+parent: searx-auto-release
+risk: high
+confidence: 90
+sprint: 2026-07-release-automation
+release: next
+resolution: "Implemented daily/manual eligibility checks, calendar versioning, protected PAT push, idempotent npm provenance publishing, and exact npm/npx/bunx verification."
+expected_result: Meaningful changes create one validated tag and one npm artifact usable by npm and Bun; skips and retries are safe.
+actual_result: Actionlint is clean; five workflow contract tests pass; audit is clean; packed npx/bunx smoke passes; isolated v2026.7.21 pipeline dry run completed cleanly.
+dependencies[1]{id,kind,created_at,author,source_kind}:
+  searx-auto-release,related,"2026-07-21T17:24:36.247Z",codex-root,null
+comments[2]{created_at,author,text}:
+  "2026-07-21T17:24:36.247Z",codex-root,Work is governed by the lossless changelog and exact-version publishing acceptance gates.
+  "2026-07-21T17:40:52.503Z",codex-root,"Implemented daily/manual Auto Release, protected PAT push, tag-triggered idempotent npm provenance publishing, and exact npm/npx/bunx verification."
+notes[2]{created_at,author,text}:
+  "2026-07-21T17:24:36.247Z",codex-root,Publish once to npm and verify the same package through both npm and Bun consumers.
+  "2026-07-21T17:40:52.503Z",codex-root,Bun uses the npm registry; the workflow publishes once and verifies both consumer toolchains.
+learnings[2]{created_at,author,text}:
+  "2026-07-21T17:24:36.247Z",codex-root,GitHub tag pushes made with GITHUB_TOKEN do not trigger downstream push workflows; production uses RELEASE_PAT.
+  "2026-07-21T17:40:52.503Z",codex-root,Pipeline outputs must explicitly distinguish skips from new tags so a no-op run never waits on an old release workflow.
+files[5]{path,scope,note}:
+  CHANGELOG.md,project,Generated release history
+  .github/workflows/auto-release.yml,project,Scheduled and manual release driver
+  .github/workflows/release.yml,project,Tag publication and recovery workflow
+  scripts/release/run-release-pipeline.mjs,project,Release orchestration
+  scripts/release/verify-published-release.mjs,project,Registry and consumer verification
+tests[3]{command,scope,timeout_seconds}:
+  bun audit,project,120
+  "bun run smoke:package",project,240
+  "bun run test:release",project,180
+docs[1]{path,scope,note}:
+  docs/release-process.md,project,Maintainer release documentation
+close_reason: Guarded Auto Release and tag publication workflows are implemented and verified.
+body: "Add release relevance detection, calendar versioning, guarded tag push, npm provenance publication, and exact npx plus bunx verification."

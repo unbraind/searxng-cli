@@ -1,0 +1,52 @@
+id: searx-auto-release
+title: Automate change-aware releases with generated project history
+description: "Port pm-cli's scheduled and manual change-aware release model with lossless pm-changelog history, calendar versions, protected tags, npm provenance, and npm plus Bun consumer verification."
+type: Feature
+status: closed
+priority: 0
+tags[6]: automation,bun,changelog,github-actions,npm,release
+created_at: "2026-07-21T17:24:34.395Z"
+updated_at: "2026-07-21T17:43:33.569Z"
+deadline: "2026-07-23T17:24:34.395Z"
+closed_at: "2026-07-21T17:43:32.728Z"
+author: codex-root
+acceptance_criteria: No existing changelog data is lost; release only occurs for release-relevant changes; exact package version is verified through npm and Bun
+definition_of_ready: "Live pm, changelog, tags, package registry, GitHub secrets, and pm-cli workflow state inspected"
+parent: searx-security-modernization
+risk: high
+confidence: 90
+sprint: 2026-07-release-automation
+release: next
+resolution: Ported pm-cli release invariants to searxng-cli with repository-specific Bun installation and verification.
+expected_result: Release-relevant changes automatically produce a verified calendar release while no-change and tracker-only runs skip safely and all legacy changelog data remains available.
+actual_result: "Implementation, generated 40-item changelog, 31-entry preservation baseline, workflows, recovery docs, unit/E2E/package/audit/actionlint gates, and isolated full pipeline dry run all pass."
+dependencies[1]{id,kind,created_at,author,source_kind}:
+  searx-security-modernization,related,"2026-07-21T17:24:34.395Z",codex-root,null
+comments[2]{created_at,author,text}:
+  "2026-07-21T17:24:34.395Z",codex-root,Work is governed by the lossless changelog and exact-version publishing acceptance gates.
+  "2026-07-21T17:43:31.591Z",codex-root,"Completed all three child tasks. Verified actionlint v1.7.12, five release contract tests, 622 unit tests, 60 E2E tests, zero audit findings, npx and bunx package smoke, and isolated clean-clone v2026.7.21 dry run."
+notes[2]{created_at,author,text}:
+  "2026-07-21T17:24:34.395Z",codex-root,Publish once to npm and verify the same package through both npm and Bun consumers.
+  "2026-07-21T17:43:31.591Z",codex-root,Production scheduling becomes active when this workflow reaches master and the release environment contains RELEASE_PAT plus the existing NPM_TOKEN.
+learnings[2]{created_at,author,text}:
+  "2026-07-21T17:24:34.395Z",codex-root,GitHub tag pushes made with GITHUB_TOKEN do not trigger downstream push workflows; production uses RELEASE_PAT.
+  "2026-07-21T17:43:31.591Z",codex-root,"A Bun-compatible publication means one npm registry publish plus exact-version bunx verification, not a second registry mutation."
+files[3]{path,scope,note}:
+  CHANGELOG.md,project,Generated release history
+  .gitignore,project,Retain packaged pm-changelog runtime while excluding node_modules
+  bun.lock,project,Stable pm CLI peer and audited body-parser override
+tests[3]:
+  - command: bun audit
+    scope: project
+    timeout_seconds: 120
+  - command: "bun run changelog:preservation:check"
+    scope: project
+    timeout_seconds: 180
+    pm_context_mode: tracker
+  - command: "bun run test:release"
+    scope: project
+    timeout_seconds: 180
+docs[1]{path,scope,note}:
+  docs/release-process.md,project,Maintainer release documentation
+close_reason: "Change-aware automated releases, lossless generated changelog history, npm provenance publishing, Bun verification, tests, and detailed pm evidence are complete."
+body: "Port pm-cli's scheduled and manual change-aware release model with lossless pm-changelog history, calendar versions, protected tags, npm provenance, and npm plus Bun consumer verification."

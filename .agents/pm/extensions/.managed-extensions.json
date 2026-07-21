@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-07-16T16:52:53.923Z",
+  "updated_at": "2026-07-21T17:54:42.825Z",
   "entries": [
     {
       "name": "builtin-beads-import",
@@ -227,6 +227,28 @@
         "location": "todos",
         "name": "todos",
         "package": "@unbrained/pm-todos"
+      }
+    },
+    {
+      "name": "pm-changelog",
+      "directory": "pm-changelog",
+      "scope": "project",
+      "manifest_version": "2026.7.18",
+      "manifest_entry": "./dist/extension.js",
+      "capabilities": [
+        "commands",
+        "importers",
+        "renderers",
+        "schema"
+      ],
+      "installed_at": "2026-07-21T17:24:58.795Z",
+      "updated_at": "2026-07-21T17:24:58.795Z",
+      "source": {
+        "kind": "npm",
+        "input": "npm:pm-changelog",
+        "location": "package",
+        "package": "pm-changelog",
+        "version": "2026.7.18"
       }
     }
   ]

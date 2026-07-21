@@ -1,0 +1,17 @@
+id: searx-kh5v
+title: "Eliminated all known dependency audit findings, including the critical Vitest and low-severity esbuild advisories reported by GitHub Dependabot."
+description: "Resolved every dependency audit finding surfaced by GitHub Dependabot, including the critical Vitest advisory and the low-severity esbuild advisory."
+type: Issue
+status: closed
+priority: 1
+tags[3]: changelog,dependencies,security
+created_at: "2026-07-21T17:16:58.283Z"
+updated_at: "2026-07-21T17:44:38.027Z"
+closed_at: "2026-07-21T17:16:58.283Z"
+author: claude-code
+parent: searx-security-modernization
+resolution: The shipped behavior is preserved as canonical pm-changelog source data.
+expected_result: The original changelog statement remains represented without semantic loss.
+actual_result: The statement exists as a closed pm item and appears in generated CHANGELOG.md under its reachable release window.
+close_reason: Closed at creation via pm create
+body: ""

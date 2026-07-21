@@ -1,0 +1,17 @@
+id: searx-pkax
+title: Added conservative global coverage thresholds so test-coverage regressions fail the quality gate.
+description: Introduced conservative global coverage thresholds so coverage regressions fail the quality gate.
+type: Task
+status: closed
+priority: 2
+tags[2]: changelog,coverage
+created_at: "2026-07-21T17:17:59.118Z"
+updated_at: "2026-07-21T17:44:41.102Z"
+closed_at: "2026-07-21T17:17:59.118Z"
+author: claude-code
+parent: searx-coverage-governance
+resolution: The shipped behavior is preserved as canonical pm-changelog source data.
+expected_result: The original changelog statement remains represented without semantic loss.
+actual_result: The statement exists as a closed pm item and appears in generated CHANGELOG.md under its reachable release window.
+close_reason: Closed at creation via pm create
+body: ""

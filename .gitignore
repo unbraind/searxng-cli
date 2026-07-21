@@ -3,6 +3,8 @@ node_modules/
 
 # Build output
 dist/
+!.agents/pm/extensions/pm-changelog/dist/
+!.agents/pm/extensions/pm-changelog/dist/**
 *.tsbuildinfo
 
 # Coverage
