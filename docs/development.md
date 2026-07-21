@@ -231,13 +231,20 @@ SEARXNG_URL=http://localhost:8080 searxng-cli --test
 
 ## Release Process
 
-### 1. Update Version
+### 1. Record the change in pm
+
+Close the implementation item with evidence. `CHANGELOG.md` is generated from closed `pm` items;
+do not edit it by hand.
+
+### 2. Generate and verify the changelog
 
 ```bash
-bun run version:sync
+bun run changelog:pm
+bun run changelog:pm:check
+bun run changelog:preservation:check
 ```
 
-### 2. Run Tests
+### 3. Run tests
 
 ```bash
 bun run typecheck
@@ -248,15 +255,15 @@ bun run smoke:package
 bun run release:dry-run
 ```
 
-### 3. Update Changelog
-
-Update `CHANGELOG.md` with changes.
-
-### 4. Publish
+### 4. Exercise the automated release path
 
 ```bash
-Use the `release` GitHub Actions workflow with manual inputs.
+bun run release:pipeline:dry-run
 ```
+
+Production publishing is performed by the scheduled Auto Release workflow when release-relevant
+changes exist. The tag-triggered Release workflow publishes one npm artifact and verifies it
+through both npx and bunx. See [Release Process](./release-process.md).
 
 ## Contributing
 

@@ -1,0 +1,17 @@
+id: searx-30a6
+title: Made the 60-test E2E suite provision and clean up its own mock SearXNG backend by default while preserving `E2E_SEARXNG_URL` for explicit live-instance runs.
+description: The E2E suite now provisions and tears down its own mock SearXNG backend by default while honoring E2E_SEARXNG_URL.
+type: Issue
+status: closed
+priority: 2
+tags[3]: changelog,e2e,testing
+created_at: "2026-07-21T17:18:00.551Z"
+updated_at: "2026-07-21T17:44:32.958Z"
+closed_at: "2026-07-21T17:18:00.551Z"
+author: claude-code
+parent: searx-hermetic-e2e
+resolution: The shipped behavior is preserved as canonical pm-changelog source data.
+expected_result: The original changelog statement remains represented without semantic loss.
+actual_result: The statement exists as a closed pm item and appears in generated CHANGELOG.md under its reachable release window.
+close_reason: Closed at creation via pm create
+body: ""

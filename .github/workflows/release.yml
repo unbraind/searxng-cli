@@ -1,84 +1,80 @@
-name: release
+name: Release
 
 on:
+  push:
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
     inputs:
-      publish_npm:
-        description: Publish to npm
+      tag:
+        description: Existing release tag to validate or recover
         required: true
-        type: boolean
-        default: false
-      create_github_release:
-        description: Create draft GitHub release
-        required: true
-        type: boolean
-        default: false
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.ref_name || inputs.tag }}
   cancel-in-progress: false
 
 jobs:
-  validate:
+  publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: release
     permissions:
-      contents: read
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 0
+          ref: ${{ inputs.tag || github.ref }}
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: latest
+          bun-version: 1.3.14
       - run: bun install --frozen-lockfile
+      - run: npm install --global @unbrained/pm-cli@latest
+      - name: Verify tag and package version
+        id: version
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          [[ "$RELEASE_TAG" == "v$version" ]] || { echo "Tag $RELEASE_TAG does not match package version $version"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+      - run: bun audit
       - run: bun run release:dry-run
+      - run: bun run changelog:pm:check
+      - run: bun run changelog:preservation:check
       - run: npm pack --dry-run
-
-  publish-npm:
-    needs: validate
-    if: ${{ github.event.inputs.publish_npm == 'true' }}
-    runs-on: ubuntu-latest
-    environment: release
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version: latest
-      - run: bun install --frozen-lockfile
-      - run: bun run build
-      - run: npm publish --access public --provenance
+      - name: Detect recovery publication
+        id: registry
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if npm view "searxng-cli@$VERSION" version >/dev/null 2>&1; then echo "published=true" >> "$GITHUB_OUTPUT"; else echo "published=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Publish to npm with provenance
+        if: steps.registry.outputs.published != 'true'
+        run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  draft-github-release:
-    needs: validate
-    if: ${{ github.event.inputs.create_github_release == 'true' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-      - name: Compute version
-        id: version
+      - name: Verify npm and Bun consumers
+        run: bun run release:verify-published -- --version "${{ steps.version.outputs.version }}"
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          VERSION="$(node -e "console.log(require('./package.json').version)")"
-          echo "version=v${VERSION}" >> "$GITHUB_OUTPUT"
-      - uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          draft: true
-          generate_release_notes: true
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --verify-tag --latest
+          else
+            gh release create "$TAG" --verify-tag --generate-notes --latest --title "$TAG"
+          fi

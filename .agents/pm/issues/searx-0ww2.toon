@@ -1,0 +1,17 @@
+id: searx-0ww2
+title: Changed trusted-source ranking to use parsed hostname boundaries instead of attacker-controlled URL substring matches.
+description: Reworked trusted-source ranking to compare parsed hostname boundaries rather than attacker-controlled URL substrings.
+type: Issue
+status: closed
+priority: 1
+tags[3]: changelog,security,url-validation
+created_at: "2026-07-21T17:17:53.367Z"
+updated_at: "2026-07-21T17:44:32.035Z"
+closed_at: "2026-07-21T17:17:53.367Z"
+author: claude-code
+parent: searx-remote-fetch-hardening
+resolution: The shipped behavior is preserved as canonical pm-changelog source data.
+expected_result: The original changelog statement remains represented without semantic loss.
+actual_result: The statement exists as a closed pm item and appears in generated CHANGELOG.md under its reachable release window.
+close_reason: Closed at creation via pm create
+body: ""

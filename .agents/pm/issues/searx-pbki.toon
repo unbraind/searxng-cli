@@ -1,0 +1,17 @@
+id: searx-pbki
+title: "Hardened remote result-content enrichment with URL, redirect, content-type, response-size, and concurrency boundaries."
+description: "Added URL, redirect, content-type, response-size, and concurrency boundaries to remote result-content enrichment."
+type: Issue
+status: closed
+priority: 1
+tags[3]: changelog,security,ssrf
+created_at: "2026-07-21T17:17:52.699Z"
+updated_at: "2026-07-21T17:44:40.114Z"
+closed_at: "2026-07-21T17:17:52.699Z"
+author: claude-code
+parent: searx-remote-fetch-hardening
+resolution: The shipped behavior is preserved as canonical pm-changelog source data.
+expected_result: The original changelog statement remains represented without semantic loss.
+actual_result: The statement exists as a closed pm item and appears in generated CHANGELOG.md under its reachable release window.
+close_reason: Closed at creation via pm create
+body: ""

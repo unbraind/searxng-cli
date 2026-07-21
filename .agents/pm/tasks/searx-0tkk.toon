@@ -1,0 +1,17 @@
+id: searx-0tkk
+title: Upgraded Gitleaks Action to its Node 24-based v3 runtime.
+description: Upgraded the Gitleaks Action to the Node 24-based v3 runtime.
+type: Task
+status: closed
+priority: 2
+tags[3]: changelog,ci,security
+created_at: "2026-07-21T17:17:55.616Z"
+updated_at: "2026-07-21T17:44:31.189Z"
+closed_at: "2026-07-21T17:17:55.616Z"
+author: claude-code
+parent: searx-ci-modernization
+resolution: The shipped behavior is preserved as canonical pm-changelog source data.
+expected_result: The original changelog statement remains represented without semantic loss.
+actual_result: The statement exists as a closed pm item and appears in generated CHANGELOG.md under its reachable release window.
+close_reason: Closed at creation via pm create
+body: ""

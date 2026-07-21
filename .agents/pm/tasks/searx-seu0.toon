@@ -1,0 +1,17 @@
+id: searx-seu0
+title: Enabled native GitHub secret scanning and push protection alongside the existing Gitleaks checks.
+description: Turned on native GitHub secret scanning and push protection in addition to the existing Gitleaks workflow.
+type: Task
+status: closed
+priority: 2
+tags[3]: changelog,ci,security
+created_at: "2026-07-21T17:17:54.023Z"
+updated_at: "2026-07-21T17:44:42.082Z"
+closed_at: "2026-07-21T17:17:54.023Z"
+author: claude-code
+parent: searx-ci-modernization
+resolution: The shipped behavior is preserved as canonical pm-changelog source data.
+expected_result: The original changelog statement remains represented without semantic loss.
+actual_result: The statement exists as a closed pm item and appears in generated CHANGELOG.md under its reachable release window.
+close_reason: Closed at creation via pm create
+body: ""

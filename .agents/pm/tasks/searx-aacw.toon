@@ -1,0 +1,17 @@
+id: searx-aacw
+title: Updated Windows browser launching to use the directly spawnable `explorer.exe` executable.
+description: Changed Windows browser launching to spawn explorer.exe directly.
+type: Task
+status: closed
+priority: 3
+tags[2]: changed,changelog
+created_at: "2026-07-21T17:17:58.182Z"
+updated_at: "2026-07-21T17:44:35.082Z"
+closed_at: "2026-07-21T17:17:58.182Z"
+author: claude-code
+parent: searx-security-modernization
+resolution: The shipped behavior is preserved as canonical pm-changelog source data.
+expected_result: The original changelog statement remains represented without semantic loss.
+actual_result: The statement exists as a closed pm item and appears in generated CHANGELOG.md under its reachable release window.
+close_reason: Closed at creation via pm create
+body: ""

@@ -1,0 +1,17 @@
+id: searx-l2pe
+title: "Updated production and development dependencies, including MCP SDK 1.29, TOON 2.3, Commander 15, node-html-parser 9, Vitest 4, TypeScript 7, Prettier 3.9, and esbuild 0.28.1."
+description: Refreshed production and development dependencies to current majors across the toolchain.
+type: Task
+status: closed
+priority: 2
+tags[3]: changed,changelog,dependencies
+created_at: "2026-07-21T17:17:57.282Z"
+updated_at: "2026-07-21T17:44:39.045Z"
+closed_at: "2026-07-21T17:17:57.282Z"
+author: claude-code
+parent: searx-dependency-remediation
+resolution: The shipped behavior is preserved as canonical pm-changelog source data.
+expected_result: The original changelog statement remains represented without semantic loss.
+actual_result: The statement exists as a closed pm item and appears in generated CHANGELOG.md under its reachable release window.
+close_reason: Closed at creation via pm create
+body: ""

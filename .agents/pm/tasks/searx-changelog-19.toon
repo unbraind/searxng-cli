@@ -1,0 +1,39 @@
+id: searx-changelog-19
+title: Full-history secret scanning and version-policy validation scripts.
+description: Historical changelog source entry preserved from the pre-pm CHANGELOG.md 2026.3.4 section.
+type: Task
+status: closed
+priority: 2
+tags[4]: added,changelog,historical,release-2026.3.4
+created_at: "2026-07-21T17:27:36.364Z"
+updated_at: "2026-07-21T17:45:05.133Z"
+deadline: "2026-07-23T17:27:36.364Z"
+closed_at: "2026-07-21T17:27:36.364Z"
+assignee: codex-root
+author: codex-root
+acceptance_criteria: The exact original changelog statement is retained by pm-changelog generation.
+definition_of_ready: Original CHANGELOG.md statement and corresponding release tag inspected.
+parent: searx-changelog-migration
+risk: low
+confidence: 100
+sprint: historical-backfill
+release: 2026.3.4
+resolution: The shipped behavior is preserved as canonical pm-changelog source data.
+expected_result: The original changelog statement remains represented without semantic loss.
+actual_result: The statement exists as a closed pm item and appears in generated CHANGELOG.md under its reachable release window.
+dependencies[1]{id,kind,created_at,author,source_kind}:
+  searx-changelog-migration,related,"2026-07-21T17:27:36.364Z",codex-root,null
+comments[1]{created_at,author,text}:
+  "2026-07-21T17:27:36.364Z",codex-root,Preserved verbatim from CHANGELOG.md under 2026.3.4.
+notes[1]{created_at,author,text}:
+  "2026-07-21T17:27:36.364Z",codex-root,"Legacy CHANGELOG later labeled this baseline 2026.3.4-2; git history proves the entries were Unreleased at the actual v2026.3.4 tag,so generation uses the real tag while preserving that label here."
+learnings[1]{created_at,author,text}:
+  "2026-07-21T17:27:36.364Z",codex-root,Explicit release metadata makes historical backfill deterministic across current tracker creation timestamps.
+files[1]{path,scope,note}:
+  CHANGELOG.md,project,Original historical statement
+tests[1]{command,scope,timeout_seconds}:
+  "bun run changelog:preservation:check",project,180
+docs[1]{path,scope,note}:
+  docs/release-process.md,project,Changelog migration policy
+close_reason: Backfill 2026.3.4 changelog entry
+body: "Original changelog entry: Full-history secret scanning and version-policy validation scripts."

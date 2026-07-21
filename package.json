@@ -31,6 +31,14 @@
     "version:check": "bash scripts/version-check.sh",
     "version:audit": "bash scripts/version-audit-tags.sh",
     "release:check": "bash scripts/release-check.sh",
+    "release:pipeline": "node scripts/release/run-release-pipeline.mjs",
+    "release:pipeline:dry-run": "node scripts/release/run-release-pipeline.mjs --dry-run --json",
+    "release:verify-published": "node scripts/release/verify-published-release.mjs",
+    "test:release": "vitest run tests/unit/release-automation.test.ts",
+    "changelog:pm:install": "pm install npm:pm-changelog --project",
+    "changelog:pm": "node scripts/release/generate-changelog.mjs",
+    "changelog:pm:check": "node scripts/release/generate-changelog.mjs --check",
+    "changelog:preservation:check": "node scripts/release/check-changelog-preservation.mjs",
     "secrets:history": "bash scripts/secret-scan-history.sh",
     "smoke:package": "bash scripts/package-smoke.sh",
     "release:dry-run": "bash scripts/release-dry-run.sh"
@@ -81,6 +89,7 @@
   ],
   "devDependencies": {
     "@types/node": "^22.20.1",
+    "@unbrained/pm-cli": "2026.7.21",
     "@vitest/coverage-v8": "4.1.10",
     "esbuild": "0.28.1",
     "prettier": "3.9.5",
@@ -96,6 +105,7 @@
   },
   "overrides": {
     "@hono/node-server": "1.19.14",
+    "body-parser": "2.3.0",
     "express-rate-limit": "8.5.2",
     "fast-uri": "3.1.3",
     "hono": "4.12.30",

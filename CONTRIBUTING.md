@@ -72,4 +72,6 @@ bun run version:audit
 bun run release:dry-run
 ```
 
-Publishing is manual via GitHub Actions release workflow.
+`CHANGELOG.md` is generated from closed `pm` items with `pm-changelog`; do not edit it by hand.
+Use `bun run changelog:pm:check` and `bun run changelog:preservation:check` before merge. Publishing
+is change-aware and automated by the daily Auto Release workflow; see `docs/release-process.md`.
