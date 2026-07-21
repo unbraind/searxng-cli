@@ -1,5 +1,9 @@
 {
   "source": "CHANGELOG.md before pm-changelog migration on 2026-07-21",
+  "preamble": [
+    "All notable changes to this project will be documented in this file.",
+    "The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)."
+  ],
   "legacyHeadingNote": "The original 2026.3.4 baseline was later labeled 2026.3.4-2 despite no matching git tag; generated history correctly uses the reachable v2026.3.4 tag and pm item notes retain the legacy label.",
   "requiredGeneratedHeadings": [
     "2026.3.6-3 - 2026-03-06",

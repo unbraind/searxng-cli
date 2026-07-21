@@ -10,9 +10,10 @@ const titles = new Set(tracker.items.map((item) => item.title));
 const missingFromTracker = baseline.entries.filter((entry) => !titles.has(entry.title));
 const missingFromChangelog = baseline.entries.filter((entry) => !changelog.includes(entry.title.replace(/\s+/g, " ")));
 const missingHeadings = baseline.requiredGeneratedHeadings.filter((heading) => !changelog.includes(`## ${heading}`));
+const missingPreamble = baseline.preamble.filter((line) => !changelog.includes(line));
 
-if (missingFromTracker.length || missingFromChangelog.length || missingHeadings.length) {
-  console.error(JSON.stringify({ missingFromTracker, missingFromChangelog, missingHeadings }, null, 2));
+if (missingFromTracker.length || missingFromChangelog.length || missingHeadings.length || missingPreamble.length) {
+  console.error(JSON.stringify({ missingFromTracker, missingFromChangelog, missingHeadings, missingPreamble }, null, 2));
   process.exit(1);
 }
 console.log(`Changelog preservation passed: ${baseline.entries.length} original entries exist in pm and generated markdown.`);

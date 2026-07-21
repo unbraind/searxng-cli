@@ -60,7 +60,7 @@ const originals = new Map([
 try {
   writeVersion(version);
   run("pm", ["install", "npm:pm-changelog", "--project"]);
-  run("pm", ["changelog", "generate", "--output", "CHANGELOG.md", "--title", "Changelog", "--mode", "replace", "--release-version", version, "--all-release-tags", "--status", "closed", "--item-url-base", "https://github.com/unbraind/searxng-cli/blob/master/.agents/pm"]);
+  run(process.execPath, ["scripts/release/generate-changelog.mjs", "--release-version", version]);
   run(process.execPath, ["scripts/release/check-changelog-preservation.mjs"]);
   run("bun", ["run", "release:dry-run"]);
 

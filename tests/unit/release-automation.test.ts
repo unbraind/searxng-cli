@@ -34,6 +34,15 @@ describe('release automation', () => {
     expect(workflow).toContain('gh run watch');
   });
 
+  it('keeps the legacy changelog preamble in pm-generated output', () => {
+    const changelog = readFileSync('CHANGELOG.md', 'utf8');
+    const generator = readFileSync('scripts/release/generate-changelog.mjs', 'utf8');
+    expect(changelog).toContain('All notable changes to this project will be documented in this file.');
+    expect(changelog).toContain('https://keepachangelog.com/en/1.0.0/');
+    expect(generator).toContain('pm');
+    expect(generator).toContain('baseline.preamble');
+  });
+
   it('publishes once to npm and verifies npm and Bun consumers', () => {
     const workflow = readFileSync('.github/workflows/release.yml', 'utf8');
     expect(workflow).toContain('"v*.*.*"');
