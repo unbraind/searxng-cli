@@ -4,14 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## Unreleased
+## 2026.7.22 - 2026-07-22
 
 ### Added
 
 - Decompose command and storage monoliths behind tested module boundaries ([searx-modular-command-architecture](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/features/searx-modular-command-architecture.toon))
 - Complete local SearXNG feature parity and agent-ready CLI delivery ([searx-feature-parity-plan](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/plans/searx-feature-parity-plan.toon))
-- Automate change-aware releases with generated project history ([searx-auto-release](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/features/searx-auto-release.toon))
+
+### Fixed
+
+- Configure RELEASE_PAT for protected automated release pushes ([searx-release-pat-secret](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-release-pat-secret.toon))
+- Refresh invalid npm publishing credentials ([searx-npm-token-refresh](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-npm-token-refresh.toon))
+- Verify published consumers outside the source checkout ([searx-published-consumer-isolation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-published-consumer-isolation.toon))
+- Validate tag releases without requiring the next version ([searx-tag-release-validation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-tag-release-validation.toon))
+
+### Security
+
+- Security, dependency, CI, and governance modernization ([searx-security-modernization](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/epics/searx-security-modernization.toon))
+
+## 2026.7.21 - 2026-07-21
+
+### Added
+
 - Added conservative global coverage thresholds so test-coverage regressions fail the quality gate. ([searx-pkax](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/tasks/searx-pkax.toon))
+- Automate change-aware releases with generated project history ([searx-auto-release](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/features/searx-auto-release.toon))
 
 ### Changed
 
@@ -21,18 +37,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-- Configure RELEASE_PAT for protected automated release pushes ([searx-release-pat-secret](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-release-pat-secret.toon))
-- Refresh invalid npm publishing credentials ([searx-npm-token-refresh](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-npm-token-refresh.toon))
-- Verify published consumers outside the source checkout ([searx-published-consumer-isolation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-published-consumer-isolation.toon))
-- Validate tag releases without requiring the next version ([searx-tag-release-validation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-tag-release-validation.toon))
-- Keep Auto Release runner output outside the checkout ([searx-auto-release-clean-tree](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-auto-release-clean-tree.toon))
 - Made the 60-test E2E suite provision and clean up its own mock SearXNG backend by default while preserving `E2E_SEARXNG_URL` for explicit live-instance runs. ([searx-30a6](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-30a6.toon))
 - Updated TOON and MCP tests for their current dependency contracts while preserving runtime behavior. ([searx-drjo](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-drjo.toon))
+- Keep Auto Release runner output outside the checkout ([searx-auto-release-clean-tree](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-auto-release-clean-tree.toon))
 - Make the E2E suite self-contained by default ([searx-hermetic-e2e](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-hermetic-e2e.toon))
 
 ### Security
 
-- Security, dependency, CI, and governance modernization ([searx-security-modernization](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/epics/searx-security-modernization.toon))
 - Upgraded Gitleaks Action to its Node 24-based v3 runtime. ([searx-0tkk](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/tasks/searx-0tkk.toon))
 - Pinned every GitHub Action to a full commit SHA and enabled repository enforcement for SHA pins. ([searx-abk2](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/tasks/searx-abk2.toon))
 - Enabled native GitHub secret scanning and push protection alongside the existing Gitleaks checks. ([searx-seu0](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/tasks/searx-seu0.toon))
