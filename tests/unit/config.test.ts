@@ -72,7 +72,7 @@ describe('Config Module', () => {
 
     it('should fallback to default URL when setting invalid URL', () => {
       setSearxngUrl('://bad-url');
-      expect(getSearxngUrl()).toBe('http://localhost:8080');
+      expect(getSearxngUrl()).toBe('http://192.168.1.183:38522');
     });
 
     it('should detect local instance for localhost', () => {
@@ -139,7 +139,7 @@ describe('Config Module', () => {
       expect(getInitialSearxngUrl('env.local:8080', settingsFile)).toBe('http://env.local:8080');
       expect(getInitialSearxngUrl(undefined, settingsFile)).toBe('http://settings.local:8080');
       fs.rmSync(directory, { recursive: true });
-      expect(getInitialSearxngUrl(undefined, settingsFile)).toBe('http://localhost:8080');
+      expect(getInitialSearxngUrl(undefined, settingsFile)).toBe('http://192.168.1.183:38522');
     });
   });
 

@@ -12,7 +12,6 @@ import {
   BOOKMARKS_FILE,
   PRESETS_FILE,
   SUGGESTIONS_FILE,
-  CACHE_FILE,
   ENGINES_CACHE_FILE,
   ENGINES_CACHE_MAX_AGE,
   SETUP_COMPLETE_FILE,
@@ -33,7 +32,6 @@ import { colorize, truncate } from '../utils';
 import { isGhAuthenticated, hasStarredRepo, starRepo, REPO_URL } from '../utils/github';
 import { rateLimitedFetch } from '../http';
 import type {
-  AppConfig,
   HistoryEntry,
   BookmarkEntry,
   Suggestions,
@@ -44,102 +42,12 @@ import type {
   GithubStarPromptStatus,
   GithubStarPromptSource,
 } from '../types';
+export { ensureConfigDir, bootstrapGlobalDataFiles, loadConfig, saveConfig } from './files';
+import { bootstrapGlobalDataFiles, ensureConfigDir, loadConfig, saveConfig } from './files';
 
 /**
  *
  */
-export function ensureConfigDir(): void {
-  if (!fs.existsSync(CONFIG_DIR)) {
-    fs.mkdirSync(CONFIG_DIR, { recursive: true });
-  }
-}
-
-function writeJsonFileIfMissing(filePath: string, data: unknown): void {
-  if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-  }
-}
-
-/**
- *
- */
-export function bootstrapGlobalDataFiles(): void {
-  ensureConfigDir();
-  try {
-    writeJsonFileIfMissing(HISTORY_FILE, []);
-    writeJsonFileIfMissing(BOOKMARKS_FILE, []);
-    writeJsonFileIfMissing(PRESETS_FILE, {});
-    writeJsonFileIfMissing(SUGGESTIONS_FILE, { popular: [], recent: [] });
-    writeJsonFileIfMissing(CACHE_FILE, {});
-    writeJsonFileIfMissing(ENGINES_CACHE_FILE, {
-      timestamp: 0,
-      engines: [],
-      categories: [],
-      info: {
-        name: 'SearXNG',
-        version: 'unknown',
-        engines_count: 0,
-        categories_count: 0,
-        api_version: '1.0',
-        contact_url: null,
-        donation_url: null,
-        privacypolicy_url: null,
-      },
-    });
-  } catch (e) {
-    if (process.env.DEBUG) {
-      console.error(
-        colorize(
-          `Warning: Could not bootstrap global data files: ${(e as Error).message}`,
-          'yellow'
-        )
-      );
-    }
-  }
-}
-
-/**
- *
- */
-export function loadConfig(): AppConfig {
-  ensureConfigDir();
-  try {
-    if (fs.existsSync(CONFIG_FILE)) {
-      const data = fs.readFileSync(CONFIG_FILE, 'utf8');
-      return JSON.parse(data) as AppConfig;
-    }
-  } catch (e) {
-    console.error(colorize(`Warning: Could not load config: ${(e as Error).message}`, 'yellow'));
-  }
-  return {
-    defaultLimit: 10,
-    defaultFormat: 'toon',
-    defaultTimeout: DEFAULT_TIMEOUT,
-    autoUnescape: true,
-    autoFormat: true,
-    colorize: true,
-    showScores: true,
-    saveHistory: true,
-    maxHistory: 100,
-    defaultEngines: null,
-    defaultCategory: null,
-    theme: 'default',
-  };
-}
-
-/**
- *
- * @param config
- */
-export function saveConfig(config: AppConfig): void {
-  ensureConfigDir();
-  try {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-  } catch (e) {
-    console.error(colorize(`Warning: Could not save config: ${(e as Error).message}`, 'yellow'));
-  }
-}
-
 /**
  *
  */

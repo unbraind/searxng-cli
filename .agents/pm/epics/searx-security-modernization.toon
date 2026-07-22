@@ -2,13 +2,13 @@ id: searx-security-modernization
 title: "Security, dependency, CI, and governance modernization"
 description: "Consolidate advisory remediation, dependency and Actions upgrades, repository review, and complete pm governance into one verified delivery lane."
 type: Epic
-status: open
+status: closed
 priority: 0
 tags[5]: ci,deps,epic,pm-governance,security
 created_at: "2026-07-16T16:55:57.898Z"
-updated_at: "2026-07-16T17:32:05.058Z"
+updated_at: "2026-07-22T04:49:08.953Z"
 deadline: "2026-07-23T16:55:57.898Z"
-assignee: codex-root
+closed_at: "2026-07-22T04:49:08.152Z"
 author: codex-root
 estimated_minutes: 600
 acceptance_criteria: All active recovery children close with evidence; No unresolved critical/high security advisories remain; Current-head CI and CodeQL are green
@@ -25,6 +25,9 @@ risk: high
 confidence: 90
 sprint: 2026-07-recovery
 release: next
+resolution: "Security, dependency, CI, governance, feature parity, release automation, and architecture modernization are complete."
+expected_result: All active recovery children close with evidence; no critical/high advisories remain; current delivery is fully verified.
+actual_result: "All children are closed; Bun audit and GitHub alert inventories are clean; release:check passes against the governed LAN SearXNG instance."
 dependencies[1]{id,kind,created_at,author,source_kind}:
   searx-repo-health-2026,related,"2026-07-16T16:55:57.898Z",codex-root,null
 comments[2]{created_at,author,text}:
@@ -40,4 +43,5 @@ tests[1]{command,scope,timeout_seconds}:
   "bun run test:unit",project,120
 docs[1]{path,scope,note}:
   README.md,project,Primary product and usage documentation
+close_reason: All recovery and architecture children are now complete with exact release-gate evidence.
 body: "## Baseline evidence\\n\\nGitHub reports 11 open Dependabot PRs, a critical Vitest advisory, a low esbuild advisory, no open CodeQL findings, and disabled native secret scanning. bun audit on the release head reports 41 advisories: 1 critical, 7 high, 31 moderate, and 2 low. Existing bot PRs split coupled upgrades and fail frozen-lockfile or peer-resolution checks.\\n\\n## Delivery strategy\\n\\nReplace fragmented bot updates with one coherent, lockfile-consistent upgrade; test breaking majors together; modernize CI runtimes/actions; audit source and packaging; preserve all findings as linked issues and future backlog."

@@ -15,7 +15,9 @@ searxng-cli/
 │   ├── classes/index.ts     # Core classes
 │   ├── cache/index.ts       # Caching system
 │   ├── http/index.ts        # HTTP handling
-│   ├── storage/index.ts     # File storage
+│   ├── lifecycle/index.ts   # Process signals and cache lifecycle
+│   ├── storage/files.ts     # Data bootstrap and app config persistence
+│   ├── storage/index.ts     # Storage facade and domain stores
 │   ├── search/index.ts      # Search functions
 │   ├── formatters/index.ts  # Output formatters
 │   ├── formatters-advanced/ # TOON, XML, HTML
@@ -83,7 +85,7 @@ bun run lint               # Type check + format check
 ### Module Dependencies
 
 ```
-config → utils → classes → cache/http → storage → search → formatters → cli → index
+config → utils → classes → cache/http → lifecycle/storage → search → formatters → cli → index
 ```
 
 ### Data Flow

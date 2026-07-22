@@ -63,7 +63,7 @@ describe('Main function', () => {
 
     // Default mocks
     vi.mocked(storage.loadSettings).mockReturnValue({
-      searxngUrl: 'http://localhost:8080',
+      searxngUrl: 'http://192.168.1.183:38522',
       defaultLimit: 10,
       defaultFormat: 'toon',
       defaultTimeout: 10000,
@@ -320,7 +320,7 @@ describe('Main function', () => {
   it('should set local URL shortcut', async () => {
     process.argv = ['node', 'index.js', '--set-local-url'];
     await expect(main()).rejects.toThrow('process.exit');
-    expect(storage.updateSetting).toHaveBeenCalledWith('url', 'http://localhost:8080');
+    expect(storage.updateSetting).toHaveBeenCalledWith('url', 'http://192.168.1.183:38522');
     expect(exitSpy).toHaveBeenCalledWith(0);
   });
 
@@ -1666,7 +1666,7 @@ describe('Main function', () => {
   it('covers local routing policies and cache lifecycle handlers', () => {
     config.setSearxngUrl('http://remote.example');
     enforceLocalRouting({ agent: true, verbose: true, silent: false });
-    expect(config.getSearxngUrl()).toBe('http://localhost:8080');
+    expect(config.getSearxngUrl()).toBe('http://192.168.1.183:38522');
 
     vi.clearAllMocks();
     vi.mocked(storage.loadSettings).mockReturnValue({
@@ -1676,7 +1676,7 @@ describe('Main function', () => {
     });
     config.setSearxngUrl('http://remote.example');
     enforceLocalRouting({ agent: false, verbose: true, silent: false });
-    expect(config.getSearxngUrl()).toBe('http://localhost:8080');
+    expect(config.getSearxngUrl()).toBe('http://192.168.1.183:38522');
 
     vi.mocked(storage.loadSettings).mockReturnValue({
       ...storage.loadSettings(),
@@ -1854,7 +1854,10 @@ describe('Main function', () => {
     await expect(main()).rejects.toThrow('process.exit');
     expect(logSpy.mock.calls.flat().join('\n')).toContain('and 1 more');
     process.argv = ['node', 'index.js', '--instance-info-json'];
-    await expect(main()).rejects.toThrow('process.exit');
+    await expect(main()).resolves.toBeUndefined();
+    expect(process.exitCode).toBe(0);
+    expect(() => JSON.parse(String(logSpy.mock.calls.at(-1)?.[0]))).not.toThrow();
+    process.exitCode = undefined;
   });
 
   it('routes every setting command including engine clearing', async () => {

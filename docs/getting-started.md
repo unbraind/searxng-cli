@@ -102,7 +102,7 @@ searxng -n 20 "search query"
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SEARXNG_URL` | `http://localhost:8080` | SearXNG instance URL |
+| `SEARXNG_URL` | `http://192.168.1.183:38522` | SearXNG instance URL |
 | `SEARXNG_TIMEOUT` | `15000` | Request timeout (ms) |
 | `SEARXNG_MAX_RETRIES` | `2` | Max retry attempts |
 | `NO_COLOR` | - | Disable colored output |

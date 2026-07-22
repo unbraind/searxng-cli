@@ -30,7 +30,7 @@ Location: `~/.searxng-cli/settings.json`
 
 ```json
 {
-  "searxngUrl": "http://localhost:8080",
+  "searxngUrl": "http://192.168.1.183:38522",
   "defaultSearxngParams": {},
   "forceLocalAgentRouting": true,
   "defaultLimit": 10,
@@ -93,7 +93,7 @@ Location: `~/.searxng-cli/config.json`
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `searxngUrl` | string | "http://localhost:8080" | SearXNG instance URL |
+| `searxngUrl` | string | "http://192.168.1.183:38522" | SearXNG instance URL |
 | `defaultLimit` | number | 10 | Default number of results |
 | `defaultSearxngParams` | object | `{}` | Default passthrough query params sent to SearXNG |
 | `forceLocalAgentRouting` | boolean | `true` | Force `--agent`/`--agent-json`/`--agent-ci` to the configured `searxngUrl` (including LAN URLs) |
@@ -123,7 +123,7 @@ searxng --config reset      # Reset to defaults
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SEARXNG_URL` | `http://localhost:8080` | SearXNG instance URL |
+| `SEARXNG_URL` | `http://192.168.1.183:38522` | SearXNG instance URL |
 | `SEARXNG_TIMEOUT` | `15000` | Request timeout (ms) |
 | `SEARXNG_MAX_RETRIES` | `2` | Max retry attempts |
 | `SEARXNG_RETRY_DELAY` | `100` | Delay between retries (ms) |

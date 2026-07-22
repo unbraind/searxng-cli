@@ -2,12 +2,13 @@ id: searx-modular-command-architecture
 title: Decompose command and storage monoliths behind tested module boundaries
 description: "Reduce change risk in the 2,660-line command dispatcher and 1,368-line storage module through incremental extraction and contract tests."
 type: Feature
-status: open
+status: closed
 priority: 0
 tags[4]: architecture,coverage,maintainability,testing
 created_at: "2026-07-16T17:12:24.079Z"
-updated_at: "2026-07-21T22:48:21.004Z"
+updated_at: "2026-07-22T04:57:09.904Z"
 deadline: "2026-07-23T18:57:11.044Z"
+closed_at: "2026-07-22T04:57:08.863Z"
 author: codex-root
 estimated_minutes: 720
 acceptance_criteria: Command families have explicit module ownership; storage concerns are split by responsibility; public CLI and SDK behavior remains compatible; per-file coverage improves without disabling global gates
@@ -18,24 +19,49 @@ risk: high
 confidence: 85
 sprint: 2026-07-feature-parity
 release: next
-dependencies[1]{id,kind,created_at,author,source_kind}:
+resolution: Focused module ownership is established; the governed LAN service is the real default; all large machine output flushes safely; SDK/CLI compatibility remains complete.
+expected_result: Command/storage boundaries are explicit and every installed CLI programmatic workflow remains valid against the configured local SearXNG service.
+actual_result: "New lifecycle/files modules, LAN default contracts, safe 67 KB instance JSON piping, 933 tests at 100/100/100/100, release:check, and npm-global jq/TOON black-box validation all pass."
+dependencies[7]{id,kind,created_at,author,source_kind}:
   searx-repository-audit,discovered_from,"2026-07-16T17:12:24.079Z",null,null
-comments[4]{created_at,author,text}:
+  searx-auto-release,related,"2026-07-22T04:48:31.436Z",codex-root,null
+  searx-changelog-migration,related,"2026-07-22T04:48:31.436Z",codex-root,null
+  searx-coverage-governance,related,"2026-07-22T04:48:31.436Z",codex-root,null
+  searx-feature-parity-plan,related,"2026-07-22T04:48:31.436Z",codex-root,null
+  searx-hermetic-e2e,related,"2026-07-22T04:48:31.436Z",codex-root,null
+  searx-verification,related,"2026-07-22T04:48:31.436Z",codex-root,null
+comments[9]{created_at,author,text}:
   "2026-07-16T17:12:24.079Z",codex-root,"Source inventory: src/index.ts is 2,660 lines and src/storage/index.ts is 1,368 lines."
   "2026-07-21T18:57:12.739Z",codex-root,"Live orientation completed: all 52 tracker items inspected; local SearXNG 2026.7.19 exposes /config but returns 403 for format=json because only HTML is enabled; browser-form GET/POST searches succeed. Global settings still point to localhost and the mise searxng shim is broken. pm-cli upgrade anomaly filed as unbraind/pm-cli#634 after duplicate search."
   "2026-07-21T21:52:02.069Z",codex-root,"Coverage hardening complete: all 20 test files and 930 tests pass with honest repo-wide V8 coverage at 100% statements (4645/4645), branches (3389/3389), functions (525/525), and lines (4346/4346). No source exclusions or artificial ignore directives were added. The monolithic dispatcher was improved through exported lifecycle/diagnostic parsers, deterministic background-refresh handling, shared self-test assertions, and exhaustive real command-path matrices."
   "2026-07-21T22:48:19.808Z",codex-root,"The feature-parity delivery improved module seams and achieved 100% coverage, but the parent Feature's explicit command/storage decomposition acceptance remains future work. Returning it to open and releasing the claim so only the actively finishing parity Plan remains in progress."
-notes[2]{created_at,author,text}:
+  "2026-07-22T04:40:32.587Z",codex-root,"2026-07-22 continuation: current master already satisfies the feature-parity delivery through PR #41 and installed live-service proof. This run will close the remaining canonical gap by decomposing src/index.ts and src/storage/index.ts behind behavior-preserving module boundaries, with 100/100/100/100 coverage, live installed-command acceptance, PM/changelog evidence, hosted reviews, and merged-head verification."
+  "2026-07-22T04:46:40.464Z",codex-root,"Initial extraction proof: lifecycle and config-file persistence now have focused owners while src/index.ts and src/storage/index.ts preserve their public facade exports. TypeScript, ESLint, Prettier, 20/20 module docstrings, jscpd, build, Bun audit, and 933 tests at 100% statements/branches/functions/lines are green."
+  "2026-07-22T04:48:34.980Z",codex-root,"Full direct release:check passed for version 2026.7.22 against http://192.168.1.183:38522: build/typecheck, 933 tests at 100/100/100/100, healthy LAN connectivity, all 19 built-in acceptance checks, live format handling, and cache behavior are green."
+  "2026-07-22T04:50:46.032Z",codex-root,"Installed v2026.7.22 acceptance exposed setup-local resetting settings to localhost:8080, contradicting the required governed LAN service and its own help text. Reopened the item, promoted 192.168.1.183:38522 to the actual DEFAULT_SEARXNG_URL source of truth, and updated default-contract tests/docs before revalidation."
+  "2026-07-22T04:57:05.082Z",codex-root,"Black-box installed-package loop found and fixed two release blockers: setup-local used the stale localhost:8080 default, and instance json called process.exit(0) before a 67 KB capability payload flushed to a pipe, causing deterministic jq EOF failures. The governed LAN URL is now the source-of-truth default; instance JSON uses natural async return with exitCode. Fresh npm-global v2026.7.22 proof: setup ready, settings/path/cache assertions green, 241-engine instance JSON parses through jq, request/search JSON use the LAN URL, and TOON validates."
+notes[3]{created_at,author,text}:
   "2026-07-16T17:12:24.079Z",codex-root,"Avoid a flag-day rewrite; each extraction must preserve CLI snapshots, exit codes, and configuration compatibility."
   "2026-07-21T18:57:14.648Z",codex-root,"Implementation will preserve existing flag compatibility while adding a centralized response adapter, explicit command help for every advertised command, deterministic global setup at ~/.searxng-cli, and live-instance E2E proof. The local service URL is http://192.168.1.183:38522."
-learnings[2]{created_at,author,text}:
+  "2026-07-22T04:40:33.352Z",codex-root,Only this existing Feature is claimed. No duplicate delivery item was created because its acceptance criteria exactly cover the remaining work and it already carries the prior audit/parity lineage.
+learnings[4]{created_at,author,text}:
   "2026-07-16T17:12:24.079Z",codex-root,The lowest-covered and most frequently edited orchestration modules are the best initial extraction candidates.
   "2026-07-21T18:57:16.199Z",codex-root,SearXNG intentionally returns 403 when a requested output format is disabled. Full client compatibility therefore requires content negotiation and HTML response parsing rather than assuming JSON API availability.
-files[2]{path,scope,note}:
+  "2026-07-22T04:48:33.136Z",codex-root,Public facade re-exports let internal ownership move incrementally without breaking SDK consumers or the 933-test compatibility surface. Lifecycle state and raw file persistence are strong first seams because their dependency direction is narrow and explicit.
+  "2026-07-22T04:57:06.054Z",codex-root,Large machine-readable stdout must never be followed by immediate process.exit(); buffered pipe writes can truncate even when terminal/file redirection appears valid. Set process.exitCode and return from async main so Node drains stdout.
+files[5]{path,scope,note}:
+  src/config/index.ts,project,Governed LAN SearXNG default source of truth
   src/index.ts,project,Command orchestration monolith
+  src/lifecycle/index.ts,project,Dedicated process and persistent-cache lifecycle owner
+  src/storage/files.ts,project,Dedicated global bootstrap and app-config persistence owner
   src/storage/index.ts,project,Persistence monolith
-tests[1]{command,scope,timeout_seconds}:
+tests[3]{command,scope,timeout_seconds}:
+  "bun run release:check",project,1200
   "bun run test:unit",project,180
-docs[1]{path,scope,note}:
+  "SEARXNG_URL=http://192.168.1.183:38522 bun run test:e2e:searxng",project,300
+docs[3]{path,scope,note}:
   CONTRIBUTING.md,project,Future architecture guidance
+  docs/configuration.md,project,LAN service defaults and environment contract
+  docs/development.md,project,Current dependency graph and source layout
+close_reason: Completed modular extraction and fixed installed-command LAN routing plus piped instance JSON integrity.
 body: "The full audit found src/index.ts and src/storage/index.ts concentrating parsing, routing, IO, formatting, and lifecycle behavior. Plan incremental extractions rather than a rewrite: define stable seams, move one coherent command family at a time, add contract tests before movement, and ratchet per-file coverage as ownership becomes clearer."

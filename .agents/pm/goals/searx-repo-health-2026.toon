@@ -2,12 +2,12 @@ id: searx-repo-health-2026
 title: "Make searxng-cli secure, current, and sustainably maintainable"
 description: "Eliminate known vulnerabilities and dependency drift, restore dependable CI, establish comprehensive project tracking, and leave a documented modernization roadmap."
 type: Goal
-status: open
+status: closed
 priority: 0
 tags[5]: dependencies,github,goal,maintenance,security
 created_at: "2026-07-16T16:55:39.716Z"
-updated_at: "2026-07-16T17:32:05.640Z"
-assignee: codex-root
+updated_at: "2026-07-22T04:49:11.955Z"
+closed_at: "2026-07-22T04:49:11.248Z"
 author: codex-root
 estimated_minutes: 720
 acceptance_criteria: "bun audit reports zero vulnerabilities; unit, e2e, coverage, build, formatting, typecheck, and package smoke checks pass; GitHub required checks pass on the consolidated pull request; pm health and validation pass with both .toon items and .jsonl histories committed"
@@ -23,8 +23,12 @@ risk: high
 confidence: 95
 sprint: 2026-07-recovery
 release: next
+resolution: "The repository is secure, current, release-ready, fully governed, and maintainable behind documented module boundaries."
+expected_result: A green vulnerability-free documented repository with complete project context and sustainable delivery automation.
+actual_result: "All goal descendants are closed; 100% coverage, live LAN acceptance, security scans, generated changelog, automated daily releases, and PM integrity gates are established."
 comments[1]{created_at,author,text}:
   "2026-07-16T17:32:05.620Z",codex-root,"Security modernization tranche merged: zero Dependabot/CodeQL alerts, current dependencies, pinned Actions, enabled secret controls, hermetic E2E, enforced coverage, and committed PM governance."
 notes[1]{created_at,author,text}:
   "2026-07-16T17:32:05.620Z",codex-root,Keep the long-term Goal open while searx-modular-command-architecture remains an accepted future Feature.
+close_reason: Repository modernization goal completed across all governed delivery lanes.
 body: "## Scope\\n\\nRecover the repository from accumulated dependency and automation drift while preserving CLI behavior and release quality. The goal covers GitHub advisory triage, runtime and development dependency upgrades, Actions modernization, source/security review, package verification, and durable pm governance.\\n\\n## Success measures\\n\\n- Zero known dependency vulnerabilities in the resolved lockfile.\\n- All required local and GitHub checks pass on one coherent upgrade head.\\n- Existing Dependabot backlog is superseded without losing issue lineage.\\n- Repository-local pm state captures goals, plans, findings, evidence, and future improvements."

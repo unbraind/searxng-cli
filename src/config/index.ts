@@ -35,7 +35,7 @@ export const SETUP_COMPLETE_FILE = path.join(CONFIG_DIR, '.setup-complete');
 export const CACHE_FILE = path.join(CONFIG_DIR, 'cache.json');
 export const ENGINES_CACHE_FILE = path.join(CONFIG_DIR, 'engines.json');
 
-export const DEFAULT_SEARXNG_URL = 'http://localhost:8080';
+export const DEFAULT_SEARXNG_URL = 'http://192.168.1.183:38522';
 
 /**
  *
