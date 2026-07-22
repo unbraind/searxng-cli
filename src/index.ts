@@ -30,8 +30,6 @@ import {
 } from './config';
 import { colorize, formatDuration, safeJsonStringify } from './utils';
 import {
-  loadCacheSync,
-  saveCacheSync,
   getCachedResult,
   setCachedResult,
   getSemanticCachedResult,
@@ -109,10 +107,17 @@ import {
   promptForStar,
 } from './storage';
 import type { SearchResponse, SearchOptions, AdvancedFilters, OutputFormat } from './types';
-
-let isShuttingDown = false;
-let cacheLoaded = false;
-let exitHandlersSetup = false;
+export {
+  ensureCacheLoaded,
+  resetCacheLoaded,
+  handleGracefulExit,
+  handleInterrupt,
+  handleTermination,
+  handleUnhandledRejection,
+  resetShutdownState,
+  setupExitHandlers,
+} from './lifecycle';
+import { ensureCacheLoaded, setupExitHandlers } from './lifecycle';
 
 /**
  *
@@ -896,83 +901,6 @@ export function savePresetFromOptions(name: string, options: SearchOptions): voi
     searxngParams: options.searxngParams ?? {},
   };
   addPreset(name, presetPayload);
-}
-
-/**
- *
- */
-export function ensureCacheLoaded(): number {
-  if (!cacheLoaded) {
-    const count = loadCacheSync();
-    cacheLoaded = true;
-    if (process.env.DEBUG) {
-      console.error(`Cache loaded: ${count} entries`);
-    }
-    return count;
-  }
-  return 0;
-}
-
-/**
- *
- */
-export function resetCacheLoaded(): void {
-  cacheLoaded = false;
-}
-
-/** Persist cache state once during a normal process shutdown. */
-export function handleGracefulExit(): void {
-  if (!isShuttingDown) {
-    isShuttingDown = true;
-    saveCacheSync();
-  }
-}
-
-/** Persist cache state and terminate cleanly after an interrupt signal. */
-export function handleInterrupt(): void {
-  if (!isShuttingDown) {
-    handleGracefulExit();
-    console.log(colorize('\n\nInterrupted by user.', 'yellow'));
-    process.exit(0);
-  }
-}
-
-/** Persist cache state and terminate cleanly after a termination signal. */
-export function handleTermination(): void {
-  if (!isShuttingDown) {
-    handleGracefulExit();
-    console.log(colorize('\n\nTerminated.', 'yellow'));
-    process.exit(0);
-  }
-}
-
-/**
- * Report an unhandled asynchronous failure and terminate unsuccessfully.
- * @param reason
- */
-export function handleUnhandledRejection(reason: unknown): void {
-  const message = reason instanceof Error ? reason.message : String(reason);
-  console.error(colorize(`Unhandled error: ${message}`, 'red'));
-  process.exit(1);
-}
-
-/** Reset shutdown state for isolated tests and embedded CLI invocations. */
-export function resetShutdownState(): void {
-  isShuttingDown = false;
-}
-
-/**
- *
- */
-export function setupExitHandlers(): void {
-  if (exitHandlersSetup) return;
-  exitHandlersSetup = true;
-
-  process.on('beforeExit', handleGracefulExit);
-  process.on('exit', handleGracefulExit);
-  process.on('SIGINT', handleInterrupt);
-  process.on('SIGTERM', handleTermination);
-  process.on('unhandledRejection', handleUnhandledRejection);
 }
 
 /**
@@ -1921,7 +1849,8 @@ export async function main(): Promise<void> {
           2
         )
       );
-      process.exit(0);
+      process.exitCode = 0;
+      return;
     }
 
     console.log(

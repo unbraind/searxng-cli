@@ -16,7 +16,7 @@ A powerful TypeScript command-line search client for SearXNG instances with TOON
 - **Persistent Caching** - Unlimited local cache (no in-memory cap), disk persistence, and compression
 - **Multiple Output Formats** - JSON, CSV, Markdown, YAML, XML, HTML, table, text, and more
 - **AI Agent Mode** - Optimized for AI/LLM consumption with structured metadata
-- **Local Agent Routing Guard** - Agent mode defaults to local `http://localhost:8080` routing (`forceLocalAgentRouting: true`)
+- **Local Agent Routing Guard** - Agent mode defaults to the governed local `http://192.168.1.183:38522` service (`forceLocalAgentRouting: true`)
 - **Agent CI Mode** - `--agent-ci` for strict, offline-first, validated TOON output
 - **Offline-First Agent Mode** - `--offline-first` for deterministic cache-only workflows
 - **Doctor Diagnostics** - `--doctor` runs connectivity, settings, and formatter validation checks
@@ -319,7 +319,7 @@ searxng-cli --settings
 
 | Variable              | Default                      | Description            |
 | --------------------- | ---------------------------- | ---------------------- |
-| `SEARXNG_URL`         | `http://localhost:8080` | SearXNG instance URL   |
+| `SEARXNG_URL`         | `http://192.168.1.183:38522` | SearXNG instance URL   |
 | `SEARXNG_TIMEOUT`     | `15000`                      | Request timeout (ms)   |
 | `SEARXNG_MAX_RETRIES` | `2`                          | Max retry attempts     |
 | `NO_COLOR`            | -                            | Disable colored output |
@@ -341,7 +341,7 @@ Edit `~/.searxng-cli/settings.json`:
 
 ```json
 {
-  "searxngUrl": "http://localhost:8080",
+  "searxngUrl": "http://192.168.1.183:38522",
   "defaultSearxngParams": {},
   "forceLocalAgentRouting": true,
   "defaultLimit": 10,

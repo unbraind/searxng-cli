@@ -47,9 +47,22 @@ bun run test:coverage
 bun run smoke:package
 ```
 
-Coverage is enforced globally at 70% statements, 58% branches, 82% functions, and 72% lines.
-These floors are intentionally below the current baseline and should be ratcheted upward as the
-large command and storage modules are decomposed and tested.
+Coverage is enforced repo-wide at 100% statements, branches, functions, and lines. Source files
+must remain included in the V8 report; ignore pragmas, test-only branches, and threshold reductions
+are not accepted substitutes for executable behavior coverage.
+
+## Module Ownership
+
+- `src/index.ts` owns top-level command dispatch and search orchestration.
+- `src/lifecycle/index.ts` owns process signals, one-shot cache loading, and shutdown persistence.
+- `src/storage/files.ts` owns global data-directory bootstrap and app-config persistence.
+- `src/storage/index.ts` remains the compatibility facade for history, bookmarks, presets,
+  suggestions, instance discovery, settings, and setup. New storage concerns belong in focused
+  sibling modules and must be re-exported through the facade when they are public API.
+
+Keep boundaries dependency-directed: focused modules may depend on config, utilities, and domain
+services, while the top-level dispatcher composes them. Do not add new process lifecycle or raw
+configuration-file logic to `src/index.ts`.
 
 ## Versioning
 

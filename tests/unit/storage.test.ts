@@ -438,7 +438,7 @@ describe('Storage Module', () => {
 
       const updated = applyLocalAgentDefaults();
 
-      expect(updated.searxngUrl).toBe('http://localhost:8080');
+      expect(updated.searxngUrl).toBe('http://192.168.1.183:38522');
       expect(updated.defaultFormat).toBe('toon');
       expect(updated.defaultLimit).toBe(10);
       expect(updated.forceLocalRouting).toBe(true);
@@ -710,12 +710,12 @@ describe('Storage Module', () => {
           })
         );
         expect(loadSettings()).toMatchObject({
-          searxngUrl: 'http://localhost:8080',
+          searxngUrl: 'http://192.168.1.183:38522',
           defaultSearxngParams: {},
         });
       }
       saveSettings({ ...getDefaultSettings(), searxngUrl: '://invalid' });
-      expect(loadSettings().searxngUrl).toBe('http://localhost:8080');
+      expect(loadSettings().searxngUrl).toBe('http://192.168.1.183:38522');
     });
 
     it('migrates legacy config and recovers from corrupt settings', () => {

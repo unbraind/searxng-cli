@@ -9,7 +9,7 @@ import { decode as decodeToon } from '@toon-format/toon';
 const CLI_PATH = path.resolve(__dirname, '../../dist/searxng-cli.js');
 const E2E_TIMEOUT = 120000;
 const COMMAND_TIMEOUT = 30000;
-const DEFAULT_LOCAL_URL = 'http://localhost:8080';
+const DEFAULT_LOCAL_URL = 'http://192.168.1.183:38522';
 
 let cliBinDir = '';
 let cliConfigDir = '';
