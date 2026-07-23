@@ -8,6 +8,7 @@ import { join } from "node:path";
 const index = process.argv.indexOf("--version");
 const version = index >= 0 ? process.argv[index + 1] : process.env.npm_package_version;
 if (!version) throw new Error("Pass --version <version>");
+const expectedVersionOutput = `SearXNG CLI v${version}`;
 
 function run(command, args, capture = false, cwd = process.cwd()) {
   return execFileSync(command, args, {
@@ -28,8 +29,25 @@ for (let attempt = 0; attempt < 30; attempt++) {
 if (published !== version) throw new Error(`npm registry did not expose searxng-cli@${version}`);
 const verificationDirectory = mkdtempSync(join(tmpdir(), "searxng-cli-release-"));
 try {
-  run("npx", ["--yes", "--package", `searxng-cli@${version}`, "--", "searxng", "--version"], false, verificationDirectory);
-  run("bunx", ["--bun", `searxng-cli@${version}`, "--version"], false, verificationDirectory);
+  const npmOutput = run(
+    "npx",
+    ["--yes", "--package", `searxng-cli@${version}`, "--", "searxng", "--version"],
+    true,
+    verificationDirectory,
+  ).trim();
+  const bunOutput = run(
+    "bunx",
+    ["--bun", `searxng-cli@${version}`, "--version"],
+    true,
+    verificationDirectory,
+  ).trim();
+  if (!npmOutput.includes(expectedVersionOutput)) {
+    throw new Error(`npx returned an unexpected version: ${npmOutput}`);
+  }
+  if (!bunOutput.includes(expectedVersionOutput)) {
+    throw new Error(`bunx returned an unexpected version: ${bunOutput}`);
+  }
+  process.stdout.write(`${npmOutput}\n${bunOutput}\n`);
 } finally {
   rmSync(verificationDirectory, { recursive: true, force: true });
 }

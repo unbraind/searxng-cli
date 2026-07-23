@@ -8,7 +8,7 @@ A powerful TypeScript command-line search client for SearXNG instances with TOON
 
 ## Features
 
-- **TOON Format Default** - Token-Oriented Object Notation for LLM-friendly output (~40% fewer tokens)
+- **TOON v4 Format Default** - Token-Oriented Object Notation for LLM-friendly output (~40% fewer tokens)
 - **Interactive Setup Wizard** - Easy first-time configuration with connection testing
 - **First-Run Auto Setup** - Interactive sessions prompt setup automatically when not configured
 - **Settings Bootstrap** - `~/.searxng-cli/settings.json` is auto-created with safe defaults
@@ -358,7 +358,7 @@ Edit `~/.searxng-cli/settings.json`:
 TOON (Token-Oriented Object Notation) is the default output format, optimized for LLM consumption:
 
 ```
-tv: 3.3
+tv: 4.0
 v: 2026.3.4
 q: search query
 n: 10

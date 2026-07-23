@@ -82,16 +82,7 @@ jobs:
       - name: Verify npm and Bun consumers
         env:
           VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -euo pipefail
-          verify_dir="$RUNNER_TEMP/published-consumers"
-          mkdir -p "$verify_dir"
-          cd "$verify_dir"
-          npm_output="$(npx --yes --package "searxng-cli@$VERSION" -- searxng --version)"
-          bun_output="$(bunx --bun "searxng-cli@$VERSION" --version)"
-          printf '%s\n' "$npm_output" "$bun_output"
-          grep -F "v$VERSION" <<< "$npm_output"
-          grep -F "v$VERSION" <<< "$bun_output"
+        run: node scripts/release/verify-published-release.mjs --version "$VERSION"
       - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
