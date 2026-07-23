@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## Unreleased
+
+### Fixed
+
+- Verify published consumers outside the source checkout ([searx-published-consumer-isolation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-published-consumer-isolation.toon))
+
 ## 2026.7.22 - 2026-07-22
 
 ### Added
@@ -15,7 +21,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Configure RELEASE_PAT for protected automated release pushes ([searx-release-pat-secret](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-release-pat-secret.toon))
 - Refresh invalid npm publishing credentials ([searx-npm-token-refresh](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-npm-token-refresh.toon))
-- Verify published consumers outside the source checkout ([searx-published-consumer-isolation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-published-consumer-isolation.toon))
 - Validate tag releases without requiring the next version ([searx-tag-release-validation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-tag-release-validation.toon))
 
 ### Security
