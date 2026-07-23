@@ -5,6 +5,7 @@ import {
   isReleaseRelevantPath,
   nextCalendarVersion,
 } from '../../scripts/release/release-state.mjs';
+import { hasExactVersionLine } from '../../scripts/release/version-output.mjs';
 
 describe('release automation', () => {
   const date = new Date('2026-07-21T02:00:00Z');
@@ -94,5 +95,24 @@ describe('release automation', () => {
       searxng: 'dist/searxng-cli.js',
     });
     expect(workflow).toContain('gh release create');
+  });
+
+  it('accepts only complete version lines from published consumers', () => {
+    const expected = 'SearXNG CLI v2026.7.22';
+    for (const output of [
+      expected,
+      `runtime diagnostic\n${expected}\nServer: http://127.0.0.1`,
+      `runtime diagnostic\r\n${expected}\r\n`,
+    ]) {
+      expect(hasExactVersionLine(output, expected)).toBe(true);
+    }
+    for (const output of [
+      'SearXNG CLI v2026.7.220',
+      'SearXNG CLI v2026.7.2',
+      `prefix ${expected}`,
+      `${expected} suffix`,
+    ]) {
+      expect(hasExactVersionLine(output, expected)).toBe(false);
+    }
   });
 });
