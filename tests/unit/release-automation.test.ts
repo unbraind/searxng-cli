@@ -5,6 +5,7 @@ import {
   isReleaseRelevantPath,
   nextCalendarVersion,
 } from '../../scripts/release/release-state.mjs';
+import { hasExactVersionLine } from '../../scripts/release/version-output.mjs';
 
 describe('release automation', () => {
   const date = new Date('2026-07-21T02:00:00Z');
@@ -73,15 +74,45 @@ describe('release automation', () => {
 
   it('publishes once to npm and verifies npm and Bun consumers', () => {
     const workflow = readFileSync('.github/workflows/release.yml', 'utf8');
+    const verifier = readFileSync('scripts/release/verify-published-release.mjs', 'utf8');
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as {
+      bin: Record<string, string>;
+    };
     expect(workflow).toContain('"v*.*.*"');
     expect(workflow).toContain('npm publish --access public --provenance');
     expect(workflow).toContain('id-token: write');
     expect(workflow).toContain('Run tag release gates');
     expect(workflow).toContain('bun run version:audit');
     expect(workflow).not.toContain('- run: bun run release:dry-run');
-    expect(workflow).toContain('$RUNNER_TEMP/published-consumers');
-    expect(workflow).toContain('npx --yes --package');
-    expect(workflow).toContain('bunx --bun');
+    expect(workflow).toContain('scripts/release/verify-published-release.mjs');
+    expect(workflow).not.toContain('$RUNNER_TEMP/published-consumers');
+    expect(verifier).toContain('npm registry did not expose');
+    expect(verifier).toContain('npx returned an unexpected version');
+    expect(verifier).toContain('bunx returned an unexpected version');
+    expect(verifier).toContain('mkdtempSync');
+    expect(pkg.bin).toEqual({
+      'searxng-cli': 'dist/searxng-cli.js',
+      searxng: 'dist/searxng-cli.js',
+    });
     expect(workflow).toContain('gh release create');
+  });
+
+  it('accepts only complete version lines from published consumers', () => {
+    const expected = 'SearXNG CLI v2026.7.22';
+    for (const output of [
+      expected,
+      `runtime diagnostic\n${expected}\nServer: http://127.0.0.1`,
+      `runtime diagnostic\r\n${expected}\r\n`,
+    ]) {
+      expect(hasExactVersionLine(output, expected)).toBe(true);
+    }
+    for (const output of [
+      'SearXNG CLI v2026.7.220',
+      'SearXNG CLI v2026.7.2',
+      `prefix ${expected}`,
+      `${expected} suffix`,
+    ]) {
+      expect(hasExactVersionLine(output, expected)).toBe(false);
+    }
   });
 });

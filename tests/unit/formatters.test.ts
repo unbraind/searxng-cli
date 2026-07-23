@@ -694,7 +694,17 @@ describe('Advanced Formatters Module', () => {
       const options = createMockOptions();
       const output = formatToonOutput(data, options);
       const parsed = decodeToon(output) as { tv?: string };
-      expect(parsed.tv).toBe('3.3');
+      expect(parsed.tv).toBe('4.0');
+    });
+
+    it('preserves hash-leading strings under the TOON v4 comment contract', () => {
+      const data = createMockResponse({
+        results: [{ title: '#heading', url: 'https://example.com/hash' }],
+      });
+      const output = formatToonOutput(data, createMockOptions());
+      const parsed = decodeToon(output) as { results?: { title?: string }[] };
+      expect(output).toContain('"#heading"');
+      expect(parsed.results?.[0]?.title).toBe('#heading');
     });
 
     it('should represent the complete optional SearXNG response surface', () => {

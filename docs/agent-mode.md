@@ -5,7 +5,7 @@ The SearXNG CLI is highly optimized for integration into AI agents, Language Mod
 ## Key Optimizations
 
 1. **TOON Format as Default**
-   The `--agent` flag automatically activates the **Token-Oriented Object Notation (TOON)** output format, utilizing the official `@toon-format/toon` specification. This format reduces token usage by approximately 40% compared to standard JSON by combining YAML-like indentation with CSV-style tabular data, while explicit array metadata (e.g., `[N]`) act as strict parsing guardrails.
+   The `--agent` flag automatically activates the **Token-Oriented Object Notation (TOON)** output format, utilizing the official `@toon-format/toon` v4 specification. This format reduces token usage by approximately 40% compared to standard JSON by combining YAML-like indentation with CSV-style tabular data, while explicit array metadata (e.g., `[N]`) act as strict parsing guardrails.
 
 2. **Content Truncation**
    URL lengths and content snippets are intelligently truncated to maximize information density.

@@ -138,7 +138,7 @@ export function isLocalInstance(): boolean {
   return _isLocalInstance;
 }
 
-export const TOON_SPEC_VERSION = '3.3';
+export const TOON_SPEC_VERSION = '4.0';
 export const IS_LOCAL_INSTANCE: boolean = _isLocalInstance;
 /**
  *
