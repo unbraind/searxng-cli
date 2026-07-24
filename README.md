@@ -32,6 +32,7 @@ A powerful TypeScript command-line search client for SearXNG instances with TOON
 - **Search Aliases** - Quick engine selection with `!gh`, `!so`, etc.
 - **Advanced Filtering** - Domain, date, score, and image filters
 - **Autocomplete + Multi-Query** - Built-in `--autocomplete` and `--multi` workflows
+- **Operational Instance Metrics** - TOON-default `instance stats` and `instance errors` commands
 - **Preset Workflows** - Save/load reusable search profiles with `--save-preset`, `--preset`, `--presets`
 - **Connection Resilience** - Circuit breaker, adaptive timeouts, request retries
 - **Built with Bun** - Fast development and runtime using Bun
@@ -166,6 +167,7 @@ Common commands:
 - `cache` - cache operations (`searxng cache status|list|clear|...`)
 - `formats` - formatter verification/schema/validation
 - `doctor` / `health` / `instance` - diagnostics and capability inspection
+- `autocomplete` - upstream suggestions in TOON or JSON
 
 ### Search Options
 
@@ -263,6 +265,10 @@ searxng-cli --paths-json          # Managed ~/.searxng-cli file paths as JSON
 searxng-cli --health-check        # Check server health
 searxng-cli --instance-info       # Show instance capabilities
 searxng-cli --instance-info-json  # Same in JSON
+searxng instance stats           # Capabilities + engine error metrics (TOON)
+searxng instance stats --json    # Same operational contract for jq/CI
+searxng instance errors --json   # Raw engine error metrics
+searxng autocomplete "type"      # Upstream suggestions (TOON default)
 searxng-cli --suggestions         # Show local recent/popular suggestions
 searxng-cli --presets             # List saved presets
 searxng-cli --preset dev "query"  # Apply preset
@@ -401,6 +407,7 @@ searxng-cli --clear-params
 
 # Autocomplete suggestions in JSON
 searxng-cli --autocomplete --json "openai api"
+searxng autocomplete "openai api" --json
 
 # Run multiple queries in one call
 searxng-cli --multi "rust lifetimes;typescript decorators" --toon

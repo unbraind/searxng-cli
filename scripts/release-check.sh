@@ -5,6 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 LIVE_SEARXNG_URL="${SEARXNG_URL:-http://192.168.1.183:38522}"
 unset SEARXNG_URL
+INSTALL_DIR="$(mktemp -d)"
+trap 'rm -rf "$INSTALL_DIR"' EXIT
 
 bash scripts/version-check.sh
 bun run clean
@@ -13,13 +15,19 @@ bun run typecheck
 echo "Running the complete unit and coverage suite..."
 bun run test:coverage
 
-bun link
+npm install --global --prefix "$INSTALL_DIR" "$ROOT_DIR" --ignore-scripts --no-audit --no-fund >/dev/null
+export PATH="$INSTALL_DIR/bin:$PATH"
+hash -r
+[[ "$(command -v searxng)" == "$INSTALL_DIR/bin/searxng" ]]
 
 searxng --set-url "$LIVE_SEARXNG_URL"
 searxng --set-format toon
 
 searxng --health-check
 searxng --instance-info-json >/tmp/searxng-instance-info.json
+searxng instance stats --json >/tmp/searxng-instance-stats.json
+searxng instance errors --json >/tmp/searxng-instance-errors.json
+searxng autocomplete "release readiness" --json >/tmp/searxng-autocomplete.json
 searxng --cache-status >/tmp/searxng-cache-status.txt
 searxng --cache-status-json >/tmp/searxng-cache-status.json
 searxng --paths-json >/tmp/searxng-paths.json
@@ -55,5 +63,8 @@ printf '%s\n' "$CSV_OUT" | head -n 1 | rg -q '^i,title,url,engine,score,text$'
 
 node -e 'const data = JSON.parse(require("fs").readFileSync("/tmp/searxng-cache-status.json","utf8")); if (data.format !== "cache-status" || typeof data.entries !== "number") process.exit(1);'
 node -e 'const data = JSON.parse(require("fs").readFileSync("/tmp/searxng-paths.json","utf8")); if (data.format !== "paths" || !data.files || typeof data.files.settings !== "string") process.exit(1);'
+node -e 'const data = JSON.parse(require("fs").readFileSync("/tmp/searxng-instance-stats.json","utf8")); if (data.format !== "instance-stats" || !Array.isArray(data.capabilities?.engines) || typeof data.errors !== "object") process.exit(1);'
+node -e 'const data = JSON.parse(require("fs").readFileSync("/tmp/searxng-instance-errors.json","utf8")); if (data.format !== "instance-errors" || typeof data.errors !== "object") process.exit(1);'
+node -e 'const data = JSON.parse(require("fs").readFileSync("/tmp/searxng-autocomplete.json","utf8")); if (data.format !== "autocomplete" || !Array.isArray(data.suggestions)) process.exit(1);'
 
 echo "release:check passed"

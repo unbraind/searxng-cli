@@ -237,6 +237,20 @@ pruneCache(7 * 24 * 60 * 60 * 1000); // 7 days
 
 `stats.maxSize` is `number | 'unlimited'` (`'unlimited'` when `LRU_CACHE_SIZE=0`).
 
+## Instance Operations
+
+```typescript
+import { fetchInstanceCapabilities, fetchInstanceErrors } from 'searxng-cli/storage';
+
+const capabilities = await fetchInstanceCapabilities();
+const errors = await fetchInstanceErrors();
+```
+
+`fetchInstanceErrors()` calls the configured instance's stable JSON `/stats/errors` endpoint,
+rejects non-object responses, and returns `Record<string, unknown>`. CLI consumers can use
+`searxng instance stats` for a TOON envelope combining both values, or append `--json` for a
+strict JSON envelope carrying `schemaVersion`, `format`, `checkedAt`, and `source`.
+
 ## Search Functions
 
 ```typescript

@@ -21,7 +21,8 @@ searxng cache <status|list|search|inspect|delete|clear|export|import|prune|help>
 searxng formats <verify|schema|validate> [...]
 searxng doctor [--json]
 searxng health
-searxng instance [info|json]
+searxng autocomplete <query> [--limit <n>] [--json]
+searxng instance <info|json|stats|errors> [--json]
 ```
 
 All commands support `--help` and global flags such as `--verbose`, `--silent`, `--format`,
@@ -97,6 +98,10 @@ bun run test:e2e:searxng
 - `--paths-json` provides machine-readable global file paths under `~/.searxng-cli/`.
 - `--cache-status-json` provides machine-readable cache metrics for automation/CI.
 - `--request-json` exposes the exact resolved search URL + query params before execution.
+- `instance stats` combines capabilities with the stable `/stats/errors` metrics for operational
+  automation. It emits TOON by default and JSON with `--json`.
+- `instance errors` exposes the unmodified engine-keyed error metrics with provenance metadata.
+- `autocomplete` is the command-style form of `--autocomplete` and emits TOON by default.
 
 ## Formatter Schemas For Automation
 
@@ -273,6 +278,10 @@ searxng-cli --test                   # Run test suite
 searxng-cli --info                   # Show instance info
 searxng-cli --instance-info          # Show instance capabilities
 searxng-cli --instance-info-json     # Capabilities in JSON
+searxng instance stats              # Capabilities + engine errors in TOON
+searxng instance stats --json       # Same operational contract in JSON
+searxng instance errors --json      # Raw engine error metrics for jq/CI
+searxng autocomplete "typescript"   # Suggestions in TOON
 searxng-cli --suggestions            # Local recent/popular suggestions
 searxng-cli --presets                # List saved presets
 searxng-cli --preset dev-search "q"  # Apply named preset
@@ -324,4 +333,5 @@ searxng-cli --silent "query" | xargs curl
 ```bash
 searxng-cli --multi "rust borrow checker;zig comptime;go generics" --toon
 searxng-cli --autocomplete --json "openai api"
+searxng autocomplete "openai api" --json
 ```

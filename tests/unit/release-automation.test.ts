@@ -69,7 +69,14 @@ describe('release automation', () => {
 
   it('runs release acceptance against the governed local SearXNG service by default', () => {
     const releaseCheck = readFileSync('scripts/release-check.sh', 'utf8');
+    const liveE2e = readFileSync('scripts/e2e-searxng.sh', 'utf8');
     expect(releaseCheck).toContain('LIVE_SEARXNG_URL="${SEARXNG_URL:-http://192.168.1.183:38522}"');
+    for (const script of [releaseCheck, liveE2e]) {
+      expect(script).toContain('INSTALL_DIR="$(mktemp -d)"');
+      expect(script).toContain('npm install --global --prefix "$INSTALL_DIR" "$ROOT_DIR"');
+      expect(script).toContain('[[ "$(command -v searxng)" == "$INSTALL_DIR/bin/searxng" ]]');
+      expect(script).not.toContain('bun link');
+    }
   });
 
   it('publishes once to npm and verifies npm and Bun consumers', () => {

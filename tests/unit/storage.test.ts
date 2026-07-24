@@ -33,6 +33,7 @@ import {
   updateSetting,
   discoverInstance,
   fetchInstanceCapabilities,
+  fetchInstanceErrors,
 } from '@/storage/index';
 import type { AppConfig, HistoryEntry, BookmarkEntry, SearchResult, Settings } from '@/types/index';
 import {
@@ -638,6 +639,27 @@ describe('Storage Module', () => {
         engines: [],
         plugins: [],
       });
+    });
+
+    it('returns engine errors and rejects invalid diagnostics responses', async () => {
+      vi.spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ brave: [['timeout', 2]] }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          })
+        )
+        .mockResolvedValueOnce(new Response('{}', { status: 503 }))
+        .mockResolvedValueOnce(
+          new Response('[]', {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          })
+        );
+
+      await expect(fetchInstanceErrors()).resolves.toEqual({ brave: [['timeout', 2]] });
+      await expect(fetchInstanceErrors()).rejects.toThrow('HTTP 503');
+      await expect(fetchInstanceErrors()).rejects.toThrow('expected a JSON object');
     });
   });
 

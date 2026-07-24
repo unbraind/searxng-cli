@@ -2,7 +2,7 @@
  * Top-level CLI orchestration that dispatches commands, performs searches, formats results, and coordinates persistent application state.
  */
 import * as fs from 'fs';
-import { decode as decodeToon } from '@toon-format/toon';
+import { decode as decodeToon, encode as encodeToon } from '@toon-format/toon';
 import {
   getSearxngUrl,
   setSearxngUrl,
@@ -103,6 +103,7 @@ import {
   showSettings,
   updateSetting,
   fetchInstanceCapabilities,
+  fetchInstanceErrors,
   applyLocalAgentDefaults,
   promptForStar,
 } from './storage';
@@ -149,6 +150,18 @@ export function showCommandHelp(command: string): void {
     console.log('Examples:');
     console.log('  searxng search "bun runtime"');
     console.log('  searxng search --agent --limit 5 "typescript mcp server"');
+    showGlobalFlagHelp();
+    return;
+  }
+  if (cmd === 'autocomplete') {
+    console.log('Usage: searxng autocomplete <query> [--limit <n>] [--json] [flags]');
+    console.log();
+    console.log('Returns suggestions from the configured SearXNG autocompleter endpoint.');
+    console.log('Output defaults to TOON; pass --json for JSON.');
+    console.log();
+    console.log('Examples:');
+    console.log('  searxng autocomplete "type"');
+    console.log('  searxng autocomplete "typescript" --limit 5 --json');
     showGlobalFlagHelp();
     return;
   }
@@ -213,11 +226,21 @@ export function showCommandHelp(command: string): void {
     return;
   }
   if (cmd === 'instance') {
-    console.log('Usage: searxng instance [info|json] [flags]');
+    console.log('Usage: searxng instance <info|json|stats|errors> [flags]');
+    console.log();
+    console.log('Subcommands:');
+    console.log('  info              Human-readable instance capabilities');
+    console.log('  json              Complete capabilities as JSON');
+    console.log('  stats             Capability and engine-error summary (TOON default)');
+    console.log('  errors            Raw engine error metrics (TOON default)');
+    console.log('  stats --json      Operational summary as JSON');
+    console.log('  errors --json     Raw engine error metrics as JSON');
     console.log();
     console.log('Examples:');
     console.log('  searxng instance info');
     console.log('  searxng instance json');
+    console.log('  searxng instance stats');
+    console.log('  searxng instance errors --json | jq .errors');
     showGlobalFlagHelp();
     return;
   }
@@ -290,6 +313,7 @@ export function showCommandHelp(command: string): void {
 const KNOWN_COMMANDS = new Set([
   'search',
   's',
+  'autocomplete',
   'setup',
   'settings',
   'set',
@@ -384,6 +408,7 @@ export function normalizeCommandArgs(rawArgs: string[]): string[] {
   }
 
   if (command === 'search' || command === 's') return args;
+  if (command === 'autocomplete') return ['--autocomplete', ...args];
   if (command === 'setup') {
     if (sub === '--local' || sub === 'local') {
       return ['--setup-local', ...args.slice(1)];
@@ -401,6 +426,13 @@ export function normalizeCommandArgs(rawArgs: string[]): string[] {
     return ['--doctor', ...args];
   }
   if (command === 'instance') {
+    const asJson =
+      args.includes('--json') ||
+      args.includes('json') ||
+      args.includes('--format=json') ||
+      args.includes('-f=json');
+    if (sub === 'stats') return [asJson ? '--instance-stats-json' : '--instance-stats'];
+    if (sub === 'errors') return [asJson ? '--instance-errors-json' : '--instance-errors'];
     if (sub === 'json' || sub === '--json') return ['--instance-info-json', ...args.slice(1)];
     return ['--instance-info', ...args];
   }
@@ -812,9 +844,9 @@ export async function runAutocomplete(options: SearchOptions): Promise<number> {
         lastError = `HTTP ${response.status} from ${endpoint}`;
         continue;
       }
-      const payload: unknown = await response.json();
-      const suggestions = Array.isArray(payload)
-        ? payload
+      const responsePayload: unknown = await response.json();
+      const suggestions = Array.isArray(responsePayload)
+        ? responsePayload
             .map((item) => {
               if (typeof item === 'string') return item;
               if (Array.isArray(item) && typeof item[0] === 'string') return item[0];
@@ -832,20 +864,18 @@ export async function runAutocomplete(options: SearchOptions): Promise<number> {
         : [];
 
       const deduped = [...new Set(suggestions)].slice(0, options.limit > 0 ? options.limit : 20);
+      const outputPayload = {
+        schemaVersion: '1.0',
+        format: 'autocomplete',
+        query: options.query,
+        source: getSearxngUrl(),
+        count: deduped.length,
+        suggestions: deduped,
+      };
       if (options.format === 'json' || options.format === 'raw') {
-        console.log(
-          safeJsonStringify(
-            {
-              schemaVersion: '1.0',
-              format: 'autocomplete',
-              query: options.query,
-              source: getSearxngUrl(),
-              count: deduped.length,
-              suggestions: deduped,
-            },
-            options.compact ? 0 : 2
-          )
-        );
+        console.log(safeJsonStringify(outputPayload, options.compact ? 0 : 2));
+      } else if (options.format === 'toon') {
+        console.log(encodeToon(outputPayload));
       } else {
         console.log(colorize(`\nAutocomplete suggestions for "${options.query}"`, 'cyan,bold'));
         if (deduped.length === 0) {
@@ -864,6 +894,41 @@ export async function runAutocomplete(options: SearchOptions): Promise<number> {
 
   console.error(colorize(`Autocomplete failed: ${lastError}`, 'red'));
   return 1;
+}
+
+/**
+ * Render the configured instance's stable operational metrics for agents and CI.
+ *
+ * @param view Selects the summarized statistics or raw error-metric contract.
+ * @param asJson Emits JSON instead of the default TOON representation.
+ */
+export async function runInstanceOperations(
+  view: 'stats' | 'errors',
+  asJson: boolean
+): Promise<void> {
+  const errors = await fetchInstanceErrors();
+  const checkedAt = new Date().toISOString();
+  const source = getSearxngUrl();
+  const payload =
+    view === 'errors'
+      ? {
+          schemaVersion: '1.0',
+          format: 'instance-errors',
+          checkedAt,
+          source,
+          engineErrorCount: Object.keys(errors).length,
+          errors,
+        }
+      : {
+          schemaVersion: '1.0',
+          format: 'instance-stats',
+          checkedAt,
+          source,
+          capabilities: await fetchInstanceCapabilities(),
+          engineErrorCount: Object.keys(errors).length,
+          errors,
+        };
+  console.log(asJson ? safeJsonStringify(payload, 2) : encodeToon(payload));
 }
 
 /**
@@ -1831,6 +1896,20 @@ export async function main(): Promise<void> {
       }
       process.exit(1);
     }
+  }
+
+  if (
+    args[0] === '--instance-stats' ||
+    args[0] === '--instance-stats-json' ||
+    args[0] === '--instance-errors' ||
+    args[0] === '--instance-errors-json'
+  ) {
+    await runInstanceOperations(
+      args[0].includes('errors') ? 'errors' : 'stats',
+      args[0].endsWith('-json')
+    );
+    process.exitCode = 0;
+    return;
   }
 
   if (args[0] === '--instance-info' || args[0] === '--instance-info-json') {

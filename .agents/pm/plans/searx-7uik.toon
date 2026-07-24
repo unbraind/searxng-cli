@@ -1,0 +1,127 @@
+id: searx-7uik
+title: Complete SearXNG operational parity and agent-native release delivery
+description: "Implement the remaining upstream operational surfaces, complete command-level help and machine output contracts, refresh the governed PM toolchain, and ship verified local-service behavior through release automation."
+type: Plan
+status: in_progress
+priority: 0
+tags[9]: agent,cli,feature-parity,operations,pm-governance,quality,release,searxng,toon
+created_at: "2026-07-24T21:01:07.495Z"
+updated_at: "2026-07-24T21:18:38.335Z"
+deadline: "2026-07-25T21:01:07.495Z"
+assignee: codex-searxng-agent
+author: codex-searxng-agent
+estimated_minutes: 240
+acceptance_criteria: "The CLI exposes documented operational instance statistics and error diagnostics from the configured SearXNG service with validated TOON-default and JSON machine contracts; every command and subcommand has focused help with global flags; arbitrary search parameters, autocomplete, configuration discovery, setup, global state, and unlimited persistent caching retain full compatibility; repo-local @unbrained/pm-cli and project pm-changelog match registry latest; all source remains erasable type-safe TypeScript with 100/100/100/100 coverage and 100% module docstrings; full quality, security, package, installed npm/Bun consumer, live LAN, PM graph, GitHub review, merged-head, and daily auto-release gates pass"
+definition_of_ready: "Complete historical PM state, live instance capabilities, official current SearXNG docs, current CLI behavior, and latest tool versions are verified before implementation."
+goal: Full SearXNG CLI parity
+objective: Agent-native operational and search workflows
+value: "One private, scriptable CLI surface for search and instance diagnostics"
+impact: Agents and CI can inspect and search the governed local service without browser-only gaps
+outcome: Release-ready CLI with explicit live operational contracts
+why_now: "The local instance exposes metrics/error surfaces not represented by intuitive CLI commands, and repo-local PM tooling trails the required latest version."
+parent: searx-repo-health-2026
+reviewer: github-bots
+risk: high
+confidence: 95
+sprint: 2026-07-operational-parity
+release: next
+dependencies[15]{id,kind,created_at,author,source_kind}:
+  searx-auto-release,related,"2026-07-24T21:01:07.495Z",null,null
+  searx-changelog-migration,related,"2026-07-24T21:01:07.495Z",null,null
+  searx-coverage-governance,related,"2026-07-24T21:01:07.495Z",null,null
+  searx-feature-parity-plan,related,"2026-07-24T21:01:07.495Z",null,null
+  searx-hermetic-e2e,related,"2026-07-24T21:01:07.495Z",null,null
+  searx-modular-command-architecture,related,"2026-07-24T21:01:07.495Z",null,null
+  searx-published-consumer-isolation,related,"2026-07-24T21:01:07.495Z",null,null
+  searx-release-publishing,related,"2026-07-24T21:01:07.495Z",null,null
+  searx-repo-health-2026,parent,"2026-07-24T21:01:07.495Z",null,null
+  searx-security-modernization,related,"2026-07-24T21:07:03.125Z",codex-searxng-agent,null
+  searx-verification,related,"2026-07-24T21:07:04.199Z",codex-searxng-agent,null
+  searx-github-delivery,related,"2026-07-24T21:07:05.319Z",codex-searxng-agent,null
+  searx-ci-modernization,related,"2026-07-24T21:07:06.333Z",codex-searxng-agent,null
+  searx-dependency-remediation,related,"2026-07-24T21:07:07.473Z",codex-searxng-agent,null
+  searx-tag-release-validation,related,"2026-07-24T21:07:08.584Z",codex-searxng-agent,null
+comments[3]{created_at,author,text}:
+  "2026-07-24T21:01:07.495Z",codex-searxng-agent,"Orientation evidence: all 53 prior items and 527 valid history entries were inspected across every status. There are no open or in-progress items and no duplicate candidate for this operational delta."
+  "2026-07-24T21:06:25.141Z",codex-searxng-agent,"Implementation checkpoint: added explicit autocomplete and read-only instance stats/errors commands; TOON is the default agent format and JSON is available for jq/CI. Updated both live E2E and release gates so the actual installed searxng binary must exercise these surfaces."
+  "2026-07-24T21:18:38.334Z",codex-searxng-agent,"Pre-commit acceptance: 20 files and 938 tests pass at exact 100% statements/branches/functions/lines; TypeScript, ESLint, Prettier, 20/20 module docstrings, jscpd, ShellCheck, Bun audit, Trivy high/critical/secret/misconfiguration scan, history secret scan, generated changelog checks, npm/Bun package smoke, isolated installed-command help matrix, and governed LAN live E2E are green."
+notes[2]{created_at,author,text}:
+  "2026-07-24T21:01:07.495Z",codex-searxng-agent,"Preserve JSON-first search with HTML fallback because this governed instance intentionally returns 403 for format=json while HTML search is enabled. Do not regress the existing TOON v4, global-state, or unlimited-cache contracts."
+  "2026-07-24T21:06:26.363Z",codex-searxng-agent,Operational stats deliberately compose the stable /config JSON and /stats/errors JSON contracts. The browser-oriented /stats and /preferences HTML pages remain discoverable through instance capability metadata but are not scraped into a brittle private schema.
+learnings[1]{created_at,author,text}:
+  "2026-07-24T21:01:07.495Z",codex-searxng-agent,"Current upstream and live service expose configuration, autocomplete, preferences, statistics, and error metrics in addition to search; raw search params already cover the user-facing query surface, while operational metrics remain the meaningful CLI parity gap."
+files[7]{path,scope,note}:
+  scripts/e2e-searxng.sh,project,Actual installed searxng live acceptance
+  scripts/release-check.sh,project,Release operational parity gate
+  src/index.ts,project,Command orchestration and instance operations
+  src/storage/index.ts,project,Capability and operational response ownership
+  tests/unit/main.test.ts,project,Command and TOON/JSON operation coverage
+  tests/unit/release-automation.test.ts,project,Prevents stale global binaries from satisfying live/release acceptance
+  tests/unit/storage.test.ts,project,Operational endpoint validation coverage
+tests[4]{command,scope,timeout_seconds,note}:
+  bun run quality,project,600,Strict type lint docstring duplication and exact coverage gate
+  "bun run release:pipeline:dry-run",project,1200,Calendar-aware complete pre-release gate
+  "bun run typecheck && bun run typecheck:tests",project,300,Source and test type safety
+  "SEARXNG_URL=http://192.168.1.183:38522 bun run test:e2e:searxng",project,1200,Governed live-service acceptance
+docs[4]{path,scope,note}:
+  docs/api.md,project,Programmatic response contracts
+  docs/e2e-testing.md,project,Live operational acceptance contract
+  docs/usage.md,project,Operational command contracts
+  README.md,project,User-facing operational commands
+plan_mode: executing
+plan_scope: "SearXNG instance operations, command UX, agent outputs, project governance, quality gates, and daily release proof"
+plan_harness: codex
+plan_resume_context: Clean master e2c82ce; all 53 prior items closed; live 2026.7.22 service healthy at governed LAN URL; search/config/autocomplete implemented; operational stats and error surfaces plus complete command help are the concrete continuation.
+plan_validation[1]{text,command,expected}:
+  Local implementation and independent gates are green before commit.,"bun run test:coverage; lint/docs/duplicates/shell; bun audit; Trivy; history secret scan; package smoke; changelog checks; installed live E2E",938 tests and 100/100/100/100 coverage; zero high/critical vulnerabilities; npm and Bun package smoke; exact installed command uses governed LAN service and valid TOON/JSON outputs
+plan_decisions[1]{ts,author,decision,rationale,evidence}:
+  "2026-07-24T21:01:26.960Z",codex-searxng-agent,Add instance stats and errors as explicit read-only commands with TOON default and JSON override; keep raw passthrough parameters as the complete search-feature contract.,This maps every stable programmatic upstream surface without scraping browser-only preference HTML into an unstable private schema.,Official Administration API documents /config; current general settings docs identify /stats and /stats/errors; the governed service returned HTTP 200 for all inspected routes.
+plan_discoveries[2]{ts,author,text}:
+  "2026-07-24T21:01:26.165Z",codex-searxng-agent,"Live SearXNG 2026.7.22 exposes /config JSON, /autocompleter suggestions, /preferences and /stats HTML, and /stats/errors JSON. Existing CLI covers config and autocomplete but has no focused instance stats/errors command surface."
+  "2026-07-24T21:18:36.053Z",codex-searxng-agent,The former bun-link acceptance path could resolve an older globally installed binary before the checkout build. Both live and release scripts now install the built package into an isolated temporary global prefix and assert exact executable resolution.
+plan_steps[5]:
+  - id: plan-step-001
+    order: 1
+    title: Confirm upstream and live-instance feature matrix
+    status: completed
+    created_at: "2026-07-24T21:01:07.703Z"
+    updated_at: "2026-07-24T21:06:06.999Z"
+    evidence: "Verified all 53 prior items and 527 history entries, official SearXNG 2026.7 docs, live 2026.7.22 endpoints, current installed CLI state, and latest PM package versions."
+    completed_at: "2026-07-24T21:06:06.999Z"
+  - id: plan-step-002
+    order: 2
+    title: Implement operational commands and complete help contracts
+    status: completed
+    created_at: "2026-07-24T21:01:07.703Z"
+    updated_at: "2026-07-24T21:07:11.590Z"
+    evidence: "Typed operational commands, TOON/JSON output, complete focused help, setup progress correction, unit coverage, live E2E, and release enforcement implemented."
+    completed_at: "2026-07-24T21:07:11.590Z"
+    linked_items[6]{id,kind,note}:
+      searx-security-modernization,related,Operational parity delivery evidence and release lineage
+      searx-verification,related,Operational parity delivery evidence and release lineage
+      searx-github-delivery,related,Operational parity delivery evidence and release lineage
+      searx-ci-modernization,related,Operational parity delivery evidence and release lineage
+      searx-dependency-remediation,related,Operational parity delivery evidence and release lineage
+      searx-tag-release-validation,related,Operational parity delivery evidence and release lineage
+  - id: plan-step-003
+    order: 3
+    title: Refresh PM/changelog tooling and project documentation
+    status: completed
+    created_at: "2026-07-24T21:01:07.703Z"
+    updated_at: "2026-07-24T21:07:13.553Z"
+    evidence: Latest PM CLI and pm-changelog package state committed to the project with operational feature and acceptance documentation.
+    completed_at: "2026-07-24T21:07:13.553Z"
+  - id: plan-step-004
+    order: 4
+    title: "Run complete local, live, installed, and release acceptance"
+    status: in_progress
+    created_at: "2026-07-24T21:01:07.703Z"
+    updated_at: "2026-07-24T21:07:14.557Z"
+    evidence: "Beginning complete strict quality, coverage, live, installed-package, security, changelog, and release validation."
+  - id: plan-step-005
+    order: 5
+    title: "Ship PR, converge bot feedback, merge, and verify release"
+    status: pending
+    created_at: "2026-07-24T21:01:07.703Z"
+    updated_at: "2026-07-24T21:01:07.703Z"
+body: "## Scope\\nComplete the stable SearXNG search and read-only operations surface through one cohesive CLI contract. Preserve the already shipped LAN routing, HTML fallback, TOON v4, setup wizard, global state, unlimited cache, SDK, formatter validation, and release guarantees.\\n\\n## Delivery\\nAdd stable instance operational commands, focused help, strict schemas/tests/docs, current PM packages, full live and installed acceptance, GitHub bot convergence, merge, and release proof."

@@ -261,6 +261,9 @@ export interface InstanceCapabilities {
   };
 }
 
+/** Read-only engine error metrics returned by SearXNG's `/stats/errors` endpoint. */
+export type InstanceErrorMetrics = Record<string, unknown>;
+
 /**
  *
  * @param refresh
@@ -449,6 +452,27 @@ export async function fetchInstanceCapabilities(): Promise<InstanceCapabilities>
       safeSearch: config.safe_search ?? 0,
     },
   };
+}
+
+/**
+ * Fetch the stable JSON diagnostics exposed by SearXNG's engine error endpoint.
+ *
+ * @returns The engine-keyed error metrics reported by the configured instance.
+ */
+export async function fetchInstanceErrors(): Promise<InstanceErrorMetrics> {
+  const searxngUrl = getSearxngUrl();
+  const response = await rateLimitedFetch(`${searxngUrl}/stats/errors`, {
+    headers: { 'User-Agent': `searxng-cli/${VERSION}`, Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  const payload: unknown = await response.json();
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error('Invalid /stats/errors response: expected a JSON object');
+  }
+  return payload as InstanceErrorMetrics;
 }
 
 /**
@@ -965,7 +989,7 @@ export async function runSetupWizard(source: GithubStarPromptSource = 'setup'): 
 
   try {
     console.log(colorize('━'.repeat(60), 'cyan'));
-    console.log(colorize('Step 1/7: Configure SearXNG Instance', 'yellow,bold'));
+    console.log(colorize('Step 1/8: Configure SearXNG Instance', 'yellow,bold'));
     console.log(colorize('━'.repeat(60), 'cyan'));
     console.log();
     console.log(colorize('Your locally hosted SearXNG instance URL.', 'dim'));
@@ -1007,7 +1031,7 @@ export async function runSetupWizard(source: GithubStarPromptSource = 'setup'): 
 
     console.log();
     console.log(colorize('━'.repeat(60), 'cyan'));
-    console.log(colorize('Step 2/7: Output Format', 'yellow,bold'));
+    console.log(colorize('Step 2/8: Output Format', 'yellow,bold'));
     console.log(colorize('━'.repeat(60), 'cyan'));
     console.log();
     console.log(colorize('TOON format is optimized for LLMs (~40% fewer tokens).', 'dim'));
@@ -1032,7 +1056,7 @@ export async function runSetupWizard(source: GithubStarPromptSource = 'setup'): 
 
     console.log();
     console.log(colorize('━'.repeat(60), 'cyan'));
-    console.log(colorize('Step 3/7: Result Limit', 'yellow,bold'));
+    console.log(colorize('Step 3/8: Result Limit', 'yellow,bold'));
     console.log(colorize('━'.repeat(60), 'cyan'));
     console.log();
     console.log(colorize('Maximum number of results per search.', 'dim'));
@@ -1051,7 +1075,7 @@ export async function runSetupWizard(source: GithubStarPromptSource = 'setup'): 
 
     console.log();
     console.log(colorize('━'.repeat(60), 'cyan'));
-    console.log(colorize('Step 4/7: Search History', 'yellow,bold'));
+    console.log(colorize('Step 4/8: Search History', 'yellow,bold'));
     console.log(colorize('━'.repeat(60), 'cyan'));
     console.log();
     console.log(colorize(`Currently: ${settings.saveHistory ? 'Enabled' : 'Disabled'}`, 'dim'));
@@ -1077,7 +1101,7 @@ export async function runSetupWizard(source: GithubStarPromptSource = 'setup'): 
 
     console.log();
     console.log(colorize('━'.repeat(60), 'cyan'));
-    console.log(colorize('Step 5/7: Display Settings', 'yellow,bold'));
+    console.log(colorize('Step 5/8: Display Settings', 'yellow,bold'));
     console.log(colorize('━'.repeat(60), 'cyan'));
     console.log();
     console.log(colorize(`Show scores: ${settings.showScores ? 'Yes' : 'No'}`, 'dim'));
@@ -1092,7 +1116,7 @@ export async function runSetupWizard(source: GithubStarPromptSource = 'setup'): 
 
     console.log();
     console.log(colorize('━'.repeat(60), 'cyan'));
-    console.log(colorize('Step 6/7: Color Theme', 'yellow,bold'));
+    console.log(colorize('Step 6/8: Color Theme', 'yellow,bold'));
     console.log(colorize('━'.repeat(60), 'cyan'));
     console.log();
     console.log(colorize('Themes: default, ocean, forest, sunset, mono', 'dim'));
