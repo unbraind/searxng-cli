@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## Unreleased
+
+### Added
+
+- Complete SearXNG operational parity and agent-native release delivery ([searx-7uik](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/plans/searx-7uik.toon))
+
 ## 2026.7.23 - 2026-07-23
 
 ### Fixed
