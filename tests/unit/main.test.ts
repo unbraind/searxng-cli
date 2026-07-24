@@ -12,6 +12,7 @@ import {
   getExplicitPresetOverrideKeys,
   applyPresetToOptions,
   runAutocomplete,
+  runInstanceOperations,
   savePresetFromOptions,
   enforceLocalRouting,
   ensureCacheLoaded,
@@ -1281,6 +1282,7 @@ describe('Main function', () => {
   it.each([
     'search',
     's',
+    'autocomplete',
     'setup',
     'settings',
     'set',
@@ -1309,6 +1311,10 @@ describe('Main function', () => {
       [['--json'], ['--json']],
       [['search', 'query'], ['query']],
       [['s', 'query'], ['query']],
+      [
+        ['autocomplete', 'type', '--limit', '2'],
+        ['--autocomplete', 'type', '--limit', '2'],
+      ],
       [['setup'], ['--setup']],
       [['setup', 'local'], ['--setup-local']],
       [['setup', '--local'], ['--setup-local']],
@@ -1323,6 +1329,12 @@ describe('Main function', () => {
       [['instance'], ['--instance-info']],
       [['instance', 'json'], ['--instance-info-json']],
       [['instance', '--json'], ['--instance-info-json']],
+      [['instance', 'stats'], ['--instance-stats']],
+      [['instance', 'stats', '--json'], ['--instance-stats-json']],
+      [['instance', 'stats', '--format=json'], ['--instance-stats-json']],
+      [['instance', 'errors'], ['--instance-errors']],
+      [['instance', 'errors', '--json'], ['--instance-errors-json']],
+      [['instance', 'errors', '-f=json'], ['--instance-errors-json']],
       [['suggestions'], ['--suggestions']],
       [['presets'], ['--presets']],
       [['history'], ['--history']],
@@ -1754,14 +1766,59 @@ describe('Main function', () => {
     await expect(
       runAutocomplete({ query: 'query', limit: 1, format: 'toon' } as SearchOptions)
     ).resolves.toBe(0);
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('format: autocomplete');
     vi.mocked(http.rateLimitedFetch).mockResolvedValueOnce({
       ok: true,
       status: 200,
       json: async () => ({ suggestions: [] }),
     } as Response);
     await expect(
-      runAutocomplete({ query: 'query', limit: 1, format: 'toon' } as SearchOptions)
+      runAutocomplete({ query: 'query', limit: 1, format: 'text' } as SearchOptions)
     ).resolves.toBe(0);
+    vi.mocked(http.rateLimitedFetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ['human suggestion'],
+    } as Response);
+    await expect(
+      runAutocomplete({ query: 'query', limit: 1, format: 'text' } as SearchOptions)
+    ).resolves.toBe(0);
+  });
+
+  it('renders instance operations as TOON and JSON', async () => {
+    vi.mocked(storage.fetchInstanceErrors).mockResolvedValue({ brave: [['timeout', 2]] });
+    vi.mocked(storage.fetchInstanceCapabilities).mockResolvedValue({
+      instance: {
+        name: 'Local',
+        version: '1',
+        engines_count: 1,
+        categories_count: 1,
+        contact_url: null,
+        donation_url: null,
+        privacypolicy_url: null,
+        api_version: '1',
+      },
+      categories: ['general'],
+      languages: ['en'],
+      plugins: [],
+      engines: [],
+      defaults: { autocomplete: '', language: 'en', locale: '', theme: 'simple', safeSearch: 0 },
+    });
+
+    await runInstanceOperations('stats', false);
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('format: instance-stats');
+    await runInstanceOperations('errors', true);
+    expect(JSON.parse(String(logSpy.mock.calls.at(-1)?.[0]))).toMatchObject({
+      format: 'instance-errors',
+      engineErrorCount: 1,
+    });
+
+    for (const argv of [['--instance-stats-json'], ['--instance-errors']]) {
+      process.argv = ['node', 'index.js', ...argv];
+      await expect(main()).resolves.toBeUndefined();
+      expect(process.exitCode).toBe(0);
+      process.exitCode = undefined;
+    }
   });
 
   it('renders human schema catalog and individual schema', async () => {
