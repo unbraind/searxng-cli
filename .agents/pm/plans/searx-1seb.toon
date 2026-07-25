@@ -6,7 +6,7 @@ status: in_progress
 priority: 0
 tags[10]: agent,cli,dependencies,pm-governance,release,search,searxng,security,toon,week
 created_at: "2026-07-25T00:13:48.812Z"
-updated_at: "2026-07-25T00:32:15.714Z"
+updated_at: "2026-07-25T00:37:14.975Z"
 deadline: "2026-07-26T00:13:48.812Z"
 assignee: codex-searxng-agent
 author: codex-searxng-agent
@@ -76,6 +76,8 @@ plan_mode: approved
 plan_scope: "Latest SearXNG search contract, secure toolchain, agent help/docs, and release delivery"
 plan_harness: codex
 plan_resume_context: "Branch agent/searxng-week-range-security; true unlimited persistence implemented; current secure dependencies/actions applied; native TypeScript 7 plus TypeScript 6 tooling API verified; quality, audit, security, package, and live LAN gates green; calendar release pipeline and GitHub review remain."
+plan_validation[1]{text,command,expected}:
+  Complete local and governed acceptance,"bun run quality; bun audit; Trivy; history scan; package smoke; live installed CLI; release:pipeline:dry-run; pm test audit/quality/live",938 tests and 100/100/100/100 coverage; zero vulnerabilities; current package consumers; governed LAN TOON/global-state behavior; calendar v2026.7.25 release candidate
 plan_decisions[1]{ts,author,decision,rationale,evidence}:
   "2026-07-25T00:25:51.633Z",codex-searxng-agent,Implement true unlimited persistent cache loading and the secure current toolchain; preserve the already-complete week range contract.,"Direct source and tests proved week parity already exists, while loadCacheSync contradicted the explicit unlimited-cache requirement with a 5 MiB refusal.",src/cache/index.ts former stat guard; tests/unit/cache.test.ts former oversized rejection; bun audit GHSA-mh99-v99m-4gvg; TypeScript 7 official side-by-side guidance.
 plan_discoveries[1]{ts,author,text}:
@@ -108,13 +110,15 @@ plan_steps[5]:
   - id: plan-step-004
     order: 4
     title: "Run full local, live, installed, package, security, PM, and release acceptance"
-    status: in_progress
+    status: completed
     created_at: "2026-07-25T00:13:49.324Z"
-    updated_at: "2026-07-25T00:26:18.416Z"
+    updated_at: "2026-07-25T00:37:13.685Z"
+    evidence: "Direct and PM-governed audit, quality, and installed live LAN tests pass. 938 tests are exact 100/100/100/100; docstrings 20/20; ESLint, Prettier, jscpd, ShellCheck, Bun audit, Trivy, history scan, changelog checks, npx/bunx package smoke, and real searxng TOON/global-settings acceptance pass. Calendar-aware release pipeline produced and fully verified v2026.7.25."
+    completed_at: "2026-07-25T00:37:13.685Z"
   - id: plan-step-005
     order: 5
     title: "Ship PR, converge every bot review, merge, release, and verify exact head"
-    status: pending
+    status: in_progress
     created_at: "2026-07-25T00:13:49.324Z"
-    updated_at: "2026-07-25T00:13:49.324Z"
+    updated_at: "2026-07-25T00:37:14.974Z"
 body: "Deliver one cohesive compatibility and security increment. The first-class time-range contract must match current upstream, continue to support arbitrary raw SearXNG parameters, preserve live HTML fallback, and be visible through all agent-facing help and schemas. Dependency updates must be API-verified from installed packages and retain every strict gate. Release completion includes installed npx/Bun behavior, exact-head reviews, merge, and daily automation."
