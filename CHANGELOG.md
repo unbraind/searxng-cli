@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## Unreleased
+
+### Other
+
+- Ship complete SearXNG instance resources and uniform agent contracts ([searx-lkzp](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/plans/searx-lkzp.toon))
+
 ## 2026.7.25 - 2026-07-25
 
 ### Added
