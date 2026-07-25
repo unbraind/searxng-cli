@@ -6,7 +6,7 @@ status: in_progress
 priority: 0
 tags[9]: agent,cache,cli,dependencies,pm-governance,release,searxng,security,toon
 created_at: "2026-07-25T00:13:48.812Z"
-updated_at: "2026-07-25T00:52:38.746Z"
+updated_at: "2026-07-25T01:00:25.781Z"
 deadline: "2026-07-26T00:13:48.812Z"
 assignee: codex-searxng-agent
 author: codex-searxng-agent
@@ -40,7 +40,7 @@ dependencies[15]{id,kind,created_at,author,source_kind}:
   searx-security-modernization,related,"2026-07-25T00:13:48.812Z",null,null
   searx-verification,related,"2026-07-25T00:13:48.812Z",null,null
   searx-repo-health-2026,related,"2026-07-25T00:32:12.818Z",null,null
-comments[8]{created_at,author,text}:
+comments[9]{created_at,author,text}:
   "2026-07-25T00:13:48.812Z",codex-searxng-agent,"All 54 item records across every status, tracker activity, graph analytics, validation, prior GitHub delivery, current upstream docs/source, live LAN config/search behavior, and registry dependency state were inspected before creation; no duplicate active or terminal item covers this new delta."
   "2026-07-25T00:25:49.699Z",codex-searxng-agent,"Correction after source inspection: week time-range parity was already complete in types, parser, MCP, docs, cache keys, and tests. No duplicate implementation was added. The concrete CLI defect is the hidden 5 MiB persistent-load refusal despite unlimited-cache documentation."
   "2026-07-25T00:31:48.958Z",codex-searxng-agent,"Pre-commit acceptance: quality passes with 938 tests and exact 100/100/100/100 coverage; 20/20 module docstrings; type-aware ESLint, Prettier, jscpd, and ShellCheck pass; Bun audit and Trivy report zero findings; history secret scan, changelog checks, npx/bunx package smoke, and isolated installed CLI live LAN E2E pass. Direct release:dry-run correctly requires the next calendar version and will be exercised through release:pipeline:dry-run after commit."
@@ -49,11 +49,13 @@ comments[8]{created_at,author,text}:
   "2026-07-25T00:51:30.948Z",codex-searxng-agent,"The generated AGENTS quickstart example node scripts/run-tests.mjs test -- ... is not valid in this repository because that script does not exist. Its PM-linked acceptance failed transparently,was removed,and was replaced by the repository-native bunx vitest run tests/unit/cache.test.ts command,which passes."
   "2026-07-25T00:51:58.383Z",codex-searxng-agent,"text=The generated AGENTS quickstart example node scripts/run-tests.mjs test -- ... is not valid in this repository because that script does not exist. Its PM-linked acceptance failed transparently, was removed, and was replaced by the repository-native bun run test:watch -- run tests/unit/cache.test.ts command."
   "2026-07-25T00:52:38.713Z",codex-searxng-agent,"text=Detailed all-state upstream search found existing pm-cli issue #529 for the invalid generated run-tests.mjs guidance, so no duplicate was created. No duplicate covered silently ignored Plan scope mutations; filed https://github.com/unbraind/pm-cli/issues/690 with exact 2026.7.24-3 reproduction."
-notes[4]{created_at,author,text}:
+  "2026-07-25T01:00:25.715Z",codex-searxng-agent,"text=Exact-head push-only workflow audit found secret-scan, release, and auto-release failed before job creation because review hardening added duplicate YAML with keys where checkout already had inputs. Consolidated each checkout into one with map, retaining fetch-depth/ref and persist-credentials=false. Full quality remains green at 938 tests and 100/100/100/100."
+notes[5]{created_at,author,text}:
   "2026-07-25T00:13:48.812Z",codex-searxng-agent,"Preserve JSON-first then HTML fallback because the governed instance intentionally returns HTTP 403 for format=json. Preserve TOON 4.0 default, ~/.searxng-cli global state, setup wizard, unlimited cache, and raw parameter passthrough."
   "2026-07-25T00:25:49.699Z",codex-searxng-agent,TypeScript 7.0 has no compiler API. The official supported arrangement is native TypeScript 7 for tsc plus TypeScript 6 for tools such as typescript-eslint; package scripts select the native binary explicitly.
   "2026-07-25T00:48:47.816Z",codex-searxng-agent,"Plan scope option on pm plan resume/approve was accepted but did not update the existing scope field. Canonical title,description,body,outcomes,evidence,tags,and resume context now carry the corrected scope; this appears to be a pm-cli mutation-contract defect and will be searched before reporting upstream."
   "2026-07-25T00:52:38.713Z",codex-searxng-agent,"Review round 1: all six CodeRabbit findings were validated. Five drove direct improvements; tracker-linked tests already existed,and the suggested exact generated command exposed known pm-cli issue #529,so the repository-native PM-linked focused test was used instead."
+  "2026-07-25T01:00:25.715Z",codex-searxng-agent,"CI diagnosis used exact-head Actions runs rather than the PR check summary: required gitleaks was absent because the workflow parser rejected duplicate mapping keys. This is an integration fix,not a bypass; branch protection remains enforced."
 learnings[2]{created_at,author,text}:
   "2026-07-25T00:13:48.812Z",codex-searxng-agent,"Upstream SearchQuery and engine request contracts include week in addition to day, month, and year; the CLI must treat this as a first-class typed value rather than requiring raw passthrough."
   "2026-07-25T00:25:49.699Z",codex-searxng-agent,A declared unlimited in-memory cache is not genuinely unlimited across restarts if persistence silently refuses files above a fixed threshold; acceptance must cross the former boundary with valid data.
