@@ -32,7 +32,8 @@ A powerful TypeScript command-line search client for SearXNG instances with TOON
 - **Search Aliases** - Quick engine selection with `!gh`, `!so`, etc.
 - **Advanced Filtering** - Domain, date, score, and image filters
 - **Autocomplete + Multi-Query** - Built-in `--autocomplete` and `--multi` workflows
-- **Operational Instance Metrics** - TOON-default `instance stats` and `instance errors` commands
+- **Complete Instance Resources** - Typed TOON-default capabilities, configuration, engine
+  descriptions, health, statistics, errors, OpenSearch metadata, manifest, and robots
 - **Preset Workflows** - Save/load reusable search profiles with `--save-preset`, `--preset`, `--presets`
 - **Connection Resilience** - Circuit breaker, adaptive timeouts, request retries
 - **Built with Bun** - Fast development and runtime using Bun
@@ -168,7 +169,7 @@ Common commands:
 - `set` - update global defaults (`searxng set <key> <value>`)
 - `cache` - cache operations (`searxng cache status|list|clear|...`)
 - `formats` - formatter verification/schema/validation
-- `doctor` / `health` / `instance` - diagnostics and capability inspection
+- `doctor` / `health` / `instance` - diagnostics and complete read-only resource inspection
 - `autocomplete` - upstream suggestions in TOON or JSON
 
 ### Search Options
@@ -266,11 +267,19 @@ searxng-cli --settings            # Show current settings
 searxng-cli --settings-json       # Same settings in machine-readable JSON
 searxng-cli --paths-json          # Managed ~/.searxng-cli file paths as JSON
 searxng-cli --health-check        # Check server health
+searxng health                    # Stable /healthz status in TOON
 searxng-cli --instance-info       # Show instance capabilities
 searxng-cli --instance-info-json  # Same in JSON
 searxng instance stats           # Capabilities + engine error metrics (TOON)
-searxng instance stats --json    # Same operational contract for jq/CI
-searxng instance errors --json   # Raw engine error metrics
+searxng instance stats --json    # Same typed resource envelope for jq/CI
+searxng instance errors --json   # Engine error metrics under .data
+searxng instance descriptions    # Engine metadata in TOON
+searxng instance config --json   # Complete upstream /config under .data
+searxng instance stats-page --raw # Exact upstream /stats HTML
+searxng instance opensearch --raw # Exact upstream OpenSearch XML
+searxng instance manifest --json  # Web application manifest under .data
+searxng instance robots --raw     # Exact upstream robots.txt
+searxng health --json            # Typed /healthz status
 searxng autocomplete "type"      # Upstream suggestions (TOON default)
 searxng-cli --suggestions         # Show local recent/popular suggestions
 searxng-cli --presets             # List saved presets

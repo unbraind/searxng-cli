@@ -25,10 +25,70 @@ const startMockSearxngServer = async (): Promise<{ url: string; close: () => Pro
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(
         JSON.stringify({
-          instance: { version: '1.0.0', server: 'mock' },
-          brand: { name: 'Mock SearXNG' },
+          instance_name: 'Mock SearXNG',
+          version: '1.0.0',
+          categories: ['general'],
+          locales: { en: 'English' },
+          engines: [
+            {
+              name: 'mock',
+              shortcut: 'm',
+              categories: ['general'],
+              enabled: true,
+              language: 'en',
+            },
+          ],
+          plugins: [{ name: 'calculator', enabled: true }],
         })
       );
+      return;
+    }
+
+    if (reqUrl.pathname === '/healthz') {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end('OK');
+      return;
+    }
+
+    if (reqUrl.pathname === '/stats/errors') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{}');
+      return;
+    }
+
+    if (reqUrl.pathname === '/engine_descriptions.json') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{"mock":{"about":"Mock engine"}}');
+      return;
+    }
+
+    if (reqUrl.pathname === '/manifest.json') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('{"name":"Mock SearXNG"}');
+      return;
+    }
+
+    if (reqUrl.pathname === '/opensearch.xml') {
+      res.writeHead(200, { 'Content-Type': 'application/opensearchdescription+xml' });
+      res.end('<OpenSearchDescription/>');
+      return;
+    }
+
+    if (reqUrl.pathname === '/robots.txt') {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end('User-agent: *');
+      return;
+    }
+
+    if (reqUrl.pathname === '/stats') {
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end('<html><body>Mock statistics</body></html>');
+      return;
+    }
+
+    if (reqUrl.pathname === '/autocompleter') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end('["mock suggestion"]');
       return;
     }
 
@@ -829,6 +889,7 @@ describe('E2E CLI Tests', () => {
   it(
     'should use cache on second run',
     async () => {
+      await runCLI(['cache', 'clear']);
       await runCLI(parseArgs('"cache test" --limit 1'));
       const output = await runCLI(parseArgs('"cache test" --limit 1 --verbose'));
       expect(output).toContain('Using cached result');
@@ -868,6 +929,49 @@ describe('E2E CLI Tests', () => {
       expect(data.format).toBe('instance-capabilities');
       expect(data.instance).toBeDefined();
       expect(Array.isArray(data.engines)).toBe(true);
+    },
+    E2E_TIMEOUT
+  );
+
+  it(
+    'should expose every stable instance resource in typed and raw formats',
+    async () => {
+      const health = await runAndParseJson(['health', '--json']);
+      expect(health).toMatchObject({
+        schemaVersion: '1.0',
+        format: 'instance-health',
+        endpoint: '/healthz',
+        data: { healthy: true, message: 'OK' },
+      });
+
+      const resources = [
+        ['capabilities', '/config'],
+        ['config', '/config'],
+        ['descriptions', '/engine_descriptions.json'],
+        ['stats', '/stats/errors'],
+        ['errors', '/stats/errors'],
+        ['manifest', '/manifest.json'],
+      ];
+      for (const [resource, endpoint] of resources) {
+        const data = await runAndParseJson(['instance', resource, '--json']);
+        expect(data.schemaVersion).toBe('1.0');
+        expect(data.format).toBe(`instance-${resource}`);
+        expect(data.endpoint).toBe(endpoint);
+        expect(data.source).toBe(expectedLocalUrl);
+        expect(data).toHaveProperty('data');
+      }
+
+      const capabilitiesToon = decodeToon(
+        await runCLIStdout(['instance', 'capabilities'])
+      ) as Record<string, unknown>;
+      expect(capabilitiesToon.format).toBe('instance-capabilities');
+      expect(capabilitiesToon.source).toBe(expectedLocalUrl);
+
+      expect(await runCLIStdout(['instance', 'opensearch', '--raw'])).toContain(
+        'OpenSearchDescription'
+      );
+      expect(await runCLIStdout(['instance', 'robots', '--raw'])).toContain('User-agent');
+      expect(await runCLIStdout(['instance', 'stats-page', '--raw'])).toContain('<html');
     },
     E2E_TIMEOUT
   );
