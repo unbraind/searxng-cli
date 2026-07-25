@@ -7,7 +7,7 @@ SearXNG CLI includes a sophisticated caching system for improved performance and
 The cache system features:
 
 - **Unlimited In-Memory Cache**: No entry cap (`LRU_CACHE_SIZE=0`)
-- **Persistent Storage**: Cache survives restarts
+- **Unlimited Persistent Storage**: Cache survives restarts without an application-level file-size cap
 - **Compression**: Optional gzip compression
 - **Search**: Full-text search in cached entries
 - **Import/Export**: Share cache between systems
@@ -190,7 +190,10 @@ When compression is enabled, the file contains base64-encoded deflated JSON.
 ### Memory Usage
 
 - Default in-memory cache size: unlimited (`0` means no cap)
+- Persistent cache files have no application-level size cap
 - Memory usage grows with cache volume; use `--cache-prune` for lifecycle management
+- Available process memory, JavaScript runtime string/JSON limits, and disk space
+  remain practical boundaries
 
 ### Disk Usage
 
@@ -221,7 +224,7 @@ searxng-cli --stats "query"
 2. Verify disk space
 3. Check for file corruption
 
-### Cache File Too Large
+### Managing Cache Growth
 
 1. Run `--cache-prune` to remove old entries
 2. Reduce `cacheSize` in config
