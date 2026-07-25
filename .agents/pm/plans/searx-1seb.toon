@@ -1,0 +1,120 @@
+id: searx-1seb
+title: Track current SearXNG search parity and dependency security
+description: "Add the upstream week time-range contract, refresh current supported development dependencies, eliminate the newly disclosed high-severity resolved-graph advisory, and ship complete live/package/release proof."
+type: Plan
+status: in_progress
+priority: 0
+tags[10]: agent,cli,dependencies,pm-governance,release,search,searxng,security,toon,week
+created_at: "2026-07-25T00:13:48.812Z"
+updated_at: "2026-07-25T00:32:15.714Z"
+deadline: "2026-07-26T00:13:48.812Z"
+assignee: codex-searxng-agent
+author: codex-searxng-agent
+estimated_minutes: 300
+acceptance_criteria: "Persistent caches larger than 5 MiB reload without an application-level cap while unlimited memory/age, global ~/.searxng-cli state, setup, raw SearXNG parameters, typed week search, TOON default, and HTML fallback remain intact; Current compatible TypeScript, ESLint, Node types, GitHub Actions, PM, TOON, and Bun contracts are documented and the resolved dependency graph has zero audit findings; All 100/100/100/100 coverage, docstring, type, lint, duplication, shell, security, package, PM, live LAN, PR review, merged-head, and daily release gates pass"
+definition_of_ready: "All-status PM lineage, upstream master and current docs, live instance behavior, dependency APIs/types, registry versions, GitHub state, and duplicate searches are inspected."
+goal: Continuous full SearXNG parity
+objective: Current secure agent-native search workflows
+value: Agents gain complete current time filtering on the governed private search service
+impact: Prevents silent feature drift and removes a high-severity development supply-chain advisory
+outcome: Release-ready current CLI with exact week-search and zero-vulnerability proof
+why_now: Upstream now documents/implements week search and a new high-severity brace-expansion advisory affects the current resolved lint graph.
+reviewer: github-bots
+risk: high
+confidence: 95
+sprint: 2026-07-current-parity
+release: 2026.7.25
+dependencies[15]{id,kind,created_at,author,source_kind}:
+  searx-7uik,related,"2026-07-25T00:13:48.812Z",null,null
+  searx-auto-release,related,"2026-07-25T00:13:48.812Z",null,null
+  searx-changelog-migration,related,"2026-07-25T00:13:48.812Z",null,null
+  searx-ci-modernization,related,"2026-07-25T00:13:48.812Z",null,null
+  searx-coverage-governance,related,"2026-07-25T00:13:48.812Z",null,null
+  searx-dependency-remediation,related,"2026-07-25T00:13:48.812Z",null,null
+  searx-feature-parity-plan,related,"2026-07-25T00:13:48.812Z",null,null
+  searx-github-delivery,related,"2026-07-25T00:13:48.812Z",null,null
+  searx-hermetic-e2e,related,"2026-07-25T00:13:48.812Z",null,null
+  searx-modular-command-architecture,related,"2026-07-25T00:13:48.812Z",null,null
+  searx-published-consumer-isolation,related,"2026-07-25T00:13:48.812Z",null,null
+  searx-release-publishing,related,"2026-07-25T00:13:48.812Z",null,null
+  searx-security-modernization,related,"2026-07-25T00:13:48.812Z",null,null
+  searx-verification,related,"2026-07-25T00:13:48.812Z",null,null
+  searx-repo-health-2026,related,"2026-07-25T00:32:12.818Z",null,null
+comments[3]{created_at,author,text}:
+  "2026-07-25T00:13:48.812Z",codex-searxng-agent,"All 54 item records across every status, tracker activity, graph analytics, validation, prior GitHub delivery, current upstream docs/source, live LAN config/search behavior, and registry dependency state were inspected before creation; no duplicate active or terminal item covers this new delta."
+  "2026-07-25T00:25:49.699Z",codex-searxng-agent,"Correction after source inspection: week time-range parity was already complete in types, parser, MCP, docs, cache keys, and tests. No duplicate implementation was added. The concrete CLI defect is the hidden 5 MiB persistent-load refusal despite unlimited-cache documentation."
+  "2026-07-25T00:31:48.958Z",codex-searxng-agent,"Pre-commit acceptance: quality passes with 938 tests and exact 100/100/100/100 coverage; 20/20 module docstrings; type-aware ESLint, Prettier, jscpd, and ShellCheck pass; Bun audit and Trivy report zero findings; history secret scan, changelog checks, npx/bunx package smoke, and isolated installed CLI live LAN E2E pass. Direct release:dry-run correctly requires the next calendar version and will be exercised through release:pipeline:dry-run after commit."
+notes[2]{created_at,author,text}:
+  "2026-07-25T00:13:48.812Z",codex-searxng-agent,"Preserve JSON-first then HTML fallback because the governed instance intentionally returns HTTP 403 for format=json. Preserve TOON 4.0 default, ~/.searxng-cli global state, setup wizard, unlimited cache, and raw parameter passthrough."
+  "2026-07-25T00:25:49.699Z",codex-searxng-agent,TypeScript 7.0 has no compiler API. The official supported arrangement is native TypeScript 7 for tsc plus TypeScript 6 for tools such as typescript-eslint; package scripts select the native binary explicitly.
+learnings[2]{created_at,author,text}:
+  "2026-07-25T00:13:48.812Z",codex-searxng-agent,"Upstream SearchQuery and engine request contracts include week in addition to day, month, and year; the CLI must treat this as a first-class typed value rather than requiring raw passthrough."
+  "2026-07-25T00:25:49.699Z",codex-searxng-agent,A declared unlimited in-memory cache is not genuinely unlimited across restarts if persistence silently refuses files above a fixed threshold; acceptance must cross the former boundary with valid data.
+files[10]{path,scope,note}:
+  src/types/index.ts,project,Typed current search range contract
+  src/cli/index.ts,project,Parser and help contract
+  src/index.ts,project,Command orchestration and agent output
+  package.json,project,Current secure dependency contract
+  src/cache/index.ts,project,Remove contradictory persistent cache size cap
+  tests/unit/cache.test.ts,project,Black-box reload proof above former 5 MiB boundary
+  tsconfig.eslint.json,project,TypeScript 7 compatible path configuration
+  bun.lock,project,Audited deterministic dependency graph
+  .github/workflows/ci.yml,project,Current pinned CI actions
+  .github/workflows/codeql.yml,project,Current pinned CodeQL actions
+tests[4]{command,scope,timeout_seconds,pm_context_mode}:
+  bun audit,project,300,tracker
+  bun run quality,project,1200,tracker
+  "bun run release:pipeline:dry-run",project,1800,tracker
+  "SEARXNG_URL=http://192.168.1.183:38522 bun run test:e2e:searxng",project,1200,tracker
+docs[5]{path,scope,note}:
+  docs/caching.md,project,True unlimited persistence contract
+  docs/development.md,project,TypeScript 7 and compatibility API architecture
+  docs/e2e-testing.md,project,Governed LAN acceptance
+  docs/usage.md,project,Detailed search contract
+  README.md,project,User and agent discoverability
+plan_mode: approved
+plan_scope: "Latest SearXNG search contract, secure toolchain, agent help/docs, and release delivery"
+plan_harness: codex
+plan_resume_context: "Branch agent/searxng-week-range-security; true unlimited persistence implemented; current secure dependencies/actions applied; native TypeScript 7 plus TypeScript 6 tooling API verified; quality, audit, security, package, and live LAN gates green; calendar release pipeline and GitHub review remain."
+plan_decisions[1]{ts,author,decision,rationale,evidence}:
+  "2026-07-25T00:25:51.633Z",codex-searxng-agent,Implement true unlimited persistent cache loading and the secure current toolchain; preserve the already-complete week range contract.,"Direct source and tests proved week parity already exists, while loadCacheSync contradicted the explicit unlimited-cache requirement with a 5 MiB refusal.",src/cache/index.ts former stat guard; tests/unit/cache.test.ts former oversized rejection; bun audit GHSA-mh99-v99m-4gvg; TypeScript 7 official side-by-side guidance.
+plan_discoveries[1]{ts,author,text}:
+  "2026-07-25T00:25:53.529Z",codex-searxng-agent,System Bun 1.3.11 could download current 1.3.14 but could not replace /usr/bin/bun due EACCES. packageManager and hosted setup-bun already select 1.3.14/current; local validation continues without weakening gates.
+plan_steps[5]:
+  - id: plan-step-001
+    order: 1
+    title: Confirm exact upstream/live/dependency delta and canonical lineage
+    status: completed
+    created_at: "2026-07-25T00:13:49.324Z"
+    updated_at: "2026-07-25T00:14:02.460Z"
+    evidence: "Inspected all-status PM state (54 closed, no duplicates), current upstream master 4f64d950 and docs, live 2026.7.22 LAN service, CLI parser/types/help, installed dependency APIs, registry versions, Bun audit, GitHub PR/workflow state, and exact predecessor lineage. Confirmed week range drift and GHSA-mh99-v99m-4gvg."
+    completed_at: "2026-07-25T00:14:02.460Z"
+  - id: plan-step-002
+    order: 2
+    title: Implement unlimited persistence and current secure dependencies
+    status: completed
+    created_at: "2026-07-25T00:13:49.324Z"
+    updated_at: "2026-07-25T00:26:15.996Z"
+    evidence: "Removed the 5 MiB persistent cache load cap; added valid >5 MiB restart regression proof; upgraded ESLint 10.8.0, jsdoc 63.2.2, Node 26 types, native TS 7.0.2 plus supported TS 6.0.3 API, patched brace-expansion 5.0.8, and current pinned checkout/setup-node/CodeQL actions. Bun audit is empty; 938 tests pass at exact 100/100/100/100."
+    completed_at: "2026-07-25T00:25:55.226Z"
+  - id: plan-step-003
+    order: 3
+    title: "Update agent/user contracts, changelog sources, and governed evidence"
+    status: completed
+    created_at: "2026-07-25T00:13:49.324Z"
+    updated_at: "2026-07-25T00:26:17.079Z"
+    evidence: "README and caching/development docs now specify unlimited persistent loading and the official TypeScript 7 plus TypeScript 6 API split. PM contains the corrected discovery, decision, files, docs, tests, deep predecessor relationships, acceptance criteria, and local Bun permission boundary."
+    completed_at: "2026-07-25T00:26:17.079Z"
+  - id: plan-step-004
+    order: 4
+    title: "Run full local, live, installed, package, security, PM, and release acceptance"
+    status: in_progress
+    created_at: "2026-07-25T00:13:49.324Z"
+    updated_at: "2026-07-25T00:26:18.416Z"
+  - id: plan-step-005
+    order: 5
+    title: "Ship PR, converge every bot review, merge, release, and verify exact head"
+    status: pending
+    created_at: "2026-07-25T00:13:49.324Z"
+    updated_at: "2026-07-25T00:13:49.324Z"
+body: "Deliver one cohesive compatibility and security increment. The first-class time-range contract must match current upstream, continue to support arbitrary raw SearXNG parameters, preserve live HTML fallback, and be visible through all agent-facing help and schemas. Dependency updates must be API-verified from installed packages and retain every strict gate. Release completion includes installed npx/Bun behavior, exact-head reviews, merge, and daily automation."

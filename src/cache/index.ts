@@ -46,11 +46,6 @@ export function loadCacheSync(options: CachePersistenceOptions = {}): number {
   if (!persistent) return 0;
   try {
     if (fs.existsSync(cacheFile)) {
-      const stat = fs.statSync(cacheFile);
-      if (stat.size > 5 * 1024 * 1024) {
-        if (process.env.DEBUG) console.error('Cache file too large, skipping load');
-        return 0;
-      }
       let cacheData = fs.readFileSync(cacheFile, 'utf8');
       if (compression) {
         try {

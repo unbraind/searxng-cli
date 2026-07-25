@@ -727,7 +727,7 @@ describe('Cache Module', () => {
       expect(count).toBe(0);
     });
 
-    it('supports disabled, plain, compressed-fallback, expiry, oversized, and error profiles', () => {
+    it('supports disabled, plain, compressed-fallback, expiry, unlimited size, and errors', () => {
       const base = `/tmp/searxng-cache-${process.pid}-${Date.now()}`;
       const data = {
         key: { timestamp: Date.now(), data: createMockResponse() },
@@ -753,11 +753,18 @@ describe('Cache Module', () => {
       resultCache.clear();
       expect(loadCacheSync({ compression: true, cacheFile: base, maxAge: 1000 })).toBe(1);
 
-      nodefs.writeFileSync(base, Buffer.alloc(5 * 1024 * 1024 + 1));
-      delete process.env.DEBUG;
-      expect(loadCacheSync({ cacheFile: base })).toBe(0);
-      process.env.DEBUG = '1';
-      expect(loadCacheSync({ cacheFile: base })).toBe(0);
+      nodefs.writeFileSync(
+        base,
+        JSON.stringify({
+          large: {
+            timestamp: Date.now(),
+            data: createMockResponse({ query: 'x'.repeat(5 * 1024 * 1024) }),
+          },
+        })
+      );
+      resultCache.clear();
+      expect(nodefs.statSync(base).size).toBeGreaterThan(5 * 1024 * 1024);
+      expect(loadCacheSync({ compression: false, cacheFile: base, maxAge: Infinity })).toBe(1);
 
       nodefs.unlinkSync(base);
       nodefs.mkdirSync(base);

@@ -36,6 +36,8 @@ A powerful TypeScript command-line search client for SearXNG instances with TOON
 - **Preset Workflows** - Save/load reusable search profiles with `--save-preset`, `--preset`, `--presets`
 - **Connection Resilience** - Circuit breaker, adaptive timeouts, request retries
 - **Built with Bun** - Fast development and runtime using Bun
+- **Native TypeScript 7 checks** - Fast project-wide type safety with the supported TypeScript 6
+  compatibility API retained for typed ESLint
 - **Global Settings** - Settings saved to `~/.searxng-cli/settings.json`
 - **Capability-Aware Transport** - Uses JSON when enabled and automatically normalizes SearXNG HTML when an administrator disables JSON API output
 - **Configured Agent Routing** - Agent and MCP searches stay pinned to the `searxngUrl` saved in global settings, including private-LAN services
@@ -241,6 +243,7 @@ Cache behavior defaults:
 
 - `CACHE_MAX_AGE=Infinity`
 - unlimited in-memory cache (`LRU_CACHE_SIZE=0`, no eviction cap)
+- unlimited persistent cache loading (no application-level file-size cap)
 
 ### AI Agent Mode
 

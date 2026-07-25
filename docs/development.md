@@ -37,6 +37,14 @@ cd searxng-cli
 bun install
 ```
 
+## TypeScript Toolchain
+
+Project and test type checks use the native TypeScript 7 compiler. ESLint and
+`typescript-eslint` use the side-by-side TypeScript 6 compatibility API because TypeScript 7.0
+does not expose a programmatic compiler API. The package scripts select each implementation
+explicitly, following the TypeScript 7 migration guidance; do not replace them with an ambiguous
+bare `tsc` invocation.
+
 ## Commands
 
 ### Versioning
