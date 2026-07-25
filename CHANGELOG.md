@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Complete SearXNG operational parity and agent-native release delivery ([searx-7uik](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/plans/searx-7uik.toon))
 
+### Security
+
+- Ship unlimited SearXNG cache persistence and secure current tooling ([searx-1seb](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/plans/searx-1seb.toon))
+
 ## 2026.7.23 - 2026-07-23
 
 ### Fixed
