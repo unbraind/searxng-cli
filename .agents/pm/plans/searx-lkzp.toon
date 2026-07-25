@@ -6,7 +6,7 @@ status: in_progress
 priority: 0
 tags[8]: agent,cli,instance-resources,pm-governance,release,searxng,toolchain,toon
 created_at: "2026-07-25T22:30:26.978Z"
-updated_at: "2026-07-25T23:13:10.266Z"
+updated_at: "2026-07-25T23:13:47.779Z"
 deadline: "2026-07-26T22:30:26.978Z"
 assignee: codex-searxng-agent
 author: codex-searxng-agent
@@ -40,10 +40,11 @@ dependencies[15]{id,kind,created_at,author,source_kind}:
   searx-tag-release-validation,related,"2026-07-25T22:30:26.978Z",null,null
   searx-verification,related,"2026-07-25T22:30:26.978Z",null,null
   searx-feature-parity-plan,related,"2026-07-25T22:49:05.460Z",codex-searxng-agent,plan_continuation
-comments[3]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-07-25T22:30:26.978Z",codex-searxng-agent,"All 55 records, 622 history entries by integrity census, 137 graph edges, deep canonical plans, all statuses, exact/fuzzy duplicate audits, package surfaces, current upstream source/docs, live route behavior, and repository command contracts were inspected before creation. No open work or duplicate terminal item covers this new route-parity and uniform-format delta."
   "2026-07-25T22:45:35.186Z",codex-searxng-agent,"Implementation checkpoint: fourteen typed instance resource/view contracts are available in TOON JSON and raw output with provenance and file capture. Hermetic installed E2E passes. Governed LAN isolated-package E2E passed after removing only the disposable /tmp/pm-cli-node-compile-cache-1000 directory that had exhausted tmpfs inodes; the first failure occurred during output capture before any product assertion."
   "2026-07-25T23:13:10.234Z",codex-searxng-agent,"Full seven-command PM-linked acceptance matrix passes after two harness hardenings: the E2E cache proof clears its isolated cache before the exact-hit assertion, and duplication output retains strict 2.93 percent threshold evidence plus the complete JSON report while bounding console capture. pm-cli 2026.7.25 reproduced closed GH-679's EAGAIN defect before that output optimization; detailed duplicate search confirmed it as a fixed-release regression and GH-714 was filed: https://github.com/unbraind/pm-cli/issues/714."
+  "2026-07-25T23:13:47.753Z",codex-searxng-agent,"Release pipeline dry run returned the governed immutable result release_already_cut_today for UTC date key 2026.7.25. Do not invent a replacement version; merge validation will use the existing immutable tag if still same UTC day, or the normal 2026.7.26 daily release after UTC rollover."
 notes[2]{created_at,author,text}:
   "2026-07-25T22:30:26.978Z",codex-searxng-agent,"Search formats may be disabled by the instance: keep JSON-first then HTML fallback. Stable metadata/resources are read-only; do not add administrative mutations or leak live payloads into PM/GitHub."
   "2026-07-25T22:48:32.291Z",codex-searxng-agent,The canonical feature-parity plan is closed and cannot be the parent of active continuation work under tracker validation. This item remains deep-linked to it as related lineage instead.
@@ -116,14 +117,16 @@ plan_steps[5]:
   - id: plan-step-004
     order: 4
     title: "Run full local, live installed, package, PM, security, and release gates"
-    status: in_progress
+    status: completed
     created_at: "2026-07-25T22:30:26.971Z"
-    updated_at: "2026-07-25T22:49:16.869Z"
-    evidence: "Beginning the complete local, PM-linked, security, package, and release-readiness gate matrix."
+    updated_at: "2026-07-25T23:13:46.175Z"
+    evidence: "Complete seven-command PM acceptance passed: audit, strict quality, Trivy, package smoke, exact coverage, hermetic installed E2E, and governed LAN isolated installed E2E. 945 tests pass at 100/100/100/100; 21/21 module docstrings; 2.93 percent duplication below strict 4 percent with full JSON inventory; history-secret scan/build/changelog preservation pass; PM validation and 152-edge graph audit have zero findings. Release pipeline dry run is clean and correctly skips because immutable UTC release 2026.7.25 already exists."
+    completed_at: "2026-07-25T23:13:46.175Z"
   - id: plan-step-005
     order: 5
     title: "Converge PR checks and every bot review, merge, release, and verify exact heads"
-    status: pending
+    status: in_progress
     created_at: "2026-07-25T22:30:26.971Z"
-    updated_at: "2026-07-25T22:30:26.971Z"
+    updated_at: "2026-07-25T23:13:47.007Z"
+    evidence: Publishing exact tested commits for CI and full bot review convergence before merge and immutable next-UTC release verification.
 body: "Canonical continuation of the closed feature-parity and operational-parity plans. The governed service is http://192.168.1.183:38522 at SearXNG 2026.7.24+4f64d9501. Upstream master 0909dbc9 differs only by two workflow dependency commits, so the product delta is stable route coverage and consistent command contracts. Preserve JSON-first/HTML fallback for search, unrestricted raw SearXNG parameters, TOON v4 default, setup wizard, all state under ~/.searxng-cli, unlimited cache persistence, and daily release invariants. Never record private settings or raw live payloads."
