@@ -765,6 +765,8 @@ describe('Cache Module', () => {
       resultCache.clear();
       expect(nodefs.statSync(base).size).toBeGreaterThan(5 * 1024 * 1024);
       expect(loadCacheSync({ compression: false, cacheFile: base, maxAge: Infinity })).toBe(1);
+      resultCache.clear();
+      expect(loadCacheSync({ compression: true, cacheFile: base, maxAge: Infinity })).toBe(1);
 
       nodefs.unlinkSync(base);
       nodefs.mkdirSync(base);

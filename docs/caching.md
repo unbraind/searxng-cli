@@ -192,7 +192,8 @@ When compression is enabled, the file contains base64-encoded deflated JSON.
 - Default in-memory cache size: unlimited (`0` means no cap)
 - Persistent cache files have no application-level size cap
 - Memory usage grows with cache volume; use `--cache-prune` for lifecycle management
-- Available memory and disk space remain the operating-system boundaries
+- Available process memory, JavaScript runtime string/JSON limits, and disk space
+  remain practical boundaries
 
 ### Disk Usage
 
