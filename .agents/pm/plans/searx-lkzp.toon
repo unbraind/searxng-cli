@@ -1,0 +1,132 @@
+id: searx-lkzp
+title: Ship complete SearXNG instance resources and uniform agent contracts
+description: "Expose every stable read-only SearXNG application resource through typed TOON-default commands, make global machine-output flags truthful across command families, refresh the latest PM and changelog toolchain, and ship exact live/package/review/release proof without regressing search, setup, global state, or unlimited cache behavior."
+type: Plan
+status: in_progress
+priority: 0
+tags[8]: agent,cli,instance-resources,pm-governance,release,searxng,toolchain,toon
+created_at: "2026-07-25T22:30:26.978Z"
+updated_at: "2026-07-25T23:13:47.779Z"
+deadline: "2026-07-26T22:30:26.978Z"
+assignee: codex-searxng-agent
+author: codex-searxng-agent
+estimated_minutes: 420
+acceptance_criteria: "Typed commands expose /healthz, /config, /engine_descriptions.json, /stats, /stats/errors, /opensearch.xml, /manifest.json, and /robots.txt with stable provenance envelopes; TOON is default and JSON or raw overrides are validated and pipe-safe; every command and subcommand has accurate detailed help and advertised global flags behave consistently; search retains all typed and raw upstream parameters plus HTML fallback; ~/.searxng-cli global settings/setup/cache contracts and zero-limit persistence remain proven; latest pm-cli and pm-changelog are installed and healthy; 100/100/100/100 coverage, docstrings, lint, duplication, security, PM, live installed CLI, package, release, CI, review, merged-head, and release checks pass"
+definition_of_ready: "All 55 PM items across all statuses and their rich fields, canonical histories and graph analytics; official current SearXNG docs/source; live instance routes; TOON specification/package; npm dependency state; repository source/tests/docs; and GitHub state were inspected with zero duplicate candidates."
+goal: Complete agent-native SearXNG service parity
+objective: Typed read-only resources and truthful machine contracts
+value: "Agents can discover, diagnose, and consume the whole configured SearXNG service without ad hoc curl parsing"
+impact: Eliminates hidden route and formatting gaps while preserving the proven search and persistence core
+outcome: "A reviewed, release-ready CLI whose documented commands match actual behavior against the governed LAN instance"
+why_now: "The prior release completed search and operational parity, but today's route inventory exposed stable resources with no first-class CLI command and global flags that are documented more broadly than implemented."
+reviewer: github-bots
+risk: high
+confidence: 92
+sprint: 2026-07-current-parity
+release: 2026.7.26
+dependencies[15]{id,kind,created_at,author,source_kind}:
+  searx-1seb,related,"2026-07-25T22:30:26.978Z",null,null
+  searx-7uik,related,"2026-07-25T22:30:26.978Z",null,null
+  searx-auto-release,related,"2026-07-25T22:30:26.978Z",null,null
+  searx-changelog-migration,related,"2026-07-25T22:30:26.978Z",null,null
+  searx-ci-modernization,related,"2026-07-25T22:30:26.978Z",null,null
+  searx-coverage-governance,related,"2026-07-25T22:30:26.978Z",null,null
+  searx-hermetic-e2e,related,"2026-07-25T22:30:26.978Z",null,null
+  searx-modular-command-architecture,related,"2026-07-25T22:30:26.978Z",null,null
+  searx-published-consumer-isolation,related,"2026-07-25T22:30:26.978Z",null,null
+  searx-release-validation,related,"2026-07-25T22:30:26.978Z",null,null
+  searx-repo-health-2026,related,"2026-07-25T22:30:26.978Z",null,null
+  searx-security-modernization,related,"2026-07-25T22:30:26.978Z",null,null
+  searx-tag-release-validation,related,"2026-07-25T22:30:26.978Z",null,null
+  searx-verification,related,"2026-07-25T22:30:26.978Z",null,null
+  searx-feature-parity-plan,related,"2026-07-25T22:49:05.460Z",codex-searxng-agent,plan_continuation
+comments[4]{created_at,author,text}:
+  "2026-07-25T22:30:26.978Z",codex-searxng-agent,"All 55 records, 622 history entries by integrity census, 137 graph edges, deep canonical plans, all statuses, exact/fuzzy duplicate audits, package surfaces, current upstream source/docs, live route behavior, and repository command contracts were inspected before creation. No open work or duplicate terminal item covers this new route-parity and uniform-format delta."
+  "2026-07-25T22:45:35.186Z",codex-searxng-agent,"Implementation checkpoint: fourteen typed instance resource/view contracts are available in TOON JSON and raw output with provenance and file capture. Hermetic installed E2E passes. Governed LAN isolated-package E2E passed after removing only the disposable /tmp/pm-cli-node-compile-cache-1000 directory that had exhausted tmpfs inodes; the first failure occurred during output capture before any product assertion."
+  "2026-07-25T23:13:10.234Z",codex-searxng-agent,"Full seven-command PM-linked acceptance matrix passes after two harness hardenings: the E2E cache proof clears its isolated cache before the exact-hit assertion, and duplication output retains strict 2.93 percent threshold evidence plus the complete JSON report while bounding console capture. pm-cli 2026.7.25 reproduced closed GH-679's EAGAIN defect before that output optimization; detailed duplicate search confirmed it as a fixed-release regression and GH-714 was filed: https://github.com/unbraind/pm-cli/issues/714."
+  "2026-07-25T23:13:47.753Z",codex-searxng-agent,"Release pipeline dry run returned the governed immutable result release_already_cut_today for UTC date key 2026.7.25. Do not invent a replacement version; merge validation will use the existing immutable tag if still same UTC day, or the normal 2026.7.26 daily release after UTC rollover."
+notes[2]{created_at,author,text}:
+  "2026-07-25T22:30:26.978Z",codex-searxng-agent,"Search formats may be disabled by the instance: keep JSON-first then HTML fallback. Stable metadata/resources are read-only; do not add administrative mutations or leak live payloads into PM/GitHub."
+  "2026-07-25T22:48:32.291Z",codex-searxng-agent,The canonical feature-parity plan is closed and cannot be the parent of active continuation work under tracker validation. This item remains deep-linked to it as related lineage instead.
+learnings[2]{created_at,author,text}:
+  "2026-07-25T22:30:26.978Z",codex-searxng-agent,"Command help is a contract test: a global flag listed for every command must be routed through every command family, not merely accepted by the shared parser."
+  "2026-07-25T23:13:10.234Z",codex-searxng-agent,Machine-readable reports should remain complete while routine agent and CI stdout stays bounded; this preserves strict gates and prevents evidence transport from becoming the failure source.
+files[10]{path,scope,note}:
+  bun.lock,project,Resolved current dependency graph
+  package.json,project,Current PM CLI toolchain
+  scripts/e2e-searxng.sh,project,Governed LAN isolated package acceptance
+  src/formatters/schema.ts,project,Official text/toon media type
+  src/index.ts,project,Command routing and typed resource orchestration
+  src/instance/index.ts,project,Typed stable read-only resource transport and renderers
+  tests/e2e/cli.test.ts,project,Hermetic installed command resource matrix
+  tests/unit/instance.test.ts,project,Complete resource contract coverage
+  tests/unit/main.test.ts,project,Command normalization and global flag coverage
+  tests/unit/validation.test.ts,project,TOON media type schema assertion
+tests[7]{command,scope,timeout_seconds,note}:
+  bun audit,project,180,Resolved dependency security
+  bun run quality,project,600,Strict 100 percent quality gate
+  "bun run security:trivy",project,600,Filesystem vulnerability secret and misconfiguration scan
+  "bun run smoke:package",project,600,npm and Bun packed consumer smoke
+  "bun run test:coverage",project,600,Exact 100 percent source coverage
+  "bun run test:e2e",project,600,Hermetic installed CLI black box suite
+  "SEARXNG_URL=http://192.168.1.183:38522 bun run test:e2e:searxng",project,900,Governed LAN isolated installed package acceptance
+docs[8]{path,scope,note}:
+  docs/api.md,project,Typed SDK exports
+  docs/development.md,project,Module architecture
+  docs/e2e-testing.md,project,Installed acceptance scope
+  docs/formats.md,project,Official TOON media type
+  docs/index.md,project,Documentation navigation
+  docs/upstream-compatibility.md,project,Primary source and route parity matrix
+  docs/usage.md,project,Complete command and resource reference
+  README.md,project,User facing resource commands
+plan_mode: executing
+plan_scope: "Read-only SearXNG route parity, uniform command formatting/help, current toolchain, and release delivery"
+plan_harness: codex
+plan_resume_context: "Fresh branch after all-status PM and upstream/live gap analysis. Implement stable read-only resource commands (health/config/descriptions/stats/errors/opensearch/manifest/robots), truthful TOON/JSON/global-format behavior and command help; upgrade local pm-cli plus pm-changelog; then run full 100 percent, live installed, PR bot, merge, and release gates."
+plan_validation[1]{text,command,expected}:
+  Complete delivery gates,"bun run quality; bun audit; bun run security:trivy; bun run smoke:package; live isolated searxng route/format/cache/setup acceptance; pm test; release dry run; exact-head CI/review inventory","100/100/100/100, all typed route/format schemas, governed LAN and isolated installed executable proof, zero PM/security/review findings, green merged head"
+plan_decisions[1]{ts,author,decision,rationale,evidence}:
+  "2026-07-25T22:30:50.337Z",codex-searxng-agent,Add typed read-only instance-resource commands and make output/global-flag behavior uniform; do not model mutating UI/admin routes as CLI parity.,"Stable GET resources are useful and safe for agents, while search already has complete typed plus raw parameter passthrough and the instance does not expose an administrative API contract.",Official webapp.py route inventory at upstream 0909dbc9; live 2026.7.24 responses; current source route coverage.
+plan_discoveries[1]{ts,author,text}:
+  "2026-07-25T22:30:51.301Z",codex-searxng-agent,"Upstream master is two workflow-only commits ahead of the governed service commit, @toon-format/toon remains 4.0.0, global pm-cli is latest 2026.7.25, repo-local pm-cli and pm-changelog need 2026.7.25 refresh, and the workstation searxng executable is stale 2026.7.23 despite npm latest 2026.7.25."
+plan_steps[5]:
+  - id: plan-step-001
+    order: 1
+    title: "Confirm current upstream, live route, tracker, and dependency delta"
+    status: completed
+    created_at: "2026-07-25T22:30:26.971Z"
+    updated_at: "2026-07-25T22:30:53.457Z"
+    evidence: "Inspected all 55 PM records and 622-history integrity census, zero active/duplicate items, 137-edge healthy graph, packages/contracts/telemetry, official SearXNG 0909dbc9 docs/source, live 2026.7.24 route behavior, TOON 4.0.0, npm state, global/local binaries, source/tests/docs/GitHub. Product upstream is unchanged; stable read-only resource and uniform output/help gaps are confirmed."
+    completed_at: "2026-07-25T22:30:53.457Z"
+  - id: plan-step-002
+    order: 2
+    title: "Implement typed resource transport, commands, formats, and help"
+    status: completed
+    created_at: "2026-07-25T22:30:26.971Z"
+    updated_at: "2026-07-25T22:45:36.302Z"
+    evidence: Added src/instance typed resource facade and SDK exports; command routing/help for capabilities engines categories languages plugins stats errors health config descriptions stats-page opensearch manifest robots; uniform TOON JSON raw and output-file behavior; official text/toon schema; complete unit and installed E2E coverage. 945 tests pass at 100/100/100/100; hermetic and governed LAN isolated package suites pass.
+    completed_at: "2026-07-25T22:45:36.302Z"
+  - id: plan-step-003
+    order: 3
+    title: Refresh PM/changelog toolchain and complete docs/evidence
+    status: completed
+    created_at: "2026-07-25T22:30:26.971Z"
+    updated_at: "2026-07-25T22:49:15.576Z"
+    evidence: "Upgraded repo-local @unbrained/pm-cli and pm-changelog to 2026.7.25; isolated package doctor reports healthy activation; PM strict validation and 152-edge graph audit have zero findings; README and seven docs describe complete route, format, global state, setup, cache, live acceptance, and upstream compatibility contracts; changelog preservation/check passes without prematurely including active work."
+    completed_at: "2026-07-25T22:49:15.576Z"
+  - id: plan-step-004
+    order: 4
+    title: "Run full local, live installed, package, PM, security, and release gates"
+    status: completed
+    created_at: "2026-07-25T22:30:26.971Z"
+    updated_at: "2026-07-25T23:13:46.175Z"
+    evidence: "Complete seven-command PM acceptance passed: audit, strict quality, Trivy, package smoke, exact coverage, hermetic installed E2E, and governed LAN isolated installed E2E. 945 tests pass at 100/100/100/100; 21/21 module docstrings; 2.93 percent duplication below strict 4 percent with full JSON inventory; history-secret scan/build/changelog preservation pass; PM validation and 152-edge graph audit have zero findings. Release pipeline dry run is clean and correctly skips because immutable UTC release 2026.7.25 already exists."
+    completed_at: "2026-07-25T23:13:46.175Z"
+  - id: plan-step-005
+    order: 5
+    title: "Converge PR checks and every bot review, merge, release, and verify exact heads"
+    status: in_progress
+    created_at: "2026-07-25T22:30:26.971Z"
+    updated_at: "2026-07-25T23:13:47.007Z"
+    evidence: Publishing exact tested commits for CI and full bot review convergence before merge and immutable next-UTC release verification.
+body: "Canonical continuation of the closed feature-parity and operational-parity plans. The governed service is http://192.168.1.183:38522 at SearXNG 2026.7.24+4f64d9501. Upstream master 0909dbc9 differs only by two workflow dependency commits, so the product delta is stable route coverage and consistent command contracts. Preserve JSON-first/HTML fallback for search, unrestricted raw SearXNG parameters, TOON v4 default, setup wizard, all state under ~/.searxng-cli, unlimited cache persistence, and daily release invariants. Never record private settings or raw live payloads."

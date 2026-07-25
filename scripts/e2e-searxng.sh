@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-SEARXNG_URL="${SEARXNG_URL:-http://localhost:8080}"
+SEARXNG_URL="${SEARXNG_URL:-http://192.168.1.183:38522}"
 TIMEOUT_BIN="${TIMEOUT_BIN:-timeout}"
 CMD_TIMEOUT="${CMD_TIMEOUT:-120s}"
 QUERY="${E2E_QUERY:-searxng cli full e2e smoke test}"
@@ -40,8 +40,16 @@ run "searxng --settings-json >/tmp/searxng-e2e-settings.json"
 run "searxng --paths-json >/tmp/searxng-e2e-paths.json"
 run "searxng --cache-status-json >/tmp/searxng-e2e-cache.json"
 run "searxng --instance-info-json >/tmp/searxng-e2e-instance.json"
+run "searxng health --json >/tmp/searxng-e2e-health.json"
+run "searxng instance capabilities --json >/tmp/searxng-e2e-capabilities.json"
+run "searxng instance config --json >/tmp/searxng-e2e-config.json"
+run "searxng instance descriptions --json >/tmp/searxng-e2e-descriptions.json"
 run "searxng instance stats --json >/tmp/searxng-e2e-instance-stats.json"
 run "searxng instance errors --json >/tmp/searxng-e2e-instance-errors.json"
+run "searxng instance manifest --json >/tmp/searxng-e2e-manifest.json"
+run "searxng instance opensearch --raw >/tmp/searxng-e2e-opensearch.xml"
+run "searxng instance robots --raw >/tmp/searxng-e2e-robots.txt"
+run "searxng instance stats-page --raw >/tmp/searxng-e2e-stats.html"
 run "searxng autocomplete \"$QUERY\" --json >/tmp/searxng-e2e-autocomplete.json"
 run "searxng --schema-json all >/tmp/searxng-e2e-schemas.json"
 run "searxng --verify-formats-json \"$QUERY\" >/tmp/searxng-e2e-verify.json"
@@ -72,8 +80,13 @@ if command -v jq >/dev/null 2>&1; then
   jq -e '.format == "paths" and (.files.settings | test("/\\.searxng-cli/settings\\.json$"))' /tmp/searxng-e2e-paths.json >/dev/null
   jq -e '.format == "cache-status" and .maxSize == "unlimited"' /tmp/searxng-e2e-cache.json >/dev/null
   jq -e '.format == "instance-capabilities" and (.engines | type == "array")' /tmp/searxng-e2e-instance.json >/dev/null
-  jq -e '.format == "instance-stats" and (.capabilities.engines | type == "array") and (.errors | type == "object")' /tmp/searxng-e2e-instance-stats.json >/dev/null
-  jq -e '.format == "instance-errors" and (.errors | type == "object")' /tmp/searxng-e2e-instance-errors.json >/dev/null
+  jq -e '.format == "instance-health" and .endpoint == "/healthz" and .data.healthy == true' /tmp/searxng-e2e-health.json >/dev/null
+  jq -e '.format == "instance-capabilities" and (.data.engines | type == "array")' /tmp/searxng-e2e-capabilities.json >/dev/null
+  jq -e '.format == "instance-config" and .endpoint == "/config" and (.data | type == "object")' /tmp/searxng-e2e-config.json >/dev/null
+  jq -e '.format == "instance-descriptions" and .endpoint == "/engine_descriptions.json" and (.data | type == "object")' /tmp/searxng-e2e-descriptions.json >/dev/null
+  jq -e '.format == "instance-stats" and (.data.capabilities.engines | type == "array") and (.data.errors | type == "object")' /tmp/searxng-e2e-instance-stats.json >/dev/null
+  jq -e '.format == "instance-errors" and (.data | type == "object")' /tmp/searxng-e2e-instance-errors.json >/dev/null
+  jq -e '.format == "instance-manifest" and .endpoint == "/manifest.json" and (.data | type == "object")' /tmp/searxng-e2e-manifest.json >/dev/null
   jq -e '.format == "autocomplete" and (.suggestions | type == "array")' /tmp/searxng-e2e-autocomplete.json >/dev/null
   jq -e '.schemaVersion == "1.0" and (.formats | length > 5)' /tmp/searxng-e2e-schemas.json >/dev/null
   jq -e '.format == "request" and (.request.url | startswith("'"$SEARXNG_URL"'"))' /tmp/searxng-e2e-request.json >/dev/null
@@ -87,13 +100,22 @@ else
   "$NODE_BIN" -e 'const d=require("fs").readFileSync("/tmp/searxng-e2e-paths.json","utf8"); const j=JSON.parse(d); if(j.format!=="paths"||!/\\.searxng-cli\/settings\.json$/.test(j.files.settings)) process.exit(1);'
   "$NODE_BIN" -e 'const d=require("fs").readFileSync("/tmp/searxng-e2e-cache.json","utf8"); const j=JSON.parse(d); if(j.format!=="cache-status"||j.maxSize!=="unlimited") process.exit(1);'
   "$NODE_BIN" -e 'const d=require("fs").readFileSync("/tmp/searxng-e2e-instance.json","utf8"); const j=JSON.parse(d); if(j.format!=="instance-capabilities"||!Array.isArray(j.engines)) process.exit(1);'
-  "$NODE_BIN" -e 'const j=JSON.parse(require("fs").readFileSync("/tmp/searxng-e2e-instance-stats.json","utf8")); if(j.format!=="instance-stats"||!Array.isArray(j.capabilities?.engines)||typeof j.errors!=="object") process.exit(1);'
-  "$NODE_BIN" -e 'const j=JSON.parse(require("fs").readFileSync("/tmp/searxng-e2e-instance-errors.json","utf8")); if(j.format!=="instance-errors"||typeof j.errors!=="object") process.exit(1);'
+  "$NODE_BIN" -e 'const j=JSON.parse(require("fs").readFileSync("/tmp/searxng-e2e-health.json","utf8")); if(j.format!=="instance-health"||j.endpoint!=="/healthz"||j.data?.healthy!==true) process.exit(1);'
+  "$NODE_BIN" -e 'const j=JSON.parse(require("fs").readFileSync("/tmp/searxng-e2e-capabilities.json","utf8")); if(j.format!=="instance-capabilities"||!Array.isArray(j.data?.engines)) process.exit(1);'
+  "$NODE_BIN" -e 'const j=JSON.parse(require("fs").readFileSync("/tmp/searxng-e2e-config.json","utf8")); if(j.format!=="instance-config"||j.endpoint!=="/config"||typeof j.data!=="object") process.exit(1);'
+  "$NODE_BIN" -e 'const j=JSON.parse(require("fs").readFileSync("/tmp/searxng-e2e-descriptions.json","utf8")); if(j.format!=="instance-descriptions"||j.endpoint!=="/engine_descriptions.json"||typeof j.data!=="object") process.exit(1);'
+  "$NODE_BIN" -e 'const j=JSON.parse(require("fs").readFileSync("/tmp/searxng-e2e-instance-stats.json","utf8")); if(j.format!=="instance-stats"||!Array.isArray(j.data?.capabilities?.engines)||typeof j.data?.errors!=="object") process.exit(1);'
+  "$NODE_BIN" -e 'const j=JSON.parse(require("fs").readFileSync("/tmp/searxng-e2e-instance-errors.json","utf8")); if(j.format!=="instance-errors"||typeof j.data!=="object") process.exit(1);'
+  "$NODE_BIN" -e 'const j=JSON.parse(require("fs").readFileSync("/tmp/searxng-e2e-manifest.json","utf8")); if(j.format!=="instance-manifest"||j.endpoint!=="/manifest.json"||typeof j.data!=="object") process.exit(1);'
   "$NODE_BIN" -e 'const j=JSON.parse(require("fs").readFileSync("/tmp/searxng-e2e-autocomplete.json","utf8")); if(j.format!=="autocomplete"||!Array.isArray(j.suggestions)) process.exit(1);'
   "$NODE_BIN" -e 'const d=require("fs").readFileSync("/tmp/searxng-e2e-schemas.json","utf8"); const j=JSON.parse(d); if(j.schemaVersion!=="1.0"||!Array.isArray(j.formats)||j.formats.length<6) process.exit(1);'
   "$NODE_BIN" -e 'const d=require("fs").readFileSync("/tmp/searxng-e2e-request.json","utf8"); const j=JSON.parse(d); if(j.format!=="request"||!j.request.url.startsWith(process.argv[1])) process.exit(1);' "$SEARXNG_URL"
   "$NODE_BIN" -e 'const d=require("fs").readFileSync("/tmp/searxng-e2e-payload-check.json","utf8"); const j=JSON.parse(d); if(j.format!=="payload-validation"||j.targetFormat!=="json"||j.valid!==true) process.exit(1);'
 fi
+
+rg -q 'OpenSearchDescription' /tmp/searxng-e2e-opensearch.xml
+rg -q '^User-agent:' /tmp/searxng-e2e-robots.txt
+rg -qi '<html' /tmp/searxng-e2e-stats.html
 
 printf '%s\n' "$JSONL_OUT" | while IFS= read -r line; do
   [ -z "$line" ] && continue

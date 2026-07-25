@@ -39,7 +39,7 @@ const FORMAT_SCHEMAS: FormatterSchemaRecord[] = [
   {
     format: 'toon',
     aliases: [],
-    mimeType: 'text/plain',
+    mimeType: 'text/toon',
     fileExtension: '.toon',
     schema: {
       type: 'object',

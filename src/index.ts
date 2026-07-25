@@ -85,6 +85,15 @@ import { validateFormattedOutput } from './formatters/validation';
 import { getFormatterSchemas, getSupportedSchemaFormats } from './formatters/schema';
 import { formatToonOutput, formatXmlOutput, formatHtmlReportOutput } from './formatters-advanced';
 import { circuitBreaker, rateLimitedFetch, checkConnectionHealth } from './http';
+import { fetchInstanceResource, renderInstanceResource, type InstanceResource } from './instance';
+export {
+  fetchInstanceResource,
+  renderInstanceResource,
+  type InstanceResource,
+  type InstanceResourceEnvelope,
+  type InstanceResourceFormat,
+  type InstanceResourceResult,
+} from './instance';
 import { fetchSearchResponse } from './search-response';
 import {
   discoverInstance,
@@ -226,21 +235,39 @@ export function showCommandHelp(command: string): void {
     return;
   }
   if (cmd === 'instance') {
-    console.log('Usage: searxng instance <info|json|stats|errors> [flags]');
+    console.log('Usage: searxng instance <resource> [--format <toon|json|raw>] [flags]');
     console.log();
     console.log('Subcommands:');
     console.log('  info              Human-readable instance capabilities');
-    console.log('  json              Complete capabilities as JSON');
+    console.log('  capabilities      Complete capabilities (TOON default)');
+    console.log('  json              Alias for capabilities --format json');
+    console.log('  engines           Configured engine contracts');
+    console.log('  categories        Configured search categories');
+    console.log('  languages         Configured search languages');
+    console.log('  plugins           Configured plugin contracts');
     console.log('  stats             Capability and engine-error summary (TOON default)');
     console.log('  errors            Raw engine error metrics (TOON default)');
-    console.log('  stats --json      Operational summary as JSON');
-    console.log('  errors --json     Raw engine error metrics as JSON');
+    console.log('  health            Stable /healthz status');
+    console.log('  config            Complete /config resource');
+    console.log('  descriptions      Engine descriptions JSON resource');
+    console.log('  stats-page        Complete /stats HTML resource');
+    console.log('  opensearch        OpenSearch description XML resource');
+    console.log('  manifest          Web application manifest JSON resource');
+    console.log('  robots            robots.txt resource');
+    console.log();
+    console.log('Resource output:');
+    console.log('  --format toon     Typed TOON envelope (default)');
+    console.log('  --format json     Typed JSON envelope');
+    console.log('  --format raw      Exact upstream or normalized resource body');
+    console.log('  --json            Alias for --format json');
+    console.log('  --raw             Alias for --format raw');
     console.log();
     console.log('Examples:');
     console.log('  searxng instance info');
-    console.log('  searxng instance json');
-    console.log('  searxng instance stats');
-    console.log('  searxng instance errors --json | jq .errors');
+    console.log('  searxng instance capabilities');
+    console.log('  searxng instance stats --json | jq .data.engineErrorCount');
+    console.log('  searxng instance descriptions --format toon');
+    console.log('  searxng instance opensearch --raw');
     showGlobalFlagHelp();
     return;
   }
@@ -263,10 +290,14 @@ export function showCommandHelp(command: string): void {
     return;
   }
   if (cmd === 'health') {
-    console.log('Usage: searxng health [flags]');
+    console.log('Usage: searxng health [--format <toon|json|raw>] [flags]');
+    console.log();
+    console.log('Checks the configured instance through its stable /healthz endpoint.');
+    console.log('Output defaults to TOON; --json and --raw are supported.');
     console.log();
     console.log('Examples:');
     console.log('  searxng health');
+    console.log('  searxng health --json | jq .data.healthy');
     showGlobalFlagHelp();
     return;
   }
@@ -420,21 +451,40 @@ export function normalizeCommandArgs(rawArgs: string[]): string[] {
     return ['--settings', ...args];
   }
   if (command === 'paths') return ['--paths-json', ...args];
-  if (command === 'health') return ['--health-check', ...args];
+  if (command === 'health') {
+    return ['--instance-resource', 'health', ...args];
+  }
   if (command === 'doctor') {
     if (sub === '--json' || sub === 'json') return ['--doctor-json', ...args.slice(1)];
     return ['--doctor', ...args];
   }
   if (command === 'instance') {
-    const asJson =
-      args.includes('--json') ||
-      args.includes('json') ||
-      args.includes('--format=json') ||
-      args.includes('-f=json');
-    if (sub === 'stats') return [asJson ? '--instance-stats-json' : '--instance-stats'];
-    if (sub === 'errors') return [asJson ? '--instance-errors-json' : '--instance-errors'];
-    if (sub === 'json' || sub === '--json') return ['--instance-info-json', ...args.slice(1)];
-    return ['--instance-info', ...args];
+    if (sub === 'info') return ['--instance-info', ...args.slice(1)];
+    if (sub === 'json') return ['--instance-resource', 'capabilities', '--json', ...args.slice(1)];
+    const resources = new Set<InstanceResource>([
+      'capabilities',
+      'categories',
+      'config',
+      'descriptions',
+      'engines',
+      'errors',
+      'health',
+      'languages',
+      'manifest',
+      'opensearch',
+      'plugins',
+      'robots',
+      'stats',
+      'stats-page',
+    ]);
+    if (!sub) return ['--instance-resource', 'capabilities'];
+    if (sub.startsWith('-')) return ['--instance-resource', 'capabilities', ...args];
+    if (resources.has(sub as InstanceResource)) {
+      return ['--instance-resource', sub, ...args.slice(1)];
+    }
+    console.error(colorize(`Error: unknown instance resource "${args[0]}"`, 'red'));
+    console.error(colorize('Run "searxng instance --help" for supported resources.', 'yellow'));
+    process.exit(1);
   }
   if (command === 'suggestions') return ['--suggestions', ...args];
   if (command === 'presets') return ['--presets', ...args];
@@ -1909,6 +1959,86 @@ export async function main(): Promise<void> {
       args[0].endsWith('-json')
     );
     process.exitCode = 0;
+    return;
+  }
+
+  if (args[0] === '--instance-resource') {
+    const resource = args[1] as InstanceResource | undefined;
+    if (!resource) {
+      console.error(colorize('Error: instance resource is required', 'red'));
+      process.exit(1);
+    }
+    let format = String('toon');
+    let outputPath: string | null = null;
+    const resourceArgs = args.slice(2);
+    for (let index = 0; index < resourceArgs.length; index++) {
+      const token = String(resourceArgs[index]);
+      if (token === '--json') {
+        format = 'json';
+        continue;
+      }
+      if (token === '--raw') {
+        format = 'raw';
+        continue;
+      }
+      if (token === '--toon') {
+        format = 'toon';
+        continue;
+      }
+      if (token === '--format' || token === '-f') {
+        const value = resourceArgs[index + 1];
+        if (!value) {
+          console.error(colorize(`Error: ${token} requires a value`, 'red'));
+          process.exit(1);
+        }
+        format = value;
+        index++;
+        continue;
+      }
+      if (token.startsWith('--format=') || token.startsWith('-f=')) {
+        format = token.slice(token.indexOf('=') + 1);
+        continue;
+      }
+      if (token === '--output' || token === '-o') {
+        const value = resourceArgs[index + 1];
+        if (!value) {
+          console.error(colorize(`Error: ${token} requires a file path`, 'red'));
+          process.exit(1);
+        }
+        outputPath = value;
+        index++;
+        continue;
+      }
+      if (token.startsWith('--output=') || token.startsWith('-o=')) {
+        outputPath = token.slice(token.indexOf('=') + 1);
+        continue;
+      }
+      if (
+        token === '--verbose' ||
+        token === '-V' ||
+        token === '--silent' ||
+        token === '-s' ||
+        token === '--no-cache'
+      ) {
+        continue;
+      }
+      console.error(colorize(`Error: Unknown instance option "${token}"`, 'red'));
+      process.exit(1);
+    }
+    if (format !== 'toon' && format !== 'json' && format !== 'raw') {
+      console.error(
+        colorize(`Error: Unsupported instance format "${format}" (use toon, json, or raw)`, 'red')
+      );
+      process.exit(1);
+    }
+    const result = await fetchInstanceResource(resource);
+    const output = renderInstanceResource(result, format);
+    if (outputPath) {
+      fs.writeFileSync(outputPath, output);
+    } else {
+      console.log(output);
+    }
+    process.exitCode = result.healthy ? 0 : 1;
     return;
   }
 

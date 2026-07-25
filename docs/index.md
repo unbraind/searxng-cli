@@ -23,6 +23,7 @@ SearXNG CLI is a powerful, privacy-focused search client that connects to SearXN
 - **Interactive Setup Wizard**: Easy first-time configuration with connection testing
 - **First-Run Auto Setup**: Interactive sessions auto-launch setup when not yet configured
 - **Command-First UX**: `searxng [command] [flags]` with per-command `--help`
+- **Complete Instance Resources**: typed TOON, JSON, and raw access to every stable read-only route
 - **Full TypeScript**: 100% type-safe implementation with comprehensive type exports
 
 ### AI/LLM Features
@@ -58,6 +59,7 @@ SearXNG CLI is a powerful, privacy-focused search client that connects to SearXN
 | [Caching](./caching.md)                     | Cache management and configuration        |
 | [Configuration](./configuration.md)         | Configuration options                     |
 | [End-to-End Testing](./e2e-testing.md)      | Real `searxng` command verification       |
+| [Upstream Compatibility](./upstream-compatibility.md) | SearXNG and TOON parity matrix |
 | [Release Process](./release-process.md)     | Dry-run and manual publishing workflow    |
 | [API Reference](./api.md)                   | Programmatic API documentation            |
 | [Development](./development.md)             | Contributing and development guide        |

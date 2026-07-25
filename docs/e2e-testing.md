@@ -16,7 +16,8 @@ What this validates:
 - settings/paths/cache/status machine outputs
 - request envelope output (`--request-json`)
 - instance capabilities (`--instance-info-json`)
-- operational instance statistics and raw engine-error metrics in JSON
+- typed capabilities, health, config, descriptions, statistics, errors, manifest, OpenSearch,
+  robots, and stats-page resources across TOON, JSON, and raw output
 - first-class autocomplete command output
 - formatter schema catalog (`--schema-json all`)
 - full format verification (`--verify-formats-json`)

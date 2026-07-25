@@ -5,6 +5,7 @@ SearXNG CLI supports multiple output formats for different use cases.
 ## TOON (Default)
 
 TOON (Token-Oriented Object Notation) is the default format, optimized for LLM consumption.
+Schema discovery reports the provisional official media type `text/toon`; documents are UTF-8.
 
 ```bash
 searxng-cli "query"

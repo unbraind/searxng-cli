@@ -22,7 +22,7 @@ searxng formats <verify|schema|validate> [...]
 searxng doctor [--json]
 searxng health
 searxng autocomplete <query> [--limit <n>] [--json]
-searxng instance <info|json|stats|errors> [--json]
+searxng instance <resource> [--format <toon|json|raw>]
 ```
 
 All commands support `--help` and global flags such as `--verbose`, `--silent`, `--format`,
@@ -98,9 +98,14 @@ bun run test:e2e:searxng
 - `--paths-json` provides machine-readable global file paths under `~/.searxng-cli/`.
 - `--cache-status-json` provides machine-readable cache metrics for automation/CI.
 - `--request-json` exposes the exact resolved search URL + query params before execution.
-- `instance stats` combines capabilities with the stable `/stats/errors` metrics for operational
-  automation. It emits TOON by default and JSON with `--json`.
-- `instance errors` exposes the unmodified engine-keyed error metrics with provenance metadata.
+- Every `instance` resource emits the same provenance envelope:
+  `schemaVersion`, `format`, `checkedAt`, `source`, `endpoint`, `contentType`, and `data`.
+- `instance stats` combines capabilities with stable `/stats/errors` metrics; `instance errors`
+  exposes the engine-keyed metrics at `data`.
+- `instance health`, `config`, `descriptions`, `stats-page`, `opensearch`, `manifest`, and `robots`
+  expose the corresponding stable read-only SearXNG routes.
+- Instance output defaults to TOON. Use `--json`, `--raw`, `--format <toon|json|raw>`, or
+  `--output <file>` consistently across every resource.
 - `autocomplete` is the command-style form of `--autocomplete` and emits TOON by default.
 
 ## Formatter Schemas For Automation
@@ -279,8 +284,16 @@ searxng-cli --info                   # Show instance info
 searxng-cli --instance-info          # Show instance capabilities
 searxng-cli --instance-info-json     # Capabilities in JSON
 searxng instance stats              # Capabilities + engine errors in TOON
-searxng instance stats --json       # Same operational contract in JSON
-searxng instance errors --json      # Raw engine error metrics for jq/CI
+searxng instance stats --json       # Same resource envelope in JSON
+searxng instance errors --json      # Engine error metrics at .data
+searxng instance capabilities       # Normalized /config capabilities in TOON
+searxng instance config --json      # Complete /config document at .data
+searxng instance descriptions       # /engine_descriptions.json in TOON
+searxng instance stats-page --raw   # Exact /stats HTML
+searxng instance opensearch --raw   # Exact OpenSearch XML
+searxng instance manifest --json    # /manifest.json at .data
+searxng instance robots --raw       # Exact robots.txt
+searxng health --json               # Typed /healthz status
 searxng autocomplete "typescript"   # Suggestions in TOON
 searxng-cli --suggestions            # Local recent/popular suggestions
 searxng-cli --presets                # List saved presets

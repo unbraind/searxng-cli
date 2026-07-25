@@ -237,19 +237,31 @@ pruneCache(7 * 24 * 60 * 60 * 1000); // 7 days
 
 `stats.maxSize` is `number | 'unlimited'` (`'unlimited'` when `LRU_CACHE_SIZE=0`).
 
-## Instance Operations
+## Instance Resources
 
 ```typescript
-import { fetchInstanceCapabilities, fetchInstanceErrors } from 'searxng-cli/storage';
+import {
+  fetchInstanceResource,
+  renderInstanceResource,
+  type InstanceResource,
+  type InstanceResourceEnvelope,
+  type InstanceResourceFormat,
+  type InstanceResourceResult,
+} from 'searxng-cli';
 
-const capabilities = await fetchInstanceCapabilities();
-const errors = await fetchInstanceErrors();
+const result = await fetchInstanceResource('descriptions');
+const toon = renderInstanceResource(result, 'toon');
+const json = renderInstanceResource(result, 'json');
+const upstreamBody = renderInstanceResource(result, 'raw');
 ```
 
-`fetchInstanceErrors()` calls the configured instance's stable JSON `/stats/errors` endpoint,
-rejects non-object responses, and returns `Record<string, unknown>`. CLI consumers can use
-`searxng instance stats` for a TOON envelope combining both values, or append `--json` for a
-strict JSON envelope carrying `schemaVersion`, `format`, `checkedAt`, and `source`.
+`InstanceResource` includes `capabilities`, `engines`, `categories`, `languages`, `plugins`,
+`stats`, `errors`, `health`, `config`, `descriptions`, `stats-page`, `opensearch`, `manifest`, and
+`robots`. `fetchInstanceResource()` returns a typed provenance envelope plus the exact upstream or
+normalized body. `renderInstanceResource()` supports lossless `toon`, `json`, and `raw` output.
+
+The lower-level `fetchInstanceCapabilities()` and `fetchInstanceErrors()` exports remain available
+from `searxng-cli/storage`.
 
 ## Search Functions
 

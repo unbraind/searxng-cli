@@ -7,6 +7,7 @@ describe('Output Validation', () => {
   it('exposes all schemas, aliases, and unknown-format behavior', () => {
     const bundle = getFormatterSchemas();
     expect(bundle).toMatchObject({ schemaVersion: '1.0' });
+    expect(getFormatterSchemas('toon')).toMatchObject({ mimeType: 'text/toon' });
     expect(getSupportedSchemaFormats()).toContain('toon');
     expect(getFormatterSchemas('md')).toMatchObject({ format: 'markdown' });
     expect(getFormatterSchemas('does-not-exist')).toBeNull();

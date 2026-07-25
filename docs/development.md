@@ -15,6 +15,7 @@ searxng-cli/
 │   ├── classes/index.ts     # Core classes
 │   ├── cache/index.ts       # Caching system
 │   ├── http/index.ts        # HTTP handling
+│   ├── instance/index.ts    # Typed read-only SearXNG resources
 │   ├── lifecycle/index.ts   # Process signals and cache lifecycle
 │   ├── storage/files.ts     # Data bootstrap and app config persistence
 │   ├── storage/index.ts     # Storage facade and domain stores
@@ -87,6 +88,10 @@ bun run typecheck          # Type check
 bun run format             # Format with Prettier
 bun run lint               # Type check + format check
 ```
+
+The duplication gate still enforces the configured threshold and writes the complete
+machine-readable inventory to `report/jscpd-report.json`, while its console reporter is concise so
+CI and agent capture pipes remain bounded.
 
 ## Architecture
 

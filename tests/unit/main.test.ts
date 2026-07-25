@@ -1322,19 +1322,44 @@ describe('Main function', () => {
       [['settings', 'json'], ['--settings-json']],
       [['settings', '--json'], ['--settings-json']],
       [['paths'], ['--paths-json']],
-      [['health'], ['--health-check']],
+      [['health'], ['--instance-resource', 'health']],
       [['doctor'], ['--doctor']],
       [['doctor', 'json'], ['--doctor-json']],
       [['doctor', '--json'], ['--doctor-json']],
-      [['instance'], ['--instance-info']],
-      [['instance', 'json'], ['--instance-info-json']],
-      [['instance', '--json'], ['--instance-info-json']],
-      [['instance', 'stats'], ['--instance-stats']],
-      [['instance', 'stats', '--json'], ['--instance-stats-json']],
-      [['instance', 'stats', '--format=json'], ['--instance-stats-json']],
-      [['instance', 'errors'], ['--instance-errors']],
-      [['instance', 'errors', '--json'], ['--instance-errors-json']],
-      [['instance', 'errors', '-f=json'], ['--instance-errors-json']],
+      [['instance'], ['--instance-resource', 'capabilities']],
+      [['instance', 'info'], ['--instance-info']],
+      [
+        ['instance', 'json'],
+        ['--instance-resource', 'capabilities', '--json'],
+      ],
+      [
+        ['instance', '--json'],
+        ['--instance-resource', 'capabilities', '--json'],
+      ],
+      [
+        ['instance', 'stats'],
+        ['--instance-resource', 'stats'],
+      ],
+      [
+        ['instance', 'stats', '--json'],
+        ['--instance-resource', 'stats', '--json'],
+      ],
+      [
+        ['instance', 'stats', '--format=json'],
+        ['--instance-resource', 'stats', '--format=json'],
+      ],
+      [
+        ['instance', 'errors'],
+        ['--instance-resource', 'errors'],
+      ],
+      [
+        ['instance', 'errors', '--json'],
+        ['--instance-resource', 'errors', '--json'],
+      ],
+      [
+        ['instance', 'errors', '-f=json'],
+        ['--instance-resource', 'errors', '-f=json'],
+      ],
       [['suggestions'], ['--suggestions']],
       [['presets'], ['--presets']],
       [['history'], ['--history']],
@@ -1443,6 +1468,66 @@ describe('Main function', () => {
     expect(normalizeCommandArgs(['formats', 'unknown'])).toEqual(['formats', 'unknown']);
     expect(normalizeCommandArgs(['cache', 'unknown'])).toEqual(['cache', 'unknown']);
     expect(() => normalizeCommandArgs(['search', '--help'])).toThrow('process.exit');
+    expect(() => normalizeCommandArgs(['instance', 'missing-resource'])).toThrow('process.exit');
+    expect(exitSpy).toHaveBeenLastCalledWith(1);
+  });
+
+  it('routes instance resources through every global output flag form', async () => {
+    const outputFile = `/tmp/searxng-instance-output-${process.pid}.txt`;
+    const cases = [
+      ['health'],
+      ['health', '--json'],
+      ['health', '--raw'],
+      ['health', '--toon'],
+      ['health', '--format', 'json'],
+      ['health', '-f', 'raw'],
+      ['health', '--format=json'],
+      ['health', '-f=toon'],
+      ['health', '--output', outputFile, '--raw'],
+      ['health', '-o', outputFile, '--json'],
+      ['health', `--output=${outputFile}`, '--toon'],
+      ['health', `-o=${outputFile}`, '--raw'],
+      ['health', '--verbose', '-V', '--silent', '-s', '--no-cache'],
+    ];
+
+    for (const args of cases) {
+      vi.mocked(http.rateLimitedFetch).mockResolvedValueOnce(
+        new Response('OK', { status: 200, headers: { 'content-type': 'text/plain' } })
+      );
+      process.argv = ['node', 'index.js', ...args];
+      await expect(main()).resolves.toBeUndefined();
+      expect(process.exitCode).toBe(0);
+      process.exitCode = undefined;
+    }
+
+    expect(fs.readFileSync(outputFile, 'utf8')).toBe('OK');
+    fs.unlinkSync(outputFile);
+
+    vi.mocked(http.rateLimitedFetch).mockResolvedValueOnce(
+      new Response('warming', { status: 200 })
+    );
+    process.argv = ['node', 'index.js', 'health'];
+    await expect(main()).resolves.toBeUndefined();
+    expect(process.exitCode).toBe(1);
+    process.exitCode = undefined;
+  });
+
+  it('rejects missing or invalid instance resource flags', async () => {
+    const cases = [
+      ['--instance-resource'],
+      ['health', '--format'],
+      ['health', '-f'],
+      ['health', '--output'],
+      ['health', '-o'],
+      ['health', '--format', 'yaml'],
+      ['health', '--unknown'],
+    ];
+
+    for (const args of cases) {
+      process.argv = ['node', 'index.js', ...args];
+      await expect(main()).rejects.toThrow('process.exit');
+      expect(exitSpy).toHaveBeenLastCalledWith(1);
+    }
   });
 
   it('covers helper normalization, preset, and payload behavior', () => {
