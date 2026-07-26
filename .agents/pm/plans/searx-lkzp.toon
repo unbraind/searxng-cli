@@ -6,7 +6,7 @@ status: closed
 priority: 0
 tags[8]: agent,cli,instance-resources,pm-governance,release,searxng,toolchain,toon
 created_at: "2026-07-25T22:30:26.978Z"
-updated_at: "2026-07-25T23:40:57.774Z"
+updated_at: "2026-07-26T00:07:35.438Z"
 deadline: "2026-07-26T22:30:26.978Z"
 closed_at: "2026-07-25T23:40:57.057Z"
 author: codex-searxng-agent
@@ -44,12 +44,13 @@ dependencies[15]{id,kind,created_at,author,source_kind}:
   searx-tag-release-validation,related,"2026-07-25T22:30:26.978Z",null,null
   searx-verification,related,"2026-07-25T22:30:26.978Z",null,null
   searx-feature-parity-plan,related,"2026-07-25T22:49:05.460Z",codex-searxng-agent,plan_continuation
-comments[5]{created_at,author,text}:
+comments[6]{created_at,author,text}:
   "2026-07-25T22:30:26.978Z",codex-searxng-agent,"All 55 records, 622 history entries by integrity census, 137 graph edges, deep canonical plans, all statuses, exact/fuzzy duplicate audits, package surfaces, current upstream source/docs, live route behavior, and repository command contracts were inspected before creation. No open work or duplicate terminal item covers this new route-parity and uniform-format delta."
   "2026-07-25T22:45:35.186Z",codex-searxng-agent,"Implementation checkpoint: fourteen typed instance resource/view contracts are available in TOON JSON and raw output with provenance and file capture. Hermetic installed E2E passes. Governed LAN isolated-package E2E passed after removing only the disposable /tmp/pm-cli-node-compile-cache-1000 directory that had exhausted tmpfs inodes; the first failure occurred during output capture before any product assertion."
   "2026-07-25T23:13:10.234Z",codex-searxng-agent,"Full seven-command PM-linked acceptance matrix passes after two harness hardenings: the E2E cache proof clears its isolated cache before the exact-hit assertion, and duplication output retains strict 2.93 percent threshold evidence plus the complete JSON report while bounding console capture. pm-cli 2026.7.25 reproduced closed GH-679's EAGAIN defect before that output optimization; detailed duplicate search confirmed it as a fixed-release regression and GH-714 was filed: https://github.com/unbraind/pm-cli/issues/714."
   "2026-07-25T23:13:47.753Z",codex-searxng-agent,"Release pipeline dry run returned the governed immutable result release_already_cut_today for UTC date key 2026.7.25. Do not invent a replacement version; merge validation will use the existing immutable tag if still same UTC day, or the normal 2026.7.26 daily release after UTC rollover."
   "2026-07-25T23:40:55.021Z",codex-searxng-agent,"PR #55 merged exact reviewed head 1749c6f into master e06054c at 2026-07-25T23:40:14Z. Current executable checks passed; final inventory at 2026-07-25T23:39:51Z had zero review threads/findings. CodeRabbit and Sourcery reported rate limits, Gemini reported sunset, Cubic skipped, and Greptile did not respond within the full 25-minute window. Every bot response was individually up-voted and acknowledged."
+  "2026-07-26T00:07:35.409Z",codex-searxng-agent,"Published-release proof: Auto Release run 30180412381 pushed immutable v2026.7.26 at exact commit 4ecd851; tag Release run 30180438968 passed tag/version, audit, full tag gates, changelog checks, pack, npm provenance publication, npm/Bun consumer verification, and GitHub Release creation. Exact release-head CI, CodeQL, secret scan, and dependency scan all passed. npm, npx, bunx, and global /home/linuxbrew/.linuxbrew/bin/searxng report 2026.7.26. The actual global CLI reconfirmed governed URL/default TOON, ~/.searxng-cli paths, unlimited cache, health/config/descriptions/stats/errors/manifest/opensearch/robots/stats-page contracts, and raw/JSON/default-TOON validation. Live search reached the configured service and returned structured engine-timeout diagnostics for default plus explicitly selected GitHub, Arch Wiki, arXiv, and Docker Hub engines; this is current upstream network availability on the SearXNG host, not contradictory CLI/API evidence. PM health is clean, all 12 isolated project extensions are active with zero warnings, and telemetry recorded a successful flush."
 notes[2]{created_at,author,text}:
   "2026-07-25T22:30:26.978Z",codex-searxng-agent,"Search formats may be disabled by the instance: keep JSON-first then HTML fallback. Stable metadata/resources are read-only; do not add administrative mutations or leak live payloads into PM/GitHub."
   "2026-07-25T22:48:32.291Z",codex-searxng-agent,The canonical feature-parity plan is closed and cannot be the parent of active continuation work under tracker validation. This item remains deep-linked to it as related lineage instead.
