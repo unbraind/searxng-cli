@@ -6,7 +6,7 @@ status: in_progress
 priority: 0
 tags[9]: bun,npm,package-contract,recovery,registry-propagation,regression,release,release-reliability,toon-v4
 created_at: "2026-07-21T18:34:27.322Z"
-updated_at: "2026-07-27T22:31:23.476Z"
+updated_at: "2026-07-27T22:33:59.658Z"
 deadline: "2026-07-28T22:25:59.682Z"
 assignee: codex-searxng-agent
 claim_principal: codex-searxng-agent
@@ -25,8 +25,8 @@ severity: critical
 environment: Post-publication npm and Bun consumer verification
 repro_steps: "Install searxng-cli globally at an older build that reports the same calendar version, then run npm exec --package searxng-cli@2026.7.27 -- searxng instance source-status from the repository. npm exec resolves the global binary and reports unknown resource although the registry tarball contains the command."
 resolution: "Hardened daily release recovery with bounded npm propagation, normalized executable metadata, exact-line npx/bunx validation, direct regression coverage, TOON v4, and current PM tooling."
-expected_result: "Daily releases tolerate npm propagation, preserve both searxng executables, ship TOON v4, and pass isolated npm plus Bun consumer verification."
-actual_result: "Exact-head PR #44 delegates release verification to the bounded registry-aware script, requires complete version lines for npm and Bun, passes 935 tests at 100/100/100/100, validates TOON v4 against the governed LAN service, and passes all hosted repository checks with zero unresolved review threads."
+expected_result: "The release verifier installs the immutable requested artifact into separate npm and Bun roots, proves each shim is contained, executes with installation disabled, and validates exact version plus source-status help before release success."
+actual_result: "Clean committed head passes all five linked acceptance commands: 949 tests at exact 100/100/100/100, calendar release policy, 10 release-contract tests, isolated npm and Bun verification of immutable 2026.7.27, and package inspection. Exact-head hosted review and merge remain pending."
 affected_version: 2026.7.27
 fixed_version: 2026.7.28
 component: release
@@ -38,7 +38,7 @@ dependencies[5]{id,kind,created_at,author,source_kind}:
   searx-feature-parity-plan,related,"2026-07-23T04:53:19.528Z",codex-root,null
   searx-release-publishing,verifies,"2026-07-23T04:53:19.528Z",codex-root,null
   searx-tag-release-validation,related,"2026-07-23T04:53:19.528Z",codex-root,null
-comments[11]{created_at,author,text}:
+comments[12]{created_at,author,text}:
   "2026-07-21T22:32:32.412Z",codex-root,"Historical delivery evidence is preserved by the item title, parent lineage, release metadata, generated changelog, and repository verification gates."
   "2026-07-23T04:53:19.528Z",codex-root,"Live failure evidence: Auto Release run 29894239662 passed all preparation and release gates, published 2026.7.22, then child Release run 29894284980 failed its immediate npx lookup with npm ETARGET. GitHub issue #43 records the scheduled failure."
   "2026-07-23T04:59:41.948Z",codex-root,"Implementation checkpoint: workflow delegates to the bounded registry verifier; exact npx and bunx version output is asserted; bin paths publish without npm correction warnings; TOON spec marker and encoder dependency are 4.0; repo-local pm-cli is 2026.7.22."
@@ -50,6 +50,7 @@ comments[11]{created_at,author,text}:
   "2026-07-27T22:25:59.682Z",codex-searxng-agent,"Post-publication discovery: npm tarball 2026.7.27 contains source-status and a direct extracted/local build reports current, but npm exec resolves /home/linuxbrew/.linuxbrew/lib/node_modules/searxng-cli/dist/searxng-cli.js, whose help omits source-status. The existing verifier only asserts a version line, so same-version global leakage passed Release run 30310208127."
   "2026-07-27T22:28:57.748Z",codex-searxng-agent,"Implementation replaces opportunistic npx/bunx resolution with separate exact-version npm and Bun installs, realpath containment assertions for both searxng shims, no-install execution, exact version lines, and source-status help probes. This makes the immutable 2026.7.27 artifact a regression fixture and prevents same-version global leakage."
   "2026-07-27T22:31:23.476Z",codex-searxng-agent,"Acceptance checkpoint: bun run quality passed 949 tests at exact 100/100/100/100; bun run test:release, the isolated immutable 2026.7.27 npm/Bun verifier, and npm pack dry-run passed. The linked release:pipeline:dry-run intentionally stopped at its clean-tree guard because implementation and PM evidence were uncommitted; it will be rerun from a clean commit as the calendar-policy proof."
+  "2026-07-27T22:33:59.625Z",codex-searxng-agent,"Clean acceptance matrix passed 5/5 through pm test. release:pipeline:dry-run returned release_already_cut_today for immutable v2026.7.27, correctly preventing a second same-day tag; the already-published artifact itself passed both isolated executable and source-status contract probes. PM validate has no integrity, drift, file, dependency, or storage errors (one expected warning because this reopened issue retains its closed parent); graph audit reports 57 nodes, 167 edges, and zero findings; package doctor reports all 12 managed extensions active and current."
 notes[1]{created_at,author,text}:
   "2026-07-23T04:53:19.528Z",codex-root,Use the existing scripts/release/verify-published-release.mjs bounded registry wait as the single consumer-verification owner; remove duplicated inline workflow logic to prevent contract drift.
 learnings[1]{created_at,author,text}:
