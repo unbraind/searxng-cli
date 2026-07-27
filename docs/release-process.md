@@ -95,9 +95,11 @@ existing tag. It:
    `version:check` is intentionally replaced by the exact tag/package equality check above;
 4. skips `npm publish` only when that exact version is already present (safe recovery);
 5. publishes to npm with provenance;
-6. waits up to five minutes for the exact version to become registry-visible, then verifies it with
-   npm, npx, and bunx from an isolated temporary directory so the source checkout cannot satisfy or
-   shadow registry resolution;
+6. waits up to five minutes for the exact version to become registry-visible, installs it into
+   separate npm and Bun roots, asserts both executable shims resolve inside those exact package
+   roots, then runs npx and bunx with installation disabled and verifies both the exact version and
+   the `instance source-status` help contract; the source checkout and global installs cannot
+   satisfy or shadow registry resolution;
 7. creates or repairs the matching GitHub Release.
 
 ## Required release environment
@@ -182,11 +184,11 @@ still repeats npm/npx/bunx verification plus GitHub Release repair.
 
 ```bash
 npm view searxng-cli@YYYY.M.D version dist.integrity dist.unpackedSize --json
-npx --yes --package searxng-cli@YYYY.M.D -- searxng --version
-bunx --bun searxng-cli@YYYY.M.D --version
 gh release view vYYYY.M.D --json tagName,name,isDraft,isPrerelease,url
 bun run release:verify-published -- --version YYYY.M.D
 ```
 
-Do not call a release complete from a green publish step alone. Registry metadata and both consumer
-execution paths must agree with the tag.
+The verifier owns isolated npm/npx/Bun/bunx execution; ad-hoc `npx --package` can select an existing
+global executable and is not release evidence. Do not call a release complete from a green publish
+step alone. Registry metadata, exact executable roots, and both consumer contract probes must agree
+with the tag.

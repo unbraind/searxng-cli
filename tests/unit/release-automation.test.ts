@@ -97,6 +97,13 @@ describe('release automation', () => {
     expect(verifier).toContain('npx returned an unexpected version');
     expect(verifier).toContain('bunx returned an unexpected version');
     expect(verifier).toContain('mkdtempSync');
+    expect(verifier).toContain('"--prefix", npmDirectory');
+    expect(verifier).toContain('"--cwd", bunDirectory');
+    expect(verifier).toContain('"--no-install"');
+    expect(verifier).toContain('assertIsolatedBinary');
+    expect(verifier).toContain('hasSourceStatusResource');
+    expect(verifier).toContain('Published consumers do not expose the source-status resource');
+    expect(verifier).not.toContain('"--package", `searxng-cli@${version}`');
     expect(pkg.bin).toEqual({
       'searxng-cli': 'dist/searxng-cli.js',
       searxng: 'dist/searxng-cli.js',
