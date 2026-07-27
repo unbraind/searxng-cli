@@ -353,8 +353,8 @@ describe('Config Module', () => {
       expect(MAX_RETRIES).toBeGreaterThanOrEqual(0);
     });
 
-    it('TOON_SPEC_VERSION should be a string', () => {
-      expect(typeof TOON_SPEC_VERSION).toBe('string');
+    it('TOON_SPEC_VERSION should match the current official contract', () => {
+      expect(TOON_SPEC_VERSION).toBe('4.1');
     });
 
     it('CACHE_MAX_AGE should be Infinity for local instance or a number', () => {

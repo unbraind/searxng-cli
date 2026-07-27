@@ -1,0 +1,128 @@
+id: searx-r99a
+title: Ship live upstream source freshness and TOON 4.1 compatibility
+description: "Add an agent-native source-status contract that compares the configured SearXNG build with the current official upstream commit, upgrade TOON to 4.1 correctness semantics, refresh the complete PM package toolchain to 2026.7.27, and ship full local/live/package/review/release proof without regressing search, global state, setup, formats, or unlimited caching."
+type: Plan
+status: in_progress
+priority: 0
+tags[8]: agent,cli,compatibility,pm-governance,release,searxng,source-freshness,toon
+created_at: "2026-07-27T21:16:45.583Z"
+updated_at: "2026-07-27T21:56:41.592Z"
+deadline: "2026-07-28T21:16:45.583Z"
+assignee: codex-searxng-agent
+claim_principal: codex-searxng-agent
+author: codex-searxng-agent
+estimated_minutes: 420
+acceptance_criteria: "The actual searxng CLI reports current, stale, or unavailable source freshness by comparing the configured service version/commit with official searxng/searxng master without treating network failures as stale; TOON 4.1.0 is the default lossless format and all strict decode/validation/schema contracts pass; Global settings/setup/cache remain under ~/.searxng-cli, governed URL remains http://192.168.1.183:38522, and zero-limit cache persistence is unchanged; Repo-local pm-cli and pm-changelog are current and all project packages activate without quarantine; 100/100/100/100 coverage, 100 percent module docstrings, lint, duplication, security, PM, installed package, live LAN, PR bot, merge, and release gates pass"
+definition_of_ready: "All 56 PM items and 650 verified histories, all statuses, duplicate searches, 152-edge graph analytics, current official SearXNG and TOON sources, live instance metadata, npm registry, source/tests/docs, and GitHub state were inspected; no active or duplicate item covers this delta."
+goal: Continuously current agent-native SearXNG CLI
+objective: Live source freshness and TOON 4.1 correctness
+value: Agents can prove that searches use the governed service and whether that service matches current upstream
+impact: Turns documentation freshness from a manual assertion into a machine-readable runtime contract while preserving full feature parity
+outcome: A release-ready CLI with self-verifying upstream compatibility and current lossless output/tooling
+why_now: TOON 4.1.0 and PM 2026.7.27 shipped after the previous release; the older project PM package set is now quarantined by the current host.
+reviewer: github-bots
+risk: high
+confidence: 94
+sprint: 2026-07-current-compatibility
+release: 2026.7.27
+dependencies[15]{id,kind,created_at,author,source_kind}:
+  searx-1seb,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-7uik,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-auto-release,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-changelog-migration,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-ci-modernization,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-coverage-governance,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-feature-parity-plan,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-hermetic-e2e,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-lkzp,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-modular-command-architecture,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-published-consumer-isolation,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-release-validation,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-security-modernization,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-tag-release-validation,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-verification,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+comments[4]:
+  - created_at: "2026-07-27T21:16:45.583Z"
+    author: codex-searxng-agent
+    text: "Pre-mutation census: 56 closed items, zero active items, 650 history entries, 152 relationship edges, zero graph or duplicate findings. Official docs are build b060c780d and the governed service reports the identical 2026.7.26+b060c780d version. TOON 4.1.0 and PM/pm-changelog 2026.7.27 are confirmed registry latest."
+  - created_at: "2026-07-27T21:31:19.288Z"
+    author: codex-searxng-agent
+    text: "Release note: direct release:dry-run correctly rejected the still-unreleased 2026.7.26 package version because today's next version is 2026.7.27. The clean-tree release:pipeline:dry-run will perform its governed temporary version/changelog generation after the implementation commit; do not hand-edit package version or generated CHANGELOG.md."
+  - created_at: "2026-07-27T21:36:27.680Z"
+    author: codex-searxng-agent
+    text: "Acceptance checkpoint: PM test ran all five non-duplicated commands with zero failures or skipped gates. The installed package resolved its own searxng binary from an isolated prefix and confirmed the configured service is current at b060c780d, default TOON 4.1 output, ~/.searxng-cli state, and unlimited cache. Release pipeline dry-run temporarily produced v2026.7.27, passed version/tag/changelog/history/build/coverage/package gates, and restored a clean tree."
+  - created_at: "2026-07-27T21:54:40.160Z"
+    author: codex-searxng-agent
+    text: "Review round 1 validated 13 CodeRabbit threads. Accepted bounded source timeouts, authenticated and rate-aware upstream checks, reconstructible endpoint provenance, unique installed-E2E artifact storage, and the PM release correction. The managed-registry merge rule cannot remain locally because pm validate rejects it as fence drift; upstream pm-cli issue #780 records the package-owned generator fix. Managed extension runtime exports were verified directly, pm_min_version is a valid compatibility minimum distinct from the peer floor, and low-value generated refactors will remain package-owned."
+    edited_at: "2026-07-27T21:56:41.592Z"
+notes[1]{created_at,author,text}:
+  "2026-07-27T21:16:45.583Z",codex-searxng-agent,"Do not persist raw live payloads, credentials, private topology beyond the governed service URL, or transient signed data in PM/GitHub. Source freshness must distinguish unavailable from stale."
+learnings[1]{created_at,author,text}:
+  "2026-07-27T21:16:45.583Z",codex-searxng-agent,Current compatibility is strongest when the installed CLI emits provenance for both the live service commit and the official upstream head instead of relying on a checked-at documentation sentence.
+files[8]{path,scope,note}:
+  .gitattributes,project,PM field-aware merge fence
+  package.json,project,current TOON and PM versions
+  scripts/e2e-searxng.sh,project,installed live source-status acceptance
+  src/config/index.ts,project,TOON 4.1 contract
+  src/index.ts,project,source-status command routing and SDK export
+  src/instance/index.ts,project,typed source freshness transport
+  tests/unit/instance.test.ts,project,source freshness state matrix
+  tests/unit/validation.test.ts,project,TOON 4.1 strict decoding
+tests[5]{command,scope,timeout_seconds,note}:
+  bun run quality,project,600,mandatory strict quality gate
+  "bun run security:trivy",project,600,filesystem vulnerability secret and misconfiguration scan
+  "bun run smoke:package",project,600,isolated npm and Bun package consumers
+  "bun run test:e2e",project,600,hermetic installed CLI black box suite
+  "SEARXNG_URL=http://192.168.1.183:38522 bun run test:e2e:searxng",project,900,governed LAN isolated installed CLI acceptance
+docs[4]{path,scope,note}:
+  docs/api.md,project,typed SDK source-status contract
+  docs/upstream-compatibility.md,project,official compatibility contract
+  docs/usage.md,project,agent and CI usage
+  README.md,project,user-facing command example
+plan_mode: approved
+plan_scope: "Live SearXNG source freshness, TOON 4.1 conformance, current PM packages, full release delivery"
+plan_harness: codex
+plan_resume_context: "All 56 records, 650 histories, 152 graph edges, latest docs/source, live b060c780d service, dependency registries, and package diagnostics were inspected. Implement source-status current/stale/unavailable, TOON 4.1 conformance, PM 2026.7.27 refresh, then full gates and PR/release."
+plan_validation[1]{text,command,expected}:
+  Complete PM-linked acceptance and clean release dry-run passed,"pm test searx-r99a --run --progress && bun run release:pipeline:dry-run",Five linked gates pass; exact 100 percent coverage; isolated and LAN installed commands pass; dry-run prepares v2026.7.27 and restores clean tree
+plan_steps[5]:
+  - id: plan-step-001
+    order: 1
+    title: "Freeze latest upstream, live service, tracker, and package evidence"
+    status: completed
+    created_at: "2026-07-27T21:16:45.573Z"
+    updated_at: "2026-07-27T21:23:51.410Z"
+    evidence: "Complete census frozen: 57 items including this sole active plan; 650 predecessor history entries plus current append-only stream; 167 graph edges and zero findings; live/config/docs/source all b060c780d; registry latest TOON 4.1.0 and PM/pm-changelog 2026.7.27."
+    completed_at: "2026-07-27T21:23:51.410Z"
+  - id: plan-step-002
+    order: 2
+    title: Implement typed source freshness and TOON 4.1 contracts
+    status: completed
+    created_at: "2026-07-27T21:16:45.573Z"
+    updated_at: "2026-07-27T21:31:16.307Z"
+    evidence: "Implemented typed instance source-status with current/stale/unavailable semantics, official GitHub provenance, TOON/JSON/raw envelopes and SDK export; upgraded TOON 4.1; 948 tests pass at exact 100/100/100/100 and hermetic/live installed E2E pass."
+    completed_at: "2026-07-27T21:31:16.307Z"
+  - id: plan-step-003
+    order: 3
+    title: Refresh PM packages and complete docs plus governed evidence
+    status: completed
+    created_at: "2026-07-27T21:16:45.573Z"
+    updated_at: "2026-07-27T21:31:17.830Z"
+    evidence: Repo-local @unbrained/pm-cli and all 11 built-in packages plus pm-changelog refreshed to 2026.7.27; package doctor has zero warnings; merge fence/drivers installed; validation and 167-edge graph audit are clean; README and three docs cover the runtime contract.
+    completed_at: "2026-07-27T21:31:17.830Z"
+  - id: plan-step-004
+    order: 4
+    title: "Run strict local, live installed, package, security, and release gates"
+    status: completed
+    created_at: "2026-07-27T21:16:45.573Z"
+    updated_at: "2026-07-27T21:36:26.105Z"
+    evidence: "PM-linked five-command acceptance passed terminally: strict quality with 948 tests at exact 100/100/100/100, 21/21 docstrings, 2.90 percent duplication and ShellCheck; Trivy/Bun audit zero findings; isolated npm/Bun consumers; 61-command hermetic E2E; governed-LAN installed E2E with URL/default TOON/global paths/unlimited cache/search/resources/source-status=current. Clean-tree release pipeline dry-run passed for v2026.7.27."
+    completed_at: "2026-07-27T21:36:26.105Z"
+  - id: plan-step-005
+    order: 5
+    title: "Converge PR checks and all bot reviews, merge, release, and verify exact heads"
+    status: in_progress
+    created_at: "2026-07-27T21:16:45.573Z"
+    updated_at: "2026-07-27T21:36:26.864Z"
+    evidence: Exact tested commit cf698d6 is ready to push for current CI and complete bot review convergence.
+body: "Deliver a runtime source-freshness contract, current official TOON semantics, complete PM package compatibility, exhaustive live installed acceptance, and exact PR/release proof. Preserve every established search/resource/format/settings/setup/cache contract."

@@ -60,6 +60,8 @@ const capabilities = {
 
 describe('instance resources', () => {
   beforeEach(() => {
+    vi.stubEnv('GITHUB_TOKEN', undefined);
+    vi.stubEnv('GH_TOKEN', undefined);
     vi.mocked(rateLimitedFetch).mockReset();
     vi.mocked(fetchInstanceCapabilities).mockReset();
     vi.mocked(fetchInstanceErrors).mockReset();
@@ -176,6 +178,133 @@ describe('instance resources', () => {
         errors: { example: [{ error: 'timeout' }] },
       },
     });
+  });
+
+  it('reports current and stale official source comparisons', async () => {
+    vi.stubEnv('GITHUB_TOKEN', 'github-fixture');
+    vi.mocked(rateLimitedFetch)
+      .mockResolvedValueOnce(new Response('{"version":"2026.7.26+b060c780d"}', { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response('{"sha":"b060c780d0751a55e75ad22f0d930c8965789db8"}', { status: 200 })
+      )
+      .mockResolvedValueOnce(new Response('{"version":"2026.7.24+0909dbc9"}', { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response('{"sha":"b060c780d0751a55e75ad22f0d930c8965789db8"}', { status: 200 })
+      );
+
+    const current = await fetchInstanceResource('source-status');
+    const stale = await fetchInstanceResource('source-status');
+    expect(current).toMatchObject({
+      healthy: true,
+      envelope: {
+        format: 'instance-source-status',
+        endpoint: '/config',
+        data: {
+          status: 'current',
+          reason: null,
+          live: { version: '2026.7.26+b060c780d', commit: 'b060c780d' },
+          upstream: {
+            repository: 'searxng/searxng',
+            branch: 'master',
+            commit: 'b060c780d0751a55e75ad22f0d930c8965789db8',
+          },
+        },
+      },
+    });
+    expect(stale).toMatchObject({
+      healthy: false,
+      envelope: {
+        data: {
+          status: 'stale',
+          reason: null,
+          live: { commit: '0909dbc9' },
+        },
+      },
+    });
+    expect(JSON.parse(renderInstanceResource(current, 'raw'))).toEqual(current.envelope.data);
+    expect(rateLimitedFetch).toHaveBeenNthCalledWith(
+      2,
+      'https://api.github.com/repos/searxng/searxng/commits/master',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: 'application/vnd.github+json',
+          Authorization: 'Bearer github-fixture',
+        }),
+        signal: expect.any(AbortSignal),
+      })
+    );
+    expect(rateLimitedFetch).toHaveBeenNthCalledWith(
+      1,
+      'http://searxng.test/config',
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    );
+  });
+
+  it('distinguishes unavailable live, version, and upstream source evidence', async () => {
+    vi.mocked(rateLimitedFetch)
+      .mockResolvedValueOnce(new Response('unavailable', { status: 503 }))
+      .mockResolvedValueOnce(new Response('{"version":"custom"}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('{"version":"2026.7.26+b060c780d"}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('unavailable', { status: 503 }))
+      .mockResolvedValueOnce(new Response('{"version":"2026.7.26+b060c780d"}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('{"sha":"invalid"}', { status: 200 }));
+
+    const liveUnavailable = await fetchInstanceResource('source-status');
+    const commitUnavailable = await fetchInstanceResource('source-status');
+    const missingVersion = await fetchInstanceResource('source-status');
+    const upstreamHttpUnavailable = await fetchInstanceResource('source-status');
+    const upstreamPayloadUnavailable = await fetchInstanceResource('source-status');
+    expect(liveUnavailable.envelope.data).toMatchObject({
+      status: 'unavailable',
+      reason: 'live_config_unavailable',
+    });
+    expect(commitUnavailable.envelope.data).toMatchObject({
+      status: 'unavailable',
+      reason: 'live_commit_unavailable',
+      live: { version: 'custom' },
+    });
+    expect(missingVersion.envelope.data).toMatchObject({
+      status: 'unavailable',
+      reason: 'live_commit_unavailable',
+      live: { version: null, commit: null },
+    });
+    expect(upstreamHttpUnavailable.envelope.data).toMatchObject({
+      status: 'unavailable',
+      reason: 'upstream_unavailable',
+      live: { commit: 'b060c780d' },
+    });
+    expect(upstreamPayloadUnavailable.envelope.data).toMatchObject({
+      status: 'unavailable',
+      reason: 'upstream_unavailable',
+      live: { commit: 'b060c780d' },
+    });
+  });
+
+  it('uses GH_TOKEN and distinguishes an exhausted upstream rate limit', async () => {
+    vi.stubEnv('GH_TOKEN', 'gh-fixture');
+    vi.mocked(rateLimitedFetch)
+      .mockResolvedValueOnce(new Response('{"version":"2026.7.26+b060c780d"}', { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response('rate limited', {
+          status: 403,
+          headers: { 'x-ratelimit-remaining': '0' },
+        })
+      );
+
+    const result = await fetchInstanceResource('source-status');
+    expect(result.envelope.data).toMatchObject({
+      status: 'unavailable',
+      reason: 'upstream_rate_limited',
+      live: { commit: 'b060c780d' },
+    });
+    expect(rateLimitedFetch).toHaveBeenNthCalledWith(
+      2,
+      'https://api.github.com/repos/searxng/searxng/commits/master',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer gh-fixture' }),
+      })
+    );
   });
 
   it('rejects failed and malformed HTTP resources', async () => {

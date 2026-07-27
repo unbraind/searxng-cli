@@ -1360,6 +1360,10 @@ describe('Main function', () => {
         ['instance', 'errors', '-f=json'],
         ['--instance-resource', 'errors', '-f=json'],
       ],
+      [
+        ['instance', 'source-status', '--json'],
+        ['--instance-resource', 'source-status', '--json'],
+      ],
       [['suggestions'], ['--suggestions']],
       [['presets'], ['--presets']],
       [['history'], ['--history']],

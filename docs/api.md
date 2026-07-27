@@ -247,6 +247,7 @@ import {
   type InstanceResourceEnvelope,
   type InstanceResourceFormat,
   type InstanceResourceResult,
+  type SearxngSourceStatus,
 } from 'searxng-cli';
 
 const result = await fetchInstanceResource('descriptions');
@@ -256,9 +257,13 @@ const upstreamBody = renderInstanceResource(result, 'raw');
 ```
 
 `InstanceResource` includes `capabilities`, `engines`, `categories`, `languages`, `plugins`,
-`stats`, `errors`, `health`, `config`, `descriptions`, `stats-page`, `opensearch`, `manifest`, and
-`robots`. `fetchInstanceResource()` returns a typed provenance envelope plus the exact upstream or
-normalized body. `renderInstanceResource()` supports lossless `toon`, `json`, and `raw` output.
+`stats`, `errors`, `health`, `config`, `descriptions`, `stats-page`, `opensearch`, `manifest`,
+`robots`, and `source-status`. `fetchInstanceResource()` returns a typed provenance envelope plus
+the exact upstream or normalized body. `source-status` uses `SearxngSourceStatus` to distinguish
+`current`, `stale`, and `unavailable`, including a distinct `upstream_rate_limited` reason. Its
+envelope retains `/config` as the reconstructible instance endpoint while the upstream commit URL
+is carried in the typed status data. `renderInstanceResource()` supports lossless `toon`, `json`,
+and `raw` output.
 
 The lower-level `fetchInstanceCapabilities()` and `fetchInstanceErrors()` exports remain available
 from `searxng-cli/storage`.

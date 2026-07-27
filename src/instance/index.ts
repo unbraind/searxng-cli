@@ -23,6 +23,7 @@ export type InstanceResource =
   | 'opensearch'
   | 'plugins'
   | 'robots'
+  | 'source-status'
   | 'stats'
   | 'stats-page';
 
@@ -52,6 +53,32 @@ export interface InstanceResourceResult {
   raw: string;
   healthy: boolean;
 }
+
+/**
+ * Comparison between the configured SearXNG build and the official upstream branch head.
+ */
+export interface SearxngSourceStatus {
+  status: 'current' | 'stale' | 'unavailable';
+  reason:
+    | 'live_config_unavailable'
+    | 'live_commit_unavailable'
+    | 'upstream_rate_limited'
+    | 'upstream_unavailable'
+    | null;
+  live: {
+    version: string | null;
+    commit: string | null;
+  };
+  upstream: {
+    repository: 'searxng/searxng';
+    branch: 'master';
+    commit: string | null;
+    commitUrl: string | null;
+  };
+}
+
+const UPSTREAM_COMMIT_ENDPOINT = 'https://api.github.com/repos/searxng/searxng/commits/master';
+const SOURCE_STATUS_TIMEOUT_MS = 15_000;
 
 const HTTP_RESOURCES: Partial<
   Record<InstanceResource, { endpoint: string; accept: string; json: boolean }>
@@ -84,6 +111,105 @@ export async function fetchInstanceResource(
 ): Promise<InstanceResourceResult> {
   const baseUrl = getSearxngUrl();
   const checkedAt = new Date().toISOString();
+  if (resource === 'source-status') {
+    const sourceStatus: SearxngSourceStatus = {
+      status: 'unavailable',
+      reason: 'live_config_unavailable',
+      live: { version: null, commit: null },
+      upstream: {
+        repository: 'searxng/searxng',
+        branch: 'master',
+        commit: null,
+        commitUrl: null,
+      },
+    };
+
+    try {
+      const liveResponse = await rateLimitedFetch(`${baseUrl}/config`, {
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': `searxng-cli/${VERSION}`,
+        },
+        signal: AbortSignal.timeout(SOURCE_STATUS_TIMEOUT_MS),
+      });
+      if (!liveResponse.ok) throw new Error('live config unavailable');
+      const liveBody: unknown = JSON.parse(await liveResponse.text());
+      if (
+        typeof liveBody === 'object' &&
+        liveBody !== null &&
+        'version' in liveBody &&
+        typeof liveBody.version === 'string'
+      ) {
+        sourceStatus.live.version = liveBody.version;
+        sourceStatus.live.commit =
+          /\+([0-9a-f]{7,40})(?:\b|$)/i.exec(liveBody.version)?.[1]?.toLowerCase() ?? null;
+      }
+      sourceStatus.reason = sourceStatus.live.commit
+        ? 'upstream_unavailable'
+        : 'live_commit_unavailable';
+    } catch {
+      sourceStatus.reason = 'live_config_unavailable';
+    }
+
+    if (sourceStatus.live.commit) {
+      try {
+        const githubToken = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+        const upstreamResponse = await rateLimitedFetch(UPSTREAM_COMMIT_ENDPOINT, {
+          headers: {
+            Accept: 'application/vnd.github+json',
+            ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
+            'User-Agent': `searxng-cli/${VERSION}`,
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+          signal: AbortSignal.timeout(SOURCE_STATUS_TIMEOUT_MS),
+        });
+        if (!upstreamResponse.ok) {
+          sourceStatus.reason =
+            upstreamResponse.status === 403 &&
+            upstreamResponse.headers.get('x-ratelimit-remaining') === '0'
+              ? 'upstream_rate_limited'
+              : 'upstream_unavailable';
+          throw new Error(sourceStatus.reason);
+        }
+        const upstreamBody: unknown = JSON.parse(await upstreamResponse.text());
+        if (
+          typeof upstreamBody !== 'object' ||
+          upstreamBody === null ||
+          !('sha' in upstreamBody) ||
+          typeof upstreamBody.sha !== 'string' ||
+          !/^[0-9a-f]{40}$/i.test(upstreamBody.sha)
+        ) {
+          throw new Error('upstream unavailable');
+        }
+        sourceStatus.upstream.commit = upstreamBody.sha.toLowerCase();
+        sourceStatus.upstream.commitUrl = `https://github.com/searxng/searxng/commit/${sourceStatus.upstream.commit}`;
+        sourceStatus.status = sourceStatus.upstream.commit.startsWith(sourceStatus.live.commit)
+          ? 'current'
+          : 'stale';
+        sourceStatus.reason = null;
+      } catch {
+        if (sourceStatus.reason !== 'upstream_rate_limited') {
+          sourceStatus.reason = 'upstream_unavailable';
+        }
+      }
+    }
+
+    const raw = safeJsonStringify(sourceStatus, 2);
+    return {
+      envelope: {
+        schemaVersion: '1.0',
+        format: 'instance-source-status',
+        checkedAt,
+        source: baseUrl,
+        endpoint: '/config',
+        contentType: 'application/json',
+        data: sourceStatus,
+      },
+      raw,
+      healthy: sourceStatus.status === 'current',
+    };
+  }
+
   const httpResource = HTTP_RESOURCES[resource];
   let endpoint: string;
   let contentType = 'application/json';

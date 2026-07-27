@@ -93,6 +93,7 @@ export {
   type InstanceResourceEnvelope,
   type InstanceResourceFormat,
   type InstanceResourceResult,
+  type SearxngSourceStatus,
 } from './instance';
 import { fetchSearchResponse } from './search-response';
 import {
@@ -254,6 +255,7 @@ export function showCommandHelp(command: string): void {
     console.log('  opensearch        OpenSearch description XML resource');
     console.log('  manifest          Web application manifest JSON resource');
     console.log('  robots            robots.txt resource');
+    console.log('  source-status     Compare the live build with official upstream master');
     console.log();
     console.log('Resource output:');
     console.log('  --format toon     Typed TOON envelope (default)');
@@ -474,6 +476,7 @@ export function normalizeCommandArgs(rawArgs: string[]): string[] {
       'opensearch',
       'plugins',
       'robots',
+      'source-status',
       'stats',
       'stats-page',
     ]);

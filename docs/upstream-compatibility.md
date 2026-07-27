@@ -41,12 +41,21 @@ the same typed result and formatter contracts.
 | `instance opensearch`             | `/opensearch.xml`                 | TOON    |
 | `instance manifest`               | `/manifest.json`                  | TOON    |
 | `instance robots`                 | `/robots.txt`                     | TOON    |
+| `instance source-status`          | `/config` plus official GitHub head | TOON  |
 
 Every resource supports a typed JSON envelope with `--json`, an exact upstream or normalized body
 with `--raw`, and file capture with `--output <file>`. The envelope records schema version, format,
 timestamp, source, endpoint, content type, and data.
 
 TOON output uses `@toon-format/toon` and is advertised as the provisional `text/toon` media type.
+The current contract is TOON 4.1, including strict byte-order-mark, trailing-space, declared-length,
+delimiter, and Unicode handling from the official reference implementation.
+
+`instance source-status` compares the commit suffix in the configured service's `/config` version
+with the current `searxng/searxng` `master` commit. It returns `current`, `stale`, or `unavailable`;
+network or malformed-source failures are never mislabeled as stale. Both requests have a bounded
+15-second timeout. The upstream request uses `GITHUB_TOKEN` or `GH_TOKEN` when available and reports
+`upstream_rate_limited` separately from a general `upstream_unavailable` result.
 
 ## Release Verification
 

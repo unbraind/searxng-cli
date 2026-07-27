@@ -104,6 +104,10 @@ bun run test:e2e:searxng
   exposes the engine-keyed metrics at `data`.
 - `instance health`, `config`, `descriptions`, `stats-page`, `opensearch`, `manifest`, and `robots`
   expose the corresponding stable read-only SearXNG routes.
+- `instance source-status` compares the configured service build with official upstream and reports
+  `current`, `stale`, or `unavailable` without conflating network failures with version drift.
+  It honors `GITHUB_TOKEN`/`GH_TOKEN`, bounds both source requests to 15 seconds, and distinguishes
+  `upstream_rate_limited` from other upstream availability failures.
 - Instance output defaults to TOON. Use `--json`, `--raw`, `--format <toon|json|raw>`, or
   `--output <file>` consistently across every resource.
 - `autocomplete` is the command-style form of `--autocomplete` and emits TOON by default.
