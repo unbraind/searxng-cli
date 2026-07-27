@@ -6,7 +6,7 @@ status: in_progress
 priority: 0
 tags[8]: agent,cli,compatibility,pm-governance,release,searxng,source-freshness,toon
 created_at: "2026-07-27T21:16:45.583Z"
-updated_at: "2026-07-27T21:31:19.289Z"
+updated_at: "2026-07-27T21:36:28.679Z"
 deadline: "2026-07-28T21:16:45.583Z"
 assignee: codex-searxng-agent
 claim_principal: codex-searxng-agent
@@ -41,9 +41,10 @@ dependencies[15]{id,kind,created_at,author,source_kind,author_source}:
   searx-security-modernization,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
   searx-tag-release-validation,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
   searx-verification,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-comments[2]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-07-27T21:16:45.583Z",codex-searxng-agent,"Pre-mutation census: 56 closed items, zero active items, 650 history entries, 152 relationship edges, zero graph or duplicate findings. Official docs are build b060c780d and the governed service reports the identical 2026.7.26+b060c780d version. TOON 4.1.0 and PM/pm-changelog 2026.7.27 are confirmed registry latest."
   "2026-07-27T21:31:19.288Z",codex-searxng-agent,"Release note: direct release:dry-run correctly rejected the still-unreleased 2026.7.26 package version because today's next version is 2026.7.27. The clean-tree release:pipeline:dry-run will perform its governed temporary version/changelog generation after the implementation commit; do not hand-edit package version or generated CHANGELOG.md."
+  "2026-07-27T21:36:27.680Z",codex-searxng-agent,"Acceptance checkpoint: PM test ran all five non-duplicated commands with zero failures or skipped gates. The installed package resolved its own searxng binary from an isolated prefix and confirmed the configured service is current at b060c780d, default TOON 4.1 output, ~/.searxng-cli state, and unlimited cache. Release pipeline dry-run temporarily produced v2026.7.27, passed version/tag/changelog/history/build/coverage/package gates, and restored a clean tree."
 notes[1]{created_at,author,text}:
   "2026-07-27T21:16:45.583Z",codex-searxng-agent,"Do not persist raw live payloads, credentials, private topology beyond the governed service URL, or transient signed data in PM/GitHub. Source freshness must distinguish unavailable from stale."
 learnings[1]{created_at,author,text}:
@@ -72,6 +73,8 @@ plan_mode: approved
 plan_scope: "Live SearXNG source freshness, TOON 4.1 conformance, current PM packages, full release delivery"
 plan_harness: codex
 plan_resume_context: "All 56 records, 650 histories, 152 graph edges, latest docs/source, live b060c780d service, dependency registries, and package diagnostics were inspected. Implement source-status current/stale/unavailable, TOON 4.1 conformance, PM 2026.7.27 refresh, then full gates and PR/release."
+plan_validation[1]{text,command,expected}:
+  Complete PM-linked acceptance and clean release dry-run passed,"pm test searx-r99a --run --progress && bun run release:pipeline:dry-run",Five linked gates pass; exact 100 percent coverage; isolated and LAN installed commands pass; dry-run prepares v2026.7.27 and restores clean tree
 plan_steps[5]:
   - id: plan-step-001
     order: 1
@@ -100,14 +103,16 @@ plan_steps[5]:
   - id: plan-step-004
     order: 4
     title: "Run strict local, live installed, package, security, and release gates"
-    status: in_progress
+    status: completed
     created_at: "2026-07-27T21:16:45.573Z"
-    updated_at: "2026-07-27T21:31:18.525Z"
-    evidence: Running the de-duplicated five-command PM-linked acceptance matrix after individual gates passed.
+    updated_at: "2026-07-27T21:36:26.105Z"
+    evidence: "PM-linked five-command acceptance passed terminally: strict quality with 948 tests at exact 100/100/100/100, 21/21 docstrings, 2.90 percent duplication and ShellCheck; Trivy/Bun audit zero findings; isolated npm/Bun consumers; 61-command hermetic E2E; governed-LAN installed E2E with URL/default TOON/global paths/unlimited cache/search/resources/source-status=current. Clean-tree release pipeline dry-run passed for v2026.7.27."
+    completed_at: "2026-07-27T21:36:26.105Z"
   - id: plan-step-005
     order: 5
     title: "Converge PR checks and all bot reviews, merge, release, and verify exact heads"
-    status: pending
+    status: in_progress
     created_at: "2026-07-27T21:16:45.573Z"
-    updated_at: "2026-07-27T21:16:45.573Z"
+    updated_at: "2026-07-27T21:36:26.864Z"
+    evidence: Exact tested commit cf698d6 is ready to push for current CI and complete bot review convergence.
 body: "Deliver a runtime source-freshness contract, current official TOON semantics, complete PM package compatibility, exhaustive live installed acceptance, and exact PR/release proof. Preserve every established search/resource/format/settings/setup/cache contract."
