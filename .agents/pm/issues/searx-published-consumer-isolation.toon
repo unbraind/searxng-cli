@@ -2,14 +2,13 @@ id: searx-published-consumer-isolation
 title: Verify published consumers outside the source checkout
 description: Eliminate global executable leakage from published release verification and prove the requested immutable package exposes the newly shipped CLI contract.
 type: Issue
-status: in_progress
+status: closed
 priority: 0
 tags[9]: bun,npm,package-contract,recovery,registry-propagation,regression,release,release-reliability,toon-v4
 created_at: "2026-07-21T18:34:27.322Z"
-updated_at: "2026-07-27T23:00:24.688Z"
+updated_at: "2026-07-27T23:12:36.655Z"
 deadline: "2026-07-28T22:25:59.682Z"
-assignee: codex-searxng-agent
-claim_principal: codex-searxng-agent
+closed_at: "2026-07-27T23:12:36.180Z"
 author: codex-release-agent
 estimated_minutes: 30
 acceptance_criteria: "Release workflow delegates exact-version registry readiness and consumer execution to the tested verification script; npm registry propagation is bounded and retry-safe; package bin metadata publishes without npm correction warnings; TOON v4 encode/decode output remains validated and default; repo-local pm-cli equals the latest installed/registry version; all 100/100/100/100, quality, security, package, live LAN, and release gates pass; scheduled recovery and exact-head GitHub checks succeed"
@@ -24,9 +23,9 @@ reporter: codex-release-agent
 severity: critical
 environment: Post-publication npm and Bun consumer verification
 repro_steps: "Install searxng-cli globally at an older build that reports the same calendar version, then run npm exec --package searxng-cli@2026.7.27 -- searxng instance source-status from the repository. npm exec resolves the global binary and reports unknown resource although the registry tarball contains the command."
-resolution: "Hardened daily release recovery with bounded npm propagation, normalized executable metadata, exact-line npx/bunx validation, direct regression coverage, TOON v4, and current PM tooling."
-expected_result: "The release verifier installs the immutable requested artifact into separate npm and Bun roots, proves each shim is contained, executes with installation disabled, and validates exact version plus source-status help before release success."
-actual_result: "Clean committed head passes all five linked acceptance commands: 949 tests at exact 100/100/100/100, calendar release policy, 10 release-contract tests, isolated npm and Bun verification of immutable 2026.7.27, and package inspection. Exact-head hosted review and merge remain pending."
+resolution: "Eliminated global executable leakage with separate exact npm/Bun installs, realpath containment, no-install execution, exact version and source-status contracts, and direct positive/negative behavioral tests."
+expected_result: Release verification proves the requested immutable package executable and command contract without source-checkout or global-install leakage.
+actual_result: "PR #57 merged as a0221ac95ed0e52e97581213f918e9b0504b3a8f; 951 tests pass at exact 100/100/100/100; CodeRabbit's sole finding was fixed and confirmed with zero unresolved threads; merged-head CI, package smoke, secret scan, and CodeQL pass; immutable npm 2026.7.27 passes isolated npm and Bun source-status probes; same-day policy correctly defers verifier publication to the next automatic calendar release."
 affected_version: 2026.7.27
 fixed_version: 2026.7.28
 component: release
@@ -80,4 +79,5 @@ tests[5]{command,scope,timeout_seconds,note}:
 docs[2]{path,scope,note}:
   docs/agent-mode.md,project,Official TOON v4 agent format behavior
   docs/release-process.md,project,Document isolated registry consumer verification
+close_reason: "Merged PR #57 after exact-head review closure and merged-head hosted verification; immutable v2026.7.27 artifact is correct, and verifier hardening is queued for the next automatic calendar release."
 body: "Canonical continuation of the existing published-consumer isolation item after scheduled run 29894239662 exposed a registry propagation race immediately after npm publish. The same log showed npm normalizing leading-dot bin paths during publication. This delivery reuses the existing release/feature-parity lineage, upgrades TOON to current spec v4 and repo-local pm-cli to the installed latest, and proves exact-version npm/Bun consumers, real executable bins, full local quality, and LAN SearXNG behavior."
