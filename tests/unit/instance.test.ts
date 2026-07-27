@@ -60,6 +60,8 @@ const capabilities = {
 
 describe('instance resources', () => {
   beforeEach(() => {
+    vi.stubEnv('GITHUB_TOKEN', undefined);
+    vi.stubEnv('GH_TOKEN', undefined);
     vi.mocked(rateLimitedFetch).mockReset();
     vi.mocked(fetchInstanceCapabilities).mockReset();
     vi.mocked(fetchInstanceErrors).mockReset();
@@ -179,6 +181,7 @@ describe('instance resources', () => {
   });
 
   it('reports current and stale official source comparisons', async () => {
+    vi.stubEnv('GITHUB_TOKEN', 'github-fixture');
     vi.mocked(rateLimitedFetch)
       .mockResolvedValueOnce(new Response('{"version":"2026.7.26+b060c780d"}', { status: 200 }))
       .mockResolvedValueOnce(
@@ -195,6 +198,7 @@ describe('instance resources', () => {
       healthy: true,
       envelope: {
         format: 'instance-source-status',
+        endpoint: '/config',
         data: {
           status: 'current',
           reason: null,
@@ -222,8 +226,17 @@ describe('instance resources', () => {
       2,
       'https://api.github.com/repos/searxng/searxng/commits/master',
       expect.objectContaining({
-        headers: expect.objectContaining({ Accept: 'application/vnd.github+json' }),
+        headers: expect.objectContaining({
+          Accept: 'application/vnd.github+json',
+          Authorization: 'Bearer github-fixture',
+        }),
+        signal: expect.any(AbortSignal),
       })
+    );
+    expect(rateLimitedFetch).toHaveBeenNthCalledWith(
+      1,
+      'http://searxng.test/config',
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
     );
   });
 
@@ -266,6 +279,32 @@ describe('instance resources', () => {
       reason: 'upstream_unavailable',
       live: { commit: 'b060c780d' },
     });
+  });
+
+  it('uses GH_TOKEN and distinguishes an exhausted upstream rate limit', async () => {
+    vi.stubEnv('GH_TOKEN', 'gh-fixture');
+    vi.mocked(rateLimitedFetch)
+      .mockResolvedValueOnce(new Response('{"version":"2026.7.26+b060c780d"}', { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response('rate limited', {
+          status: 403,
+          headers: { 'x-ratelimit-remaining': '0' },
+        })
+      );
+
+    const result = await fetchInstanceResource('source-status');
+    expect(result.envelope.data).toMatchObject({
+      status: 'unavailable',
+      reason: 'upstream_rate_limited',
+      live: { commit: 'b060c780d' },
+    });
+    expect(rateLimitedFetch).toHaveBeenNthCalledWith(
+      2,
+      'https://api.github.com/repos/searxng/searxng/commits/master',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer gh-fixture' }),
+      })
+    );
   });
 
   it('rejects failed and malformed HTTP resources', async () => {

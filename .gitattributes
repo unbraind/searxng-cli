@@ -1,4 +1,6 @@
 # pm-cli:merge-drivers:start
+".agents/pm/cards/*.toon" merge=pm-item-toon
+".agents/pm/cards/*.md" merge=pm-item-markdown
 ".agents/pm/chores/*.toon" merge=pm-item-toon
 ".agents/pm/chores/*.md" merge=pm-item-markdown
 ".agents/pm/decisions/*.toon" merge=pm-item-toon

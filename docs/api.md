@@ -260,7 +260,9 @@ const upstreamBody = renderInstanceResource(result, 'raw');
 `stats`, `errors`, `health`, `config`, `descriptions`, `stats-page`, `opensearch`, `manifest`,
 `robots`, and `source-status`. `fetchInstanceResource()` returns a typed provenance envelope plus
 the exact upstream or normalized body. `source-status` uses `SearxngSourceStatus` to distinguish
-`current`, `stale`, and `unavailable`. `renderInstanceResource()` supports lossless `toon`, `json`,
+`current`, `stale`, and `unavailable`, including a distinct `upstream_rate_limited` reason. Its
+envelope retains `/config` as the reconstructible instance endpoint while the upstream commit URL
+is carried in the typed status data. `renderInstanceResource()` supports lossless `toon`, `json`,
 and `raw` output.
 
 The lower-level `fetchInstanceCapabilities()` and `fetchInstanceErrors()` exports remain available

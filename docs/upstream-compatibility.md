@@ -53,7 +53,9 @@ delimiter, and Unicode handling from the official reference implementation.
 
 `instance source-status` compares the commit suffix in the configured service's `/config` version
 with the current `searxng/searxng` `master` commit. It returns `current`, `stale`, or `unavailable`;
-network or malformed-source failures are never mislabeled as stale.
+network or malformed-source failures are never mislabeled as stale. Both requests have a bounded
+15-second timeout. The upstream request uses `GITHUB_TOKEN` or `GH_TOKEN` when available and reports
+`upstream_rate_limited` separately from a general `upstream_unavailable` result.
 
 ## Release Verification
 

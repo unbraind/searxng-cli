@@ -6,7 +6,7 @@ status: in_progress
 priority: 0
 tags[8]: agent,cli,compatibility,pm-governance,release,searxng,source-freshness,toon
 created_at: "2026-07-27T21:16:45.583Z"
-updated_at: "2026-07-27T21:36:28.679Z"
+updated_at: "2026-07-27T21:56:41.592Z"
 deadline: "2026-07-28T21:16:45.583Z"
 assignee: codex-searxng-agent
 claim_principal: codex-searxng-agent
@@ -24,27 +24,37 @@ reviewer: github-bots
 risk: high
 confidence: 94
 sprint: 2026-07-current-compatibility
-release: 2026.7.28
-dependencies[15]{id,kind,created_at,author,source_kind,author_source}:
-  searx-1seb,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-  searx-7uik,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-  searx-auto-release,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-  searx-changelog-migration,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-  searx-ci-modernization,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-  searx-coverage-governance,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-  searx-feature-parity-plan,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-  searx-hermetic-e2e,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-  searx-lkzp,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-  searx-modular-command-architecture,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-  searx-published-consumer-isolation,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-  searx-release-validation,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-  searx-security-modernization,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-  searx-tag-release-validation,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-  searx-verification,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep",detected
-comments[3]{created_at,author,text}:
-  "2026-07-27T21:16:45.583Z",codex-searxng-agent,"Pre-mutation census: 56 closed items, zero active items, 650 history entries, 152 relationship edges, zero graph or duplicate findings. Official docs are build b060c780d and the governed service reports the identical 2026.7.26+b060c780d version. TOON 4.1.0 and PM/pm-changelog 2026.7.27 are confirmed registry latest."
-  "2026-07-27T21:31:19.288Z",codex-searxng-agent,"Release note: direct release:dry-run correctly rejected the still-unreleased 2026.7.26 package version because today's next version is 2026.7.27. The clean-tree release:pipeline:dry-run will perform its governed temporary version/changelog generation after the implementation commit; do not hand-edit package version or generated CHANGELOG.md."
-  "2026-07-27T21:36:27.680Z",codex-searxng-agent,"Acceptance checkpoint: PM test ran all five non-duplicated commands with zero failures or skipped gates. The installed package resolved its own searxng binary from an isolated prefix and confirmed the configured service is current at b060c780d, default TOON 4.1 output, ~/.searxng-cli state, and unlimited cache. Release pipeline dry-run temporarily produced v2026.7.27, passed version/tag/changelog/history/build/coverage/package gates, and restored a clean tree."
+release: 2026.7.27
+dependencies[15]{id,kind,created_at,author,source_kind}:
+  searx-1seb,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-7uik,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-auto-release,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-changelog-migration,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-ci-modernization,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-coverage-governance,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-feature-parity-plan,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-hermetic-e2e,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-lkzp,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-modular-command-architecture,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-published-consumer-isolation,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-release-validation,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-security-modernization,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-tag-release-validation,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+  searx-verification,related,"2026-07-27T21:16:45.583Z",codex-searxng-agent,"cli:create:dep"
+comments[4]:
+  - created_at: "2026-07-27T21:16:45.583Z"
+    author: codex-searxng-agent
+    text: "Pre-mutation census: 56 closed items, zero active items, 650 history entries, 152 relationship edges, zero graph or duplicate findings. Official docs are build b060c780d and the governed service reports the identical 2026.7.26+b060c780d version. TOON 4.1.0 and PM/pm-changelog 2026.7.27 are confirmed registry latest."
+  - created_at: "2026-07-27T21:31:19.288Z"
+    author: codex-searxng-agent
+    text: "Release note: direct release:dry-run correctly rejected the still-unreleased 2026.7.26 package version because today's next version is 2026.7.27. The clean-tree release:pipeline:dry-run will perform its governed temporary version/changelog generation after the implementation commit; do not hand-edit package version or generated CHANGELOG.md."
+  - created_at: "2026-07-27T21:36:27.680Z"
+    author: codex-searxng-agent
+    text: "Acceptance checkpoint: PM test ran all five non-duplicated commands with zero failures or skipped gates. The installed package resolved its own searxng binary from an isolated prefix and confirmed the configured service is current at b060c780d, default TOON 4.1 output, ~/.searxng-cli state, and unlimited cache. Release pipeline dry-run temporarily produced v2026.7.27, passed version/tag/changelog/history/build/coverage/package gates, and restored a clean tree."
+  - created_at: "2026-07-27T21:54:40.160Z"
+    author: codex-searxng-agent
+    text: "Review round 1 validated 13 CodeRabbit threads. Accepted bounded source timeouts, authenticated and rate-aware upstream checks, reconstructible endpoint provenance, unique installed-E2E artifact storage, and the PM release correction. The managed-registry merge rule cannot remain locally because pm validate rejects it as fence drift; upstream pm-cli issue #780 records the package-owned generator fix. Managed extension runtime exports were verified directly, pm_min_version is a valid compatibility minimum distinct from the peer floor, and low-value generated refactors will remain package-owned."
+    edited_at: "2026-07-27T21:56:41.592Z"
 notes[1]{created_at,author,text}:
   "2026-07-27T21:16:45.583Z",codex-searxng-agent,"Do not persist raw live payloads, credentials, private topology beyond the governed service URL, or transient signed data in PM/GitHub. Source freshness must distinguish unavailable from stale."
 learnings[1]{created_at,author,text}:
