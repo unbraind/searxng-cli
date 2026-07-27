@@ -6,7 +6,7 @@ status: in_progress
 priority: 0
 tags[9]: bun,npm,package-contract,recovery,registry-propagation,regression,release,release-reliability,toon-v4
 created_at: "2026-07-21T18:34:27.322Z"
-updated_at: "2026-07-27T22:33:59.658Z"
+updated_at: "2026-07-27T23:00:24.688Z"
 deadline: "2026-07-28T22:25:59.682Z"
 assignee: codex-searxng-agent
 claim_principal: codex-searxng-agent
@@ -38,7 +38,7 @@ dependencies[5]{id,kind,created_at,author,source_kind}:
   searx-feature-parity-plan,related,"2026-07-23T04:53:19.528Z",codex-root,null
   searx-release-publishing,verifies,"2026-07-23T04:53:19.528Z",codex-root,null
   searx-tag-release-validation,related,"2026-07-23T04:53:19.528Z",codex-root,null
-comments[12]{created_at,author,text}:
+comments[13]{created_at,author,text}:
   "2026-07-21T22:32:32.412Z",codex-root,"Historical delivery evidence is preserved by the item title, parent lineage, release metadata, generated changelog, and repository verification gates."
   "2026-07-23T04:53:19.528Z",codex-root,"Live failure evidence: Auto Release run 29894239662 passed all preparation and release gates, published 2026.7.22, then child Release run 29894284980 failed its immediate npx lookup with npm ETARGET. GitHub issue #43 records the scheduled failure."
   "2026-07-23T04:59:41.948Z",codex-root,"Implementation checkpoint: workflow delegates to the bounded registry verifier; exact npx and bunx version output is asserted; bin paths publish without npm correction warnings; TOON spec marker and encoder dependency are 4.0; repo-local pm-cli is 2026.7.22."
@@ -51,11 +51,12 @@ comments[12]{created_at,author,text}:
   "2026-07-27T22:28:57.748Z",codex-searxng-agent,"Implementation replaces opportunistic npx/bunx resolution with separate exact-version npm and Bun installs, realpath containment assertions for both searxng shims, no-install execution, exact version lines, and source-status help probes. This makes the immutable 2026.7.27 artifact a regression fixture and prevents same-version global leakage."
   "2026-07-27T22:31:23.476Z",codex-searxng-agent,"Acceptance checkpoint: bun run quality passed 949 tests at exact 100/100/100/100; bun run test:release, the isolated immutable 2026.7.27 npm/Bun verifier, and npm pack dry-run passed. The linked release:pipeline:dry-run intentionally stopped at its clean-tree guard because implementation and PM evidence were uncommitted; it will be rerun from a clean commit as the calendar-policy proof."
   "2026-07-27T22:33:59.625Z",codex-searxng-agent,"Clean acceptance matrix passed 5/5 through pm test. release:pipeline:dry-run returned release_already_cut_today for immutable v2026.7.27, correctly preventing a second same-day tag; the already-published artifact itself passed both isolated executable and source-status contract probes. PM validate has no integrity, drift, file, dependency, or storage errors (one expected warning because this reopened issue retains its closed parent); graph audit reports 57 nodes, 167 edges, and zero findings; package doctor reports all 12 managed extensions active and current."
+  "2026-07-27T23:00:24.687Z",codex-searxng-agent,"CodeRabbit review on PR #57 found a valid test-quality gap: source-text assertions could not prove helper behavior. Extracted shim containment and source-status parsing into a directly imported release module, then added real symlink containment success/escape failure cases plus missing and misleading help-output cases. Focused release tests now pass 12/12."
 notes[1]{created_at,author,text}:
   "2026-07-23T04:53:19.528Z",codex-root,Use the existing scripts/release/verify-published-release.mjs bounded registry wait as the single consumer-verification owner; remove duplicated inline workflow logic to prevent contract drift.
 learnings[1]{created_at,author,text}:
   "2026-07-23T04:53:19.528Z",codex-root,Publishing success does not imply immediate registry read-after-write consistency. Exact-version consumer verification must wait for npm view to expose the version before invoking npx or bunx.
-files[13]{path,scope,note}:
+files[14]{path,scope,note}:
   .agents/pm/extensions/pm-changelog/dist/extension.js,project,pm-changelog 2026.7.22 runtime
   .agents/pm/extensions/pm-changelog/dist/extension.js.map,project,pm-changelog 2026.7.22 source map
   .agents/pm/extensions/pm-changelog/manifest.json,project,pm-changelog 2026.7.22 manifest
@@ -65,6 +66,7 @@ files[13]{path,scope,note}:
   bun.lock,project,Reproducible TOON 4 and pm-cli 2026.7.22 dependency graph
   package.json,project,Normalized executable metadata and current TOON plus pm-cli versions
   README.md,project,TOON v4 default user contract
+  scripts/release/published-verification.mjs,project,Pure behaviorally tested shim containment and source-status contract predicates
   scripts/release/verify-published-release.mjs,project,Isolate local exact-version verification from the source checkout
   scripts/release/version-output.mjs,project,Exact-line published version matcher extracted for direct regression testing
   src/config/index.ts,project,TOON 4.0 output contract marker

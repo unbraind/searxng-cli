@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, sep } from "node:path";
+import { join } from "node:path";
+import {
+  assertIsolatedBinary,
+  hasSourceStatusResource,
+} from "./published-verification.mjs";
 import { hasExactVersionLine } from "./version-output.mjs";
 
 const index = process.argv.indexOf("--version");
@@ -25,30 +29,6 @@ function run(command, args, cwd = process.cwd()) {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "inherit"],
   });
-}
-
-/**
- * Assert that one package-manager shim resolves inside its isolated package root.
- *
- * @param {string} binaryPath Expected executable shim path.
- * @param {string} packageRoot Exact installed package root.
- */
-function assertIsolatedBinary(binaryPath, packageRoot) {
-  const resolvedBinary = realpathSync(binaryPath);
-  const resolvedRoot = realpathSync(packageRoot);
-  if (!resolvedBinary.startsWith(`${resolvedRoot}${sep}`)) {
-    throw new Error(`Published executable escaped its isolated package root: ${resolvedBinary}`);
-  }
-}
-
-/**
- * Detect the exact source-status resource row in instance help output.
- *
- * @param {string} output Captured instance help text.
- * @returns {boolean} Whether the published CLI exposes the source-status contract.
- */
-function hasSourceStatusResource(output) {
-  return output.split(/\r?\n/u).some((line) => /^\s+source-status\s+/u.test(line));
 }
 
 let published = "";

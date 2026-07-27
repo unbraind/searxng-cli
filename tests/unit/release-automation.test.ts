@@ -1,5 +1,11 @@
-import { readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import {
+  assertIsolatedBinary,
+  hasSourceStatusResource,
+} from '../../scripts/release/published-verification.mjs';
 import {
   calendarVersion,
   isReleaseRelevantPath,
@@ -109,6 +115,47 @@ describe('release automation', () => {
       searxng: 'dist/searxng-cli.js',
     });
     expect(workflow).toContain('gh release create');
+  });
+
+  it('accepts contained package shims and rejects escaped executable targets', () => {
+    const root = mkdtempSync(join(tmpdir(), 'searxng-cli-isolation-test-'));
+    try {
+      const packageRoot = join(root, 'node_modules', 'searxng-cli');
+      const shimRoot = join(root, 'node_modules', '.bin');
+      const outsideRoot = join(root, 'outside');
+      mkdirSync(packageRoot, { recursive: true });
+      mkdirSync(shimRoot, { recursive: true });
+      mkdirSync(outsideRoot);
+      const packageBinary = join(packageRoot, 'searxng-cli.js');
+      const outsideBinary = join(outsideRoot, 'searxng-cli.js');
+      writeFileSync(packageBinary, '#!/usr/bin/env node\n');
+      writeFileSync(outsideBinary, '#!/usr/bin/env node\n');
+      const containedShim = join(shimRoot, 'searxng');
+      const escapedShim = join(shimRoot, 'searxng-escaped');
+      symlinkSync(packageBinary, containedShim);
+      symlinkSync(outsideBinary, escapedShim);
+
+      expect(() => assertIsolatedBinary(containedShim, packageRoot)).not.toThrow();
+      expect(() => assertIsolatedBinary(escapedShim, packageRoot)).toThrow(
+        'Published executable escaped its isolated package root'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('requires an exact source-status resource row in instance help', () => {
+    expect(hasSourceStatusResource('Resources:\n  source-status  Compare source revisions\n')).toBe(
+      true
+    );
+    for (const output of [
+      'Resources:\n  engines  List engines\n',
+      'Resources:\n  source-status-detail  Wrong resource\n',
+      'Resources:\n  not-source-status  Misleading suffix\n',
+      'source-status  Missing command indentation\n',
+    ]) {
+      expect(hasSourceStatusResource(output)).toBe(false);
+    }
   });
 
   it('accepts only complete version lines from published consumers', () => {
