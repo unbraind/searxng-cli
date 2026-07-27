@@ -178,6 +178,96 @@ describe('instance resources', () => {
     });
   });
 
+  it('reports current and stale official source comparisons', async () => {
+    vi.mocked(rateLimitedFetch)
+      .mockResolvedValueOnce(new Response('{"version":"2026.7.26+b060c780d"}', { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response('{"sha":"b060c780d0751a55e75ad22f0d930c8965789db8"}', { status: 200 })
+      )
+      .mockResolvedValueOnce(new Response('{"version":"2026.7.24+0909dbc9"}', { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response('{"sha":"b060c780d0751a55e75ad22f0d930c8965789db8"}', { status: 200 })
+      );
+
+    const current = await fetchInstanceResource('source-status');
+    const stale = await fetchInstanceResource('source-status');
+    expect(current).toMatchObject({
+      healthy: true,
+      envelope: {
+        format: 'instance-source-status',
+        data: {
+          status: 'current',
+          reason: null,
+          live: { version: '2026.7.26+b060c780d', commit: 'b060c780d' },
+          upstream: {
+            repository: 'searxng/searxng',
+            branch: 'master',
+            commit: 'b060c780d0751a55e75ad22f0d930c8965789db8',
+          },
+        },
+      },
+    });
+    expect(stale).toMatchObject({
+      healthy: false,
+      envelope: {
+        data: {
+          status: 'stale',
+          reason: null,
+          live: { commit: '0909dbc9' },
+        },
+      },
+    });
+    expect(JSON.parse(renderInstanceResource(current, 'raw'))).toEqual(current.envelope.data);
+    expect(rateLimitedFetch).toHaveBeenNthCalledWith(
+      2,
+      'https://api.github.com/repos/searxng/searxng/commits/master',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Accept: 'application/vnd.github+json' }),
+      })
+    );
+  });
+
+  it('distinguishes unavailable live, version, and upstream source evidence', async () => {
+    vi.mocked(rateLimitedFetch)
+      .mockResolvedValueOnce(new Response('unavailable', { status: 503 }))
+      .mockResolvedValueOnce(new Response('{"version":"custom"}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('{"version":"2026.7.26+b060c780d"}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('unavailable', { status: 503 }))
+      .mockResolvedValueOnce(new Response('{"version":"2026.7.26+b060c780d"}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('{"sha":"invalid"}', { status: 200 }));
+
+    const liveUnavailable = await fetchInstanceResource('source-status');
+    const commitUnavailable = await fetchInstanceResource('source-status');
+    const missingVersion = await fetchInstanceResource('source-status');
+    const upstreamHttpUnavailable = await fetchInstanceResource('source-status');
+    const upstreamPayloadUnavailable = await fetchInstanceResource('source-status');
+    expect(liveUnavailable.envelope.data).toMatchObject({
+      status: 'unavailable',
+      reason: 'live_config_unavailable',
+    });
+    expect(commitUnavailable.envelope.data).toMatchObject({
+      status: 'unavailable',
+      reason: 'live_commit_unavailable',
+      live: { version: 'custom' },
+    });
+    expect(missingVersion.envelope.data).toMatchObject({
+      status: 'unavailable',
+      reason: 'live_commit_unavailable',
+      live: { version: null, commit: null },
+    });
+    expect(upstreamHttpUnavailable.envelope.data).toMatchObject({
+      status: 'unavailable',
+      reason: 'upstream_unavailable',
+      live: { commit: 'b060c780d' },
+    });
+    expect(upstreamPayloadUnavailable.envelope.data).toMatchObject({
+      status: 'unavailable',
+      reason: 'upstream_unavailable',
+      live: { commit: 'b060c780d' },
+    });
+  });
+
   it('rejects failed and malformed HTTP resources', async () => {
     vi.mocked(rateLimitedFetch)
       .mockResolvedValueOnce(new Response('no', { status: 503 }))

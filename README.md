@@ -272,6 +272,7 @@ searxng-cli --instance-info       # Show instance capabilities
 searxng-cli --instance-info-json  # Same in JSON
 searxng instance stats           # Capabilities + engine error metrics (TOON)
 searxng instance stats --json    # Same typed resource envelope for jq/CI
+searxng instance source-status   # Prove the configured service matches official upstream
 searxng instance errors --json   # Engine error metrics under .data
 searxng instance descriptions    # Engine metadata in TOON
 searxng instance config --json   # Complete upstream /config under .data

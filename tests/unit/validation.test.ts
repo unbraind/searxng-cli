@@ -143,6 +143,17 @@ describe('Output Validation', () => {
     expect(result.valid).toBe(true);
   });
 
+  it('accepts TOON 4.1 byte-order marks and trailing spaces in strict decoding', () => {
+    const toon = encode({
+      q: 'test',
+      n: 1,
+      src: 'http://localhost:8080',
+      ts: '2026-03-04T00:00:00.000Z',
+      results: [{ i: 1, title: 'Result', url: 'https://example.com' }],
+    });
+    expect(validateFormattedOutput('toon', `\uFEFF${toon}   `).valid).toBe(true);
+  });
+
   it('rejects TOON n mismatch', () => {
     const toon = encode({
       q: 'test',

@@ -694,7 +694,7 @@ describe('Advanced Formatters Module', () => {
       const options = createMockOptions();
       const output = formatToonOutput(data, options);
       const parsed = decodeToon(output) as { tv?: string };
-      expect(parsed.tv).toBe('4.0');
+      expect(parsed.tv).toBe('4.1');
     });
 
     it('preserves hash-leading strings under the TOON v4 comment contract', () => {
