@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 2026.7.28 - 2026-07-28
+
+### Fixed
+
+- Verify published consumers outside the source checkout ([searx-published-consumer-isolation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-published-consumer-isolation.toon))
+
+## 2026.7.27 - 2026-07-27
+
+### Other
+
+- Ship live upstream source freshness and TOON 4.1 compatibility ([searx-r99a](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/plans/searx-r99a.toon))
+
 ## 2026.7.26 - 2026-07-26
 
 ### Other
@@ -19,12 +31,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Security
 
 - Ship unlimited SearXNG cache persistence and secure current tooling ([searx-1seb](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/plans/searx-1seb.toon))
-
-## 2026.7.23 - 2026-07-23
-
-### Fixed
-
-- Verify published consumers outside the source checkout ([searx-published-consumer-isolation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-published-consumer-isolation.toon))
 
 ## 2026.7.22 - 2026-07-22
 
