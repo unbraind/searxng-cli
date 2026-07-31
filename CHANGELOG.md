@@ -4,15 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## Unreleased
-
-### Fixed
-
-- Verify published consumers outside the source checkout ([searx-published-consumer-isolation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-published-consumer-isolation.toon))
+## 2026.7.31 - 2026-07-31
 
 ### Other
 
 - Ship current SearXNG API transport and agent contract discovery ([searx-b73v](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/plans/searx-b73v.toon))
+
+## 2026.7.28 - 2026-07-28
+
+### Fixed
+
+- Verify published consumers outside the source checkout ([searx-published-consumer-isolation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-published-consumer-isolation.toon))
 
 ## 2026.7.27 - 2026-07-27
 
