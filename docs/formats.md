@@ -39,26 +39,26 @@ domains:
 
 ### TOON Field Reference
 
-| Field | Description | Example |
-|-------|-------------|---------|
-| `v:` | Schema version | `v: 2026.3.1` |
-| `q:` | Search query | `q: nodejs tutorial` |
-| `n:` | Result count returned | `n: 10` |
-| `src:` | Source SearXNG instance URL | `src: http://localhost:8080` |
-| `ts:` | Output generation timestamp (ISO-8601) | `ts: 2026-03-04T00:00:00.000Z` |
-| `c: 1` | Cached result indicator | `c: 1` |
-| `ca:` | Cache age in seconds | `ca: 45s` |
-| `e:` | Engine(s) used | `e: google,bing` |
-| `cat:` | Category filter | `cat: general` |
-| `t:` | Time range filter | `t: day` |
-| `total:` | Total results available | `total: 1000000` |
-| `results[N]:` | Results array | `results[10]:` |
-| `answers[N]:` | Direct answers array | `answers[1]: The Answer` |
-| `infobox:` | Infobox object | `infobox:` |
-| `suggestions[N]:`| Search suggestions array | `suggestions[2]: better query,alternative` |
-| `corrections[N]:`| Spelling corrections | `corrections[1]: corrected query` |
-| `domains:` | Domain distribution object | `domains:` |
-| `unresponsive_engines:` | Unresponsive engines array | `unresponsive_engines[2]: engine1,engine2` |
+| Field                   | Description                            | Example                                    |
+| ----------------------- | -------------------------------------- | ------------------------------------------ |
+| `v:`                    | Schema version                         | `v: 2026.3.1`                              |
+| `q:`                    | Search query                           | `q: nodejs tutorial`                       |
+| `n:`                    | Result count returned                  | `n: 10`                                    |
+| `src:`                  | Source SearXNG instance URL            | `src: http://localhost:8080`               |
+| `ts:`                   | Output generation timestamp (ISO-8601) | `ts: 2026-03-04T00:00:00.000Z`             |
+| `c: 1`                  | Cached result indicator                | `c: 1`                                     |
+| `ca:`                   | Cache age in seconds                   | `ca: 45s`                                  |
+| `e:`                    | Engine(s) used                         | `e: google,bing`                           |
+| `cat:`                  | Category filter                        | `cat: general`                             |
+| `t:`                    | Time range filter                      | `t: day`                                   |
+| `total:`                | Total results available                | `total: 1000000`                           |
+| `results[N]:`           | Results array                          | `results[10]:`                             |
+| `answers[N]:`           | Direct answers array                   | `answers[1]: The Answer`                   |
+| `infobox:`              | Infobox object                         | `infobox:`                                 |
+| `suggestions[N]:`       | Search suggestions array               | `suggestions[2]: better query,alternative` |
+| `corrections[N]:`       | Spelling corrections                   | `corrections[1]: corrected query`          |
+| `domains:`              | Domain distribution object             | `domains:`                                 |
+| `unresponsive_engines:` | Unresponsive engines array             | `unresponsive_engines[2]: engine1,engine2` |
 
 Result rows contain: `idx,title,url[,engine][,score],snippet[,date]`
 
@@ -68,6 +68,21 @@ Result rows contain: `idx,title,url[,engine][,score],snippet[,date]`
 - **LLM-friendly**: Key-value pairs, no nesting syntax overhead
 - **Context-rich**: Includes answers, infoboxes, suggestions, domain stats
 - **Compact mode**: Use `--compact` or `--agent` for even smaller output
+
+## RSS 2.0
+
+RSS output is a validated local serialization of the normalized result contract. It works whether
+the configured instance returns JSON directly or requires the CLI's HTML compatibility fallback,
+and with either official search transport.
+
+```bash
+searxng --rss "release news" > results.rss
+searxng search --post --format rss --validate-output "release news"
+```
+
+Each item contains an escaped title, link, stable permalink GUID, plain-text description, and an
+optional RFC 822 `pubDate`. The channel records the configured SearXNG source and generation time.
+Use `--limit 0` for all returned results.
 
 ## JSON
 
@@ -138,6 +153,7 @@ searxng-cli -f md "query"
 
 ```markdown
 # query
+
 > 2 results
 
 1. [Example](https://example.com)
@@ -192,21 +208,24 @@ searxng-cli --format xml "query"
 
 ## Validation Mode
 
-Use `--validate-output` to verify format/schema before the CLI exits. Validation currently enforces structural checks for `toon`, `json`, `jsonl`/`ndjson`, `raw`, `csv`, `yaml`, `xml`, `markdown`, `table`, `text`, `simple`, and `html-report`.
+Use `--validate-output` to verify format/schema before the CLI exits. Validation currently enforces structural checks for `toon`, `json`, `jsonl`/`ndjson`, `raw`, `rss`, `csv`, `yaml`, `xml`, `markdown`, `table`, `text`, `simple`, and `html-report`.
 
 For machine workflows, validation also enforces:
+
 - JSON: `schemaVersion`, `format`, `source`, `generatedAt`, `resultCount`, `returnedCount`, and result object shape
 - JSONL: line-delimited object validation (`schemaVersion`, `format`, `query`, `source`, `generatedAt`, sequential `index`, title/url)
 - CSV: exact header and fixed six-column rows
 - YAML: required top-level keys plus `schemaVersion: '1.0'`, `format: 'yaml'`, `source`, and `generatedAt`
 - TOON: `q`, `n`, `src`, `ts`, sequential result indices and decode success
 - XML: `<search>` root with `source` and `generatedAt` attributes
+- RSS: XML declaration plus RSS 2.0, channel, and item/link structure
 
 ```bash
 searxng --format json --validate-output "query" | jq '.results'
 searxng --format jsonl --validate-output "query" | jq -R 'fromjson?'
 searxng --format ndjson --validate-output "query" | jq -R 'fromjson?'
 searxng --format toon --validate-output "query"
+searxng --post --format rss --validate-output "query"
 searxng --format yaml --validate-output "query"
 searxng --format html-report --validate-output "query" > report.html
 ```
@@ -250,6 +269,7 @@ searxng-cli --urls "query"
 ```
 
 Output:
+
 ```
 https://example.com/1
 https://example.com/2
@@ -268,6 +288,7 @@ searxng-cli --jsonl "query"
 ```
 
 Each result on a separate line for streaming:
+
 ```json
 {"title":"Result 1","url":"https://example.com/1"}
 {"title":"Result 2","url":"https://example.com/2"}
@@ -283,16 +304,16 @@ searxng-cli --raw "query"
 
 ## Format Comparison
 
-| Format | Use Case | LLM-Friendly | Human-Readable |
-|--------|----------|--------------|----------------|
-| toon | AI/LLM consumption | Best | Good |
-| json | Data processing | Good | Good |
-| csv | Spreadsheets | Poor | Good |
-| markdown | Documentation | Good | Best |
-| yaml | Configuration | Good | Best |
-| table | Terminal display | Poor | Good |
-| xml | Data interchange | Poor | Fair |
-| html-report | Web viewing | Poor | Best |
+| Format      | Use Case           | LLM-Friendly | Human-Readable |
+| ----------- | ------------------ | ------------ | -------------- |
+| toon        | AI/LLM consumption | Best         | Good           |
+| json        | Data processing    | Good         | Good           |
+| csv         | Spreadsheets       | Poor         | Good           |
+| markdown    | Documentation      | Good         | Best           |
+| yaml        | Configuration      | Good         | Best           |
+| table       | Terminal display   | Poor         | Good           |
+| xml         | Data interchange   | Poor         | Fair           |
+| html-report | Web viewing        | Poor         | Best           |
 
 ## Choosing a Format
 

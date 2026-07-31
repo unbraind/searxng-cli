@@ -23,6 +23,7 @@ searxng doctor [--json]
 searxng health
 searxng autocomplete <query> [--limit <n>] [--json]
 searxng instance <resource> [--format <toon|json|raw>]
+searxng commands [--json]
 ```
 
 All commands support `--help` and global flags such as `--verbose`, `--silent`, `--format`,
@@ -30,53 +31,56 @@ All commands support `--help` and global flags such as `--verbose`, `--silent`, 
 
 ## Search Options
 
-| Option                 | Short | Description                                            |
-| ---------------------- | ----- | ------------------------------------------------------ |
-| `--format <fmt>`       | `-f`  | Output format (default: toon)                          |
-| `--engines <list>`     | `-e`  | Comma-separated search engines                         |
-| `--lang <code>`        | `-l`  | Language code (en, de, fr, etc.)                       |
-| `--page <n>`           | `-p`  | Page number (default: 1)                               |
-| `--safe <level>`       | -     | Safe search: 0=off, 1=moderate, 2=strict               |
-| `--time <range>`       | `-t`  | Time range: day, week, month, year                     |
-| `--category <cat>`     | `-c`  | Category: general, images, videos, news, etc.          |
-| `--limit <n>`          | `-n`  | Max results (default: 10, 0=all)                       |
-| `--param <k=v>`        | -     | Pass through raw SearXNG query parameters (repeatable) |
-| `--sx <k=v>`           | -     | Alias for `--param`                                     |
-| `--sx-query <k=v&...>` | -     | URL-style SearXNG passthrough params in one argument    |
-| `--sx-theme <name>`    | -     | Set upstream SearXNG `theme` query parameter           |
-| `--sx-enabled-plugins <list>`  | -     | Set upstream `enabled_plugins` (comma-separated)  |
-| `--sx-disabled-plugins <list>` | -     | Set upstream `disabled_plugins` (comma-separated) |
-| `--sx-enabled-engines <list>`  | -     | Set upstream `enabled_engines` (comma-separated)  |
-| `--sx-disabled-engines <list>` | -     | Set upstream `disabled_engines` (comma-separated) |
-| `--sx-enabled-categories <list>`  | -  | Set upstream `enabled_categories` (comma-separated) |
-| `--sx-disabled-categories <list>` | -  | Set upstream `disabled_categories` (comma-separated) |
-| `--sx-image-proxy <bool>`      | -     | Set upstream `image_proxy` (`true`/`false`)       |
-| `--params-json <obj>`  | -     | Pass through SearXNG params as JSON object             |
-| `--params-file <path>` | -     | Load SearXNG params from JSON file                     |
-| `--multi <q1;q2>`      | -     | Run multiple queries sequentially (separator: `;`/`||`) |
-| `--autocomplete`       | -     | Fetch autocomplete suggestions from the SearXNG instance |
-| `--engines-refresh`    | -     | Refresh local engines/categories cache from instance   |
-| `--offline-first`      | -     | Cache-only mode (exact + semantic cache, no network)   |
-| `--agent-json`         | -     | Agent mode with compact validated JSON output            |
-| `--agent-ci`           | -     | `--agent` + `--strict` + `--offline-first` + `--validate-output` |
-| `--request-json`       | -     | Print the resolved request envelope (URL + params) as JSON |
+| Option                            | Short  | Description                                                      |
+| --------------------------------- | ------ | ---------------------------------------------------------------- |
+| `--format <fmt>`                  | `-f`   | Output format (default: toon)                                    |
+| `--method <get                    | post>` | -                                                                | Official SearXNG search transport (default: get) |
+| `--get` / `--post`                | -      | Select GET or form-encoded POST transport                        |
+| `--engines <list>`                | `-e`   | Comma-separated search engines                                   |
+| `--lang <code>`                   | `-l`   | Language code (en, de, fr, etc.)                                 |
+| `--page <n>`                      | `-p`   | Page number (default: 1)                                         |
+| `--safe <level>`                  | -      | Safe search: 0=off, 1=moderate, 2=strict                         |
+| `--time <range>`                  | `-t`   | Time range: day, week, month, year                               |
+| `--category <cat>`                | `-c`   | Category: general, images, videos, news, etc.                    |
+| `--limit <n>`                     | `-n`   | Max results (default: 10, 0=all)                                 |
+| `--param <k=v>`                   | -      | Pass through raw SearXNG query parameters (repeatable)           |
+| `--sx <k=v>`                      | -      | Alias for `--param`                                              |
+| `--sx-query <k=v&...>`            | -      | URL-style SearXNG passthrough params in one argument             |
+| `--sx-theme <name>`               | -      | Set upstream SearXNG `theme` query parameter                     |
+| `--sx-enabled-plugins <list>`     | -      | Set upstream `enabled_plugins` (comma-separated)                 |
+| `--sx-disabled-plugins <list>`    | -      | Set upstream `disabled_plugins` (comma-separated)                |
+| `--sx-enabled-engines <list>`     | -      | Set upstream `enabled_engines` (comma-separated)                 |
+| `--sx-disabled-engines <list>`    | -      | Set upstream `disabled_engines` (comma-separated)                |
+| `--sx-enabled-categories <list>`  | -      | Set upstream `enabled_categories` (comma-separated)              |
+| `--sx-disabled-categories <list>` | -      | Set upstream `disabled_categories` (comma-separated)             |
+| `--sx-image-proxy <bool>`         | -      | Set upstream `image_proxy` (`true`/`false`)                      |
+| `--params-json <obj>`             | -      | Pass through SearXNG params as JSON object                       |
+| `--params-file <path>`            | -      | Load SearXNG params from JSON file                               |
+| `--multi <q1;q2>`                 | -      | Run multiple queries sequentially (separator: `;`/`              |                                                  | `)  |
+| `--autocomplete`                  | -      | Fetch autocomplete suggestions from the SearXNG instance         |
+| `--engines-refresh`               | -      | Refresh local engines/categories cache from instance             |
+| `--offline-first`                 | -      | Cache-only mode (exact + semantic cache, no network)             |
+| `--agent-json`                    | -      | Agent mode with compact validated JSON output                    |
+| `--agent-ci`                      | -      | `--agent` + `--strict` + `--offline-first` + `--validate-output` |
+| `--request-json`                  | -      | Print the resolved request envelope (URL + params) as JSON       |
+| `--rss`                           | -      | Validated RSS 2.0 output                                         |
 
 ## Output Options
 
-| Option              | Description                                               |
-| ------------------- | --------------------------------------------------------- |
-| `--output <file>`   | Save results to file                                      |
-| `--verbose`         | Show detailed request info                                |
-| `--raw`             | Raw JSON output                                           |
-| `--urls`            | Output only URLs                                          |
-| `--titles`          | Output only titles                                        |
-| `--compact`         | Compact JSON output                                       |
-| `--pretty`          | Pretty-printed output                                     |
-| `--text`            | Human-readable text formatter output                      |
-| `--simple`          | Minimal numbered + URL formatter output                   |
-| `--validate-output` | Validate output schema/format correctness before printing |
-| `--offline-first`   | Return only cached results; skip network requests          |
-| `--strict` / `--fail-on-empty` | Exit with code 2 when no search results are returned |
+| Option                         | Description                                               |
+| ------------------------------ | --------------------------------------------------------- |
+| `--output <file>`              | Save results to file                                      |
+| `--verbose`                    | Show detailed request info                                |
+| `--raw`                        | Raw JSON output                                           |
+| `--urls`                       | Output only URLs                                          |
+| `--titles`                     | Output only titles                                        |
+| `--compact`                    | Compact JSON output                                       |
+| `--pretty`                     | Pretty-printed output                                     |
+| `--text`                       | Human-readable text formatter output                      |
+| `--simple`                     | Minimal numbered + URL formatter output                   |
+| `--validate-output`            | Validate output schema/format correctness before printing |
+| `--offline-first`              | Return only cached results; skip network requests         |
+| `--strict` / `--fail-on-empty` | Exit with code 2 when no search results are returned      |
 
 ## Formatter Verification For CI
 
@@ -88,6 +92,8 @@ searxng --settings-json | jq '.settings.defaultFormat'
 searxng --paths-json | jq '.files.cache'
 searxng --cache-status-json | jq '.entries'
 searxng --request-json "release candidate query" | jq '.request.params'
+searxng --post --request-json "release candidate query" | jq '.request.method, .request.params'
+searxng commands --json | jq '.commands[].name'
 bun run test:e2e:searxng
 ```
 
@@ -97,13 +103,19 @@ bun run test:e2e:searxng
 - `--settings-json` provides machine-readable effective settings and resolved config paths.
 - `--paths-json` provides machine-readable global file paths under `~/.searxng-cli/`.
 - `--cache-status-json` provides machine-readable cache metrics for automation/CI.
-- `--request-json` exposes the exact resolved search URL + query params before execution.
+- `--request-json` exposes the resolved transport, URL, and params before execution. In POST mode,
+  query parameters remain in `.request.params` while `.request.url` is the endpoint without a query string.
+- `commands` publishes a versioned, settings-independent CLI catalog for agents, completion tools,
+  and integrations. TOON is the default; use `--json` for `jq`.
 - Every `instance` resource emits the same provenance envelope:
   `schemaVersion`, `format`, `checkedAt`, `source`, `endpoint`, `contentType`, and `data`.
 - `instance stats` combines capabilities with stable `/stats/errors` metrics; `instance errors`
   exposes the engine-keyed metrics at `data`.
-- `instance health`, `config`, `descriptions`, `stats-page`, `opensearch`, `manifest`, and `robots`
+- `instance health`, `config`, `descriptions`, `metrics`, `stats-page`, `opensearch`, `manifest`, and `robots`
   expose the corresponding stable read-only SearXNG routes.
+- `/metrics` is an optional authenticated administrative route. Set
+  `SEARXNG_OPEN_METRICS_PASSWORD` (and optionally `SEARXNG_OPEN_METRICS_USERNAME`) when the
+  instance administrator enabled `general.open_metrics`; secrets are never stored in settings.
 - `instance source-status` compares the configured service build with official upstream and reports
   `current`, `stale`, or `unavailable` without conflating network failures with version drift.
   It honors `GITHUB_TOKEN`/`GH_TOKEN`, bounds both source requests to 15 seconds, and distinguishes

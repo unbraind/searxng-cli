@@ -292,6 +292,30 @@ function validateXml(output: string): OutputValidationResult {
   return { valid: true, message: 'XML output validated' };
 }
 
+function validateRss(output: string): OutputValidationResult {
+  if (!output.startsWith('<?xml version="1.0"')) {
+    return { valid: false, message: 'RSS XML declaration is missing' };
+  }
+  if (!output.includes('<rss version="2.0">') || !output.includes('</rss>')) {
+    return { valid: false, message: 'RSS 2.0 root element is missing or malformed' };
+  }
+  if (!output.includes('<channel>') || !output.includes('</channel>')) {
+    return { valid: false, message: 'RSS channel element is missing or malformed' };
+  }
+  for (const element of ['title', 'link', 'description', 'lastBuildDate']) {
+    if (!output.includes(`<${element}>`) || !output.includes(`</${element}>`)) {
+      return { valid: false, message: `RSS channel is missing ${element}` };
+    }
+  }
+  const items = output.match(/<item>[\s\S]*?<\/item>/g) ?? [];
+  for (const [index, item] of items.entries()) {
+    if (!item.includes('<title>') || !item.includes('<link>') || !item.includes('<guid ')) {
+      return { valid: false, message: `RSS item ${index + 1} is missing title/link/guid` };
+    }
+  }
+  return { valid: true, message: 'RSS output validated' };
+}
+
 function validateToon(output: string): OutputValidationResult {
   const parsed = decodeToon(output) as {
     q?: unknown;
@@ -456,6 +480,7 @@ export function validateFormattedOutput(format: string, output: string): OutputV
     if (format === 'csv') return validateCsv(output);
     if (format === 'yaml' || format === 'yml') return validateYaml(output);
     if (format === 'xml') return validateXml(output);
+    if (format === 'rss') return validateRss(output);
     if (format === 'toon') return validateToon(output);
     if (format === 'markdown' || format === 'md') return validateMarkdown(output);
     if (format === 'table') return validateTable(output);

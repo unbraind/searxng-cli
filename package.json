@@ -1,6 +1,6 @@
 {
   "name": "searxng-cli",
-  "version": "2026.7.28",
+  "version": "2026.7.31",
   "description": "SearXNG CLI - Enhanced TypeScript search client for SearXNG instances with TOON format support, persistent caching, and AI agent mode",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -97,25 +97,25 @@
   ],
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@types/node": "^26.1.1",
+    "@types/node": "26.1.2",
     "@typescript/native": "npm:typescript@7.0.2",
-    "@unbrained/pm-cli": "2026.7.27",
+    "@unbrained/pm-cli": "2026.7.31",
     "@vitest/coverage-v8": "4.1.10",
     "esbuild": "0.28.1",
     "eslint": "10.8.0",
-    "eslint-plugin-jsdoc": "63.2.2",
-    "jscpd": "5.0.12",
+    "eslint-plugin-jsdoc": "63.3.2",
+    "jscpd": "5.0.14",
     "prettier": "3.9.6",
     "typescript": "6.0.3",
     "typescript-eslint": "8.65.0",
     "vitest": "4.1.10"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.29.0",
+    "@modelcontextprotocol/sdk": "1.30.0",
     "@toon-format/toon": "4.1.0",
     "cac": "^7.0.0",
     "commander": "15.0.0",
-    "node-html-parser": "9.0.0"
+    "node-html-parser": "9.0.1"
   },
   "overrides": {
     "@hono/node-server": "2.0.11",

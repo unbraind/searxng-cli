@@ -11,11 +11,13 @@ npm install searxng-cli
 ## Basic Usage
 
 ```typescript
-import { performSearch, SearchOptions } from 'searxng-cli';
+import { performSearch } from 'searxng-cli';
+import type { SearchOptions } from 'searxng-cli';
 
 const options: SearchOptions = {
   query: 'nodejs tutorial',
   format: 'toon',
+  requestMethod: 'get',
   limit: 10,
   // ... other options
 };
@@ -47,6 +49,7 @@ const response = await performSearch({
   verbose: false,
   silent: false,
   retries: 2,
+  requestMethod: 'post',
   // ... all SearchOptions fields required
 });
 ```
@@ -59,6 +62,7 @@ const response = await performSearch({
 interface SearchOptions {
   query: string;
   format: OutputFormat;
+  requestMethod: SearchRequestMethod;
   engines: string | null;
   lang: string | null;
   page: number;
@@ -181,8 +185,10 @@ interface SearchResult {
 type OutputFormat =
   | 'toon'
   | 'json'
+  | 'jsonl'
   | 'html'
   | 'csv'
+  | 'rss'
   | 'markdown'
   | 'md'
   | 'raw'
@@ -193,7 +199,35 @@ type OutputFormat =
   | 'xml'
   | 'text'
   | 'simple';
+
+type SearchRequestMethod = 'get' | 'post';
 ```
+
+Both transports use the same typed normalization, cache, retry, JSON-first, and HTML-fallback
+pipeline. POST sends the resolved search params as
+`application/x-www-form-urlencoded;charset=UTF-8` and keeps them out of the request URL.
+
+### Agent and Instance Contracts
+
+```typescript
+import {
+  getCliCommandContract,
+  getCliContractEnvelope,
+  renderCliContracts,
+  fetchInstanceResource,
+  renderInstanceResource,
+} from 'searxng-cli';
+
+const commands = getCliContractEnvelope();
+const search = getCliCommandContract('search');
+const commandsToon = renderCliContracts('toon');
+const health = await fetchInstanceResource('health');
+const healthJson = renderInstanceResource(health, 'json');
+```
+
+`fetchInstanceResource('metrics')` supports authenticated OpenMetrics when
+`SEARXNG_OPEN_METRICS_PASSWORD` is present. The optional username is read from
+`SEARXNG_OPEN_METRICS_USERNAME`; neither value is written to global settings or output envelopes.
 
 ### SafeSearchLevel
 

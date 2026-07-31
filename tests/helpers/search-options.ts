@@ -88,6 +88,7 @@ export function createTestSearchOptions(overrides: Partial<SearchOptions> = {}):
     searxngParams: undefined,
     estimateTokens: false,
     maxTokens: null,
+    requestMethod: 'get',
   };
 
   for (const [key, value] of Object.entries(overrides) as [

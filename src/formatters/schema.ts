@@ -195,6 +195,30 @@ const FORMAT_SCHEMAS: FormatterSchemaRecord[] = [
     requiredChecks: ['Header is i,title,url,engine,score,text', 'Rows have 6 columns'],
   },
   {
+    format: 'rss',
+    aliases: [],
+    mimeType: 'application/rss+xml',
+    fileExtension: '.rss',
+    schema: {
+      type: 'string',
+      requiredElements: [
+        '<?xml version="1.0"',
+        '<rss version="2.0">',
+        '<channel>',
+        '<title>',
+        '<link>',
+        '<description>',
+        '</channel>',
+        '</rss>',
+      ],
+    },
+    requiredChecks: [
+      'RSS 2.0 root and channel exist',
+      'Channel metadata is complete',
+      'Items have title, link, and guid',
+    ],
+  },
+  {
     format: 'yaml',
     aliases: ['yml'],
     mimeType: 'application/yaml',

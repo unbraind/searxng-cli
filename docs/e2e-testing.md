@@ -14,9 +14,10 @@ What this validates:
 - local URL setup and TOON defaults
 - health checks and doctor diagnostics
 - settings/paths/cache/status machine outputs
-- request envelope output (`--request-json`)
+- GET and POST request envelopes (`--request-json`) plus a live POST search
+- versioned TOON/JSON command discovery (`searxng commands`)
 - instance capabilities (`--instance-info-json`)
-- typed capabilities, health, config, descriptions, statistics, errors, manifest, OpenSearch,
+- typed capabilities, health, config, descriptions, Prometheus metrics, statistics, errors, manifest, OpenSearch,
   robots, and stats-page resources across TOON, JSON, and raw output
 - first-class autocomplete command output
 - formatter schema catalog (`--schema-json all`)
@@ -24,7 +25,7 @@ What this validates:
 - payload schema validation command (`--validate-payload-json`)
 - built-in CLI self-tests (`searxng --test`)
 - all formatter outputs with `--validate-output`:
-  - `toon`, `json`, `jsonl`, `raw`, `csv`, `yaml`, `xml`, `markdown`, `table`, `text`, `simple`, `html`
+  - `toon`, `json`, `jsonl`, `raw`, `rss`, `csv`, `yaml`, `xml`, `markdown`, `table`, `text`, `simple`, `html`
 
 ## Environment Overrides
 

@@ -4,6 +4,7 @@ import {
   formatJsonOutput,
   formatJsonlOutput,
   formatCsvOutput,
+  formatRssOutput,
   formatMarkdownOutput,
   formatRawOutput,
   formatYamlOutput,
@@ -402,6 +403,53 @@ describe('Formatters Module', () => {
       expect(formatCsvOutput(createMockResponse({ results: undefined }), createMockOptions())).toBe(
         'i,title,url,engine,score,text'
       );
+    });
+  });
+
+  describe('formatRssOutput', () => {
+    it('renders escaped RSS 2.0 items, optional dates, limits, and empty results', () => {
+      const data = createMockResponse({
+        results: [
+          {
+            title: `A & "B" 'C'`,
+            url: 'https://example.com/?a=1&b=2',
+            content: '<b>Useful & safe</b>',
+            publishedDate: '2026-07-31T10:00:00.000Z',
+          },
+          { title: 'Second', url: '', link: 'https://example.com/second' },
+        ],
+      });
+      const output = formatRssOutput(data, createMockOptions({ query: 'A & B', limit: 1 }));
+      expect(output).toContain('<rss version="2.0">');
+      expect(output).toContain('<title>A &amp; B</title>');
+      expect(output).toContain('<title>A &amp; &quot;B&quot; &apos;C&apos;</title>');
+      expect(output).toContain('<pubDate>');
+      expect(output).not.toContain('<title>Second</title>');
+
+      const unlimited = formatRssOutput(
+        {
+          query: 'fallbacks',
+          results: [
+            {
+              title: 'Abstract',
+              url: undefined,
+              link: 'https://example.com/abstract',
+              abstract: 'A',
+            },
+            { title: 'Snippet', url: 'https://example.com/snippet', snippet: 'S' },
+            { title: undefined, url: undefined, link: undefined },
+          ],
+        } as unknown as SearchResponse,
+        createMockOptions({ limit: 0 })
+      );
+      expect(unlimited).toContain('<link>https://example.com/abstract</link>');
+      expect(unlimited).toContain('<description>A</description>');
+      expect(unlimited).toContain('<description>S</description>');
+      expect(unlimited).toContain('<title></title>');
+      expect(unlimited).not.toContain('<pubDate>');
+      expect(
+        formatRssOutput({ query: 'empty' } as unknown as SearchResponse, createMockOptions())
+      ).toContain('<channel>');
     });
   });
 

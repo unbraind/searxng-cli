@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { formatAndOutput, ensureCacheLoaded, resetCacheLoaded, performSearch } from '@/index';
 import { setCachedResult, clearCache } from '@/cache/index';
 import { createTestSearchOptions as createMockOptions } from '../helpers/search-options';
@@ -79,6 +81,12 @@ describe('Index Module - formatAndOutput', () => {
     expect(consoleLogSpy).toHaveBeenCalled();
     const output = consoleLogSpy.mock.calls[0]?.[0] as string;
     expect(output).toContain('i,title,url');
+  });
+
+  it('should output results in RSS format', async () => {
+    await formatAndOutput(createMockResponse(), createMockOptions({ format: 'rss' }));
+    const output = consoleLogSpy.mock.calls[0]?.[0] as string;
+    expect(output).toContain('<rss version="2.0">');
   });
 
   it('should output results in markdown format', async () => {
@@ -298,7 +306,7 @@ describe('Index Module - formatAndOutput', () => {
   });
 
   it('should save output to file when output path is set', async () => {
-    const tmpFile = `/tmp/test-output-${Date.now()}.toon`;
+    const tmpFile = join(tmpdir(), `test-output-${Date.now()}.toon`);
     try {
       const data = createMockResponse();
       const options = createMockOptions({ output: tmpFile, dedup: false });
@@ -312,7 +320,7 @@ describe('Index Module - formatAndOutput', () => {
   });
 
   it('should save export to file when export path is set', async () => {
-    const tmpFile = `/tmp/test-export-${Date.now()}.json`;
+    const tmpFile = join(tmpdir(), `test-export-${Date.now()}.json`);
     try {
       const data = createMockResponse();
       // Use compact mode so the output is valid JSON (formatJsonOutput produces human-readable text otherwise)

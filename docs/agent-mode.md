@@ -37,25 +37,40 @@ The SearXNG CLI is highly optimized for integration into AI agents, Language Mod
 10. **Capability-Aware Transport**
     SearXNG returns HTTP 403 when its administrator disables JSON API output. Agent searches automatically retry as HTML and normalize the response into the same typed TOON/JSON contract, including upstream engine timeout evidence.
 
+11. **Machine-Readable Command Discovery**
+    `searxng commands` returns the versioned CLI surface in TOON without reading private user
+    settings. `searxng commands --json` provides the same catalog for tool generation and `jq`.
+    The envelope declares TOON output, GET transport, the managed state root, and unlimited cache
+    as defaults; every command includes usage, aliases, subcommands, and flags.
+
+12. **Explicit Transport Planning**
+    Agents can select official form-encoded POST with `--post` or `--method post`. Use it with
+    `--request-json` to inspect a replay-safe request plan without putting the query in the reported URL.
+
 ## Example Usage
 
 \`\`\`bash
+
 # Run an optimized search query directly from your LLM agent
+
 searxng-cli --agent "latest react native updates" --limit 5
 
 # Pipe it straight into another pipeline, extracting full content
+
 searxng-cli --agent "machine learning papers" --raw-content > results.toon
 
 # Get compact validated JSON for downstream machine parsing
+
 searxng-cli --agent-json "machine learning papers" | jq '.results[0]'
 
 # Fail fast in automation if the query yields zero results
+
 searxng-cli --agent --strict "site:internal.example incident postmortem"
 \`\`\`
 
 ## Model Context Protocol (MCP) Integration
 
-The CLI includes built-in support for the **Model Context Protocol (MCP)** via the `--mcp` flag. This allows you to run SearXNG CLI directly as an MCP stdio server. By hooking this server into MCP-compatible clients (like Claude Desktop or other AI agents), the model can autonomously execute structured search queries without needing a `run_shell_command` wrapper. 
+The CLI includes built-in support for the **Model Context Protocol (MCP)** via the `--mcp` flag. This allows you to run SearXNG CLI directly as an MCP stdio server. By hooking this server into MCP-compatible clients (like Claude Desktop or other AI agents), the model can autonomously execute structured search queries without needing a `run_shell_command` wrapper.
 
 **Usage:**
 \`\`\`bash
@@ -63,14 +78,16 @@ searxng-cli --mcp
 \`\`\`
 
 The MCP server exposes two robust tools:
+
 1. **`search`**: A fully-featured search tool equipped with input schemas that naturally parse arguments like `query`, `engines`, `limit`, `timeRange`, `category`, and **`fetchContent`** (to automatically retrieve the full webpage text of the results).
 2. **`fetch_webpage`**: A dedicated tool to fetch and extract the clean text content of any single webpage by its URL, allowing agents to dive deeper into specific search results.
 
 ## Using with Function Calling
 
-When building a system that executes `run_shell_command` dynamically, instruct your agent to exclusively use the `--agent` flag for data retrieval. 
+When building a system that executes `run_shell_command` dynamically, instruct your agent to exclusively use the `--agent` flag for data retrieval.
 
 ### Why TOON is Better for LLMs
+
 - **Reduced Hallucinations:** The rigid schema defined at the top of the TOON output helps the model correctly identify and map the data types.
 - **Lower Context Cost:** For large result sets, stripping out repetitive keys (like `"title":`, `"url":`, `"snippet":` in JSON) across arrays saves thousands of tokens.
 - **Lossless Parsing:** The data can be unambiguously read back into a structured schema natively using the `@toon-format/toon` parser in your backend systems.

@@ -62,6 +62,8 @@ describe('instance resources', () => {
   beforeEach(() => {
     vi.stubEnv('GITHUB_TOKEN', undefined);
     vi.stubEnv('GH_TOKEN', undefined);
+    vi.stubEnv('SEARXNG_OPEN_METRICS_PASSWORD', undefined);
+    vi.stubEnv('SEARXNG_OPEN_METRICS_USERNAME', undefined);
     vi.mocked(rateLimitedFetch).mockReset();
     vi.mocked(fetchInstanceCapabilities).mockReset();
     vi.mocked(fetchInstanceErrors).mockReset();
@@ -105,6 +107,7 @@ describe('instance resources', () => {
     const cases: [InstanceResource, string, string][] = [
       ['config', '/config', '{"version":"current"}'],
       ['manifest', '/manifest.json', '{"name":"SearXNG"}'],
+      ['metrics', '/metrics', '# HELP searxng_searches_total Searches'],
       ['opensearch', '/opensearch.xml', '<OpenSearchDescription/>'],
       ['robots', '/robots.txt', 'User-agent: *'],
       ['stats-page', '/stats', '<html>stats</html>'],
@@ -144,6 +147,33 @@ describe('instance resources', () => {
       healthy: false,
       envelope: { data: { healthy: false, message: 'warming' } },
     });
+  });
+
+  it('authenticates an enabled OpenMetrics endpoint without exposing its password', async () => {
+    vi.stubEnv('SEARXNG_OPEN_METRICS_PASSWORD', 'metrics-secret');
+    vi.mocked(rateLimitedFetch).mockImplementation(() =>
+      Promise.resolve(new Response('# TYPE searxng_searches_total counter', { status: 200 }))
+    );
+    await fetchInstanceResource('metrics');
+    expect(rateLimitedFetch).toHaveBeenLastCalledWith(
+      'http://searxng.test/metrics',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: `Basic ${Buffer.from('searxng-cli:metrics-secret').toString('base64')}`,
+        }) as unknown,
+      })
+    );
+
+    vi.stubEnv('SEARXNG_OPEN_METRICS_USERNAME', 'prometheus');
+    await fetchInstanceResource('metrics');
+    expect(rateLimitedFetch).toHaveBeenLastCalledWith(
+      'http://searxng.test/metrics',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: `Basic ${Buffer.from('prometheus:metrics-secret').toString('base64')}`,
+        }) as unknown,
+      })
+    );
   });
 
   it('normalizes capabilities and every derived resource view', async () => {

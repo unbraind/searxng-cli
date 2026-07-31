@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import {
   main,
   resetCacheLoaded,
@@ -918,6 +920,7 @@ describe('Main function', () => {
       ...cli.createDefaultOptions(),
       query: 'query',
       requestJson: true,
+      requestMethod: 'post',
       format: 'toon',
       agent: true,
       strict: false,
@@ -928,6 +931,8 @@ describe('Main function', () => {
     process.argv = ['node', 'index.js', '--request-json', 'query'];
     await expect(main()).rejects.toThrow('process.exit');
     expect(logSpy.mock.calls.flat().join('\n')).toContain('"format": "request"');
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('"method": "POST"');
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('"url": "http://localhost:8080/search"');
     expect(exitSpy).toHaveBeenLastCalledWith(0);
 
     vi.mocked(cli.parseArgs).mockReturnValue({
@@ -1289,6 +1294,7 @@ describe('Main function', () => {
     'cache',
     'formats',
     'instance',
+    'commands',
     'config',
     'doctor',
     'health',
@@ -1322,6 +1328,9 @@ describe('Main function', () => {
       [['settings', 'json'], ['--settings-json']],
       [['settings', '--json'], ['--settings-json']],
       [['paths'], ['--paths-json']],
+      [['commands'], ['--commands']],
+      [['commands', 'json'], ['--commands-json']],
+      [['commands', '--json'], ['--commands-json']],
       [['health'], ['--instance-resource', 'health']],
       [['doctor'], ['--doctor']],
       [['doctor', 'json'], ['--doctor-json']],
@@ -1476,8 +1485,28 @@ describe('Main function', () => {
     expect(exitSpy).toHaveBeenLastCalledWith(1);
   });
 
+  it('emits command discovery in TOON and JSON', async () => {
+    process.argv = ['node', 'index.js', 'commands'];
+    await main();
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('format: cli-contracts');
+    logSpy.mockClear();
+    process.argv = ['node', 'index.js', 'commands', '--json'];
+    await main();
+    expect(JSON.parse(String(logSpy.mock.calls[0]?.[0]))).toMatchObject({
+      format: 'cli-contracts',
+      defaults: { output: 'toon', cacheLimit: 'unlimited' },
+    });
+  });
+
+  it('renders nested operation help from command contracts', () => {
+    showCommandHelp('instance', 'metrics');
+    showCommandHelp('set', 'format');
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('Selected operation: metrics');
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('searxng set format <value>');
+  });
+
   it('routes instance resources through every global output flag form', async () => {
-    const outputFile = `/tmp/searxng-instance-output-${process.pid}.txt`;
+    const outputFile = join(tmpdir(), `searxng-instance-output-${process.pid}.txt`);
     const cases = [
       ['health'],
       ['health', '--json'],
@@ -1551,7 +1580,7 @@ describe('Main function', () => {
       'json',
     ]);
     expect(toPlainParams(new URLSearchParams('a=1&b=2'))).toEqual({ a: '1', b: '2' });
-    const file = `/tmp/searxng-payload-${process.pid}.json`;
+    const file = join(tmpdir(), `searxng-payload-${process.pid}.json`);
     fs.writeFileSync(file, '{"ok":true}');
     expect(readValidationPayload(file)).toBe('{"ok":true}');
     fs.unlinkSync(file);
@@ -1919,8 +1948,8 @@ describe('Main function', () => {
   });
 
   it('validates payload files and rejects malformed validation arguments', async () => {
-    const file = `/tmp/searxng-validation-${process.pid}.json`;
-    const invalidFile = `/tmp/searxng-validation-invalid-${process.pid}.json`;
+    const file = join(tmpdir(), `searxng-validation-${process.pid}.json`);
+    const invalidFile = join(tmpdir(), `searxng-validation-invalid-${process.pid}.json`);
     fs.writeFileSync(
       file,
       JSON.stringify({

@@ -305,11 +305,19 @@ export async function fetchWithRetry(
   const controller = new AbortController();
   const timeoutId = setTimeout(controller.abort.bind(controller), effectiveTimeout);
   const startTime = Date.now();
+  const requestMethod = options.requestMethod ?? 'get';
+  const postBody = requestMethod === 'post' ? url.searchParams.toString() : null;
+  const requestUrl = postBody === null ? url : new URL(url.pathname, url.origin);
   try {
-    const response = await rateLimitedFetch(url.toString(), {
+    const response = await rateLimitedFetch(requestUrl.toString(), {
+      method: requestMethod.toUpperCase(),
+      ...(postBody === null ? {} : { body: postBody }),
       signal: controller.signal,
       headers: {
         Accept: 'application/json',
+        ...(postBody === null
+          ? {}
+          : { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }),
         'User-Agent': `searxng-cli/${VERSION}`,
         'Accept-Language': options.lang ?? 'en-US,en;q=0.9',
         Connection: 'keep-alive',
