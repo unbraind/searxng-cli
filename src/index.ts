@@ -71,6 +71,7 @@ import {
   formatJsonOutput,
   formatJsonlOutput,
   formatCsvOutput,
+  formatRssOutput,
   formatMarkdownOutput,
   formatRawOutput,
   formatYamlOutput,
@@ -96,6 +97,15 @@ export {
   type SearxngSourceStatus,
 } from './instance';
 import { fetchSearchResponse } from './search-response';
+import { getCliCommandContract, renderCliContracts } from './contracts';
+export {
+  CLI_COMMANDS,
+  getCliCommandContract,
+  getCliContractEnvelope,
+  renderCliContracts,
+  type CliCommandContract,
+  type CliContractEnvelope,
+} from './contracts';
 import {
   discoverInstance,
   addToHistory,
@@ -148,11 +158,33 @@ export function showGlobalFlagHelp(): void {
 }
 
 /**
- *
- * @param command
+ * Print focused command or operation help plus the universally supported flags.
+ * @param command Canonical command name selected by the dispatcher.
+ * @param subcommand Optional nested operation whose invocation needs explaining.
  */
-export function showCommandHelp(command: string): void {
+export function showCommandHelp(command: string, subcommand = ''): void {
   const cmd = command.toLowerCase();
+  const operation = subcommand.trim().toLowerCase();
+  const contract = getCliCommandContract(cmd);
+  if (contract && operation && !operation.startsWith('-')) {
+    const takesValue = cmd === 'set' && operation !== 'local-url' && operation !== 'clear-params';
+    console.log(
+      `Usage: searxng ${contract.name} ${operation}${takesValue ? ' <value>' : ''} [global flags]`
+    );
+    console.log();
+    console.log(`${contract.summary}`);
+    console.log(`Selected operation: ${operation}`);
+    if (contract.flags.length > 0) {
+      console.log();
+      console.log('Applicable flags:');
+      contract.flags.forEach((flag) => console.log(`  ${flag}`));
+    }
+    console.log();
+    console.log('Example:');
+    console.log(`  searxng ${contract.name} ${operation}${takesValue ? ' <value>' : ''}`);
+    showGlobalFlagHelp();
+    return;
+  }
   if (cmd === 'search' || cmd === 's') {
     console.log('Usage: searxng search [flags] <query>');
     console.log('Aliases: s');
@@ -254,6 +286,7 @@ export function showCommandHelp(command: string): void {
     console.log('  stats-page        Complete /stats HTML resource');
     console.log('  opensearch        OpenSearch description XML resource');
     console.log('  manifest          Web application manifest JSON resource');
+    console.log('  metrics           Prometheus/OpenMetrics resource');
     console.log('  robots            robots.txt resource');
     console.log('  source-status     Compare the live build with official upstream master');
     console.log();
@@ -270,6 +303,20 @@ export function showCommandHelp(command: string): void {
     console.log('  searxng instance stats --json | jq .data.engineErrorCount');
     console.log('  searxng instance descriptions --format toon');
     console.log('  searxng instance opensearch --raw');
+    showGlobalFlagHelp();
+    return;
+  }
+  if (cmd === 'commands') {
+    console.log('Usage: searxng commands [json|--json]');
+    console.log();
+    console.log(
+      'Emits versioned agent-readable command, flag, default, state, and resource contracts.'
+    );
+    console.log('Output defaults to TOON; pass json or --json for JSON.');
+    console.log();
+    console.log('Examples:');
+    console.log('  searxng commands');
+    console.log('  searxng commands --json | jq .commands');
     showGlobalFlagHelp();
     return;
   }
@@ -363,6 +410,7 @@ const KNOWN_COMMANDS = new Set([
   'paths',
   'version',
   'test',
+  'commands',
 ]);
 
 const COMMAND_LIKE_PATTERN = /^[a-z][a-z0-9-]*$/;
@@ -436,7 +484,7 @@ export function normalizeCommandArgs(rawArgs: string[]): string[] {
   const sub = (args[0] ?? '').toLowerCase();
   const hasHelp = args.includes('--help') || args.includes('-h');
   if (hasHelp) {
-    showCommandHelp(command);
+    showCommandHelp(command, sub);
     process.exit(0);
   }
 
@@ -453,6 +501,10 @@ export function normalizeCommandArgs(rawArgs: string[]): string[] {
     return ['--settings', ...args];
   }
   if (command === 'paths') return ['--paths-json', ...args];
+  if (command === 'commands') {
+    if (sub === 'json' || sub === '--json') return ['--commands-json', ...args.slice(1)];
+    return ['--commands', ...args];
+  }
   if (command === 'health') {
     return ['--instance-resource', 'health', ...args];
   }
@@ -473,6 +525,7 @@ export function normalizeCommandArgs(rawArgs: string[]): string[] {
       'health',
       'languages',
       'manifest',
+      'metrics',
       'opensearch',
       'plugins',
       'robots',
@@ -1241,6 +1294,7 @@ export async function formatAndOutput(
   const formatMap: Record<string, () => string> = {
     raw: () => formatRawOutput(data),
     csv: () => formatCsvOutput(data, options),
+    rss: () => formatRssOutput(data, options),
     markdown: () => formatMarkdownOutput(data, options),
     md: () => formatMarkdownOutput(data, options),
     yaml: () => formatYamlOutput(data, options),
@@ -1414,6 +1468,7 @@ export async function runDoctor(asJson = false): Promise<number> {
       'jsonl',
       'raw',
       'csv',
+      'rss',
       'yaml',
       'yml',
       'xml',
@@ -1434,6 +1489,7 @@ export async function runDoctor(asJson = false): Promise<number> {
       jsonl: formatJsonlOutput,
       raw: formatRawOutput,
       csv: formatCsvOutput,
+      rss: formatRssOutput,
       yaml: formatYamlOutput,
       yml: formatYamlOutput,
       xml: formatXmlOutput,
@@ -1567,6 +1623,7 @@ export async function runFormatVerification(query: string, asJson: boolean): Pro
     'jsonl',
     'raw',
     'csv',
+    'rss',
     'yaml',
     'yml',
     'xml',
@@ -1585,6 +1642,7 @@ export async function runFormatVerification(query: string, asJson: boolean): Pro
       jsonl: formatJsonlOutput,
       raw: formatRawOutput,
       csv: formatCsvOutput,
+      rss: formatRssOutput,
       yaml: formatYamlOutput,
       yml: formatYamlOutput,
       xml: formatXmlOutput,
@@ -1786,6 +1844,12 @@ export async function main(): Promise<void> {
       )
     );
     process.exit(0);
+  }
+
+  if (args[0] === '--commands' || args[0] === '--commands-json') {
+    console.log(renderCliContracts(args[0] === '--commands-json' ? 'json' : 'toon'));
+    process.exitCode = 0;
+    return;
   }
 
   if (args[0] === '--doctor' || args[0] === '--doctor-json') {
@@ -2456,6 +2520,7 @@ export async function main(): Promise<void> {
       refreshEngines: false,
       instanceInfo: false,
       instanceInfoJson: false,
+      requestMethod: 'get',
     };
 
     const currentUrl = getSearxngUrl();
@@ -2475,6 +2540,13 @@ export async function main(): Promise<void> {
       const url = buildUrl(options);
       const data = await fetchSearchResponse(url, options, 2);
       assertSelfTest(data.results && Array.isArray(data.results), 'Invalid response format');
+    });
+
+    await test('POST Search Transport', async () => {
+      const options = { ...defaultTestOptions, query: 'test', requestMethod: 'post' as const };
+      const url = buildUrl(options);
+      const data = await fetchSearchResponse(url, options, 2);
+      assertSelfTest(data.results && Array.isArray(data.results), 'Invalid POST response format');
     });
 
     await test('TOON Format Output', async () => {
@@ -2510,6 +2582,15 @@ export async function main(): Promise<void> {
         const cells = splitCsvRow(row);
         assertSelfTest(cells.length === 6, `CSV row has ${cells.length} columns`);
       }
+    });
+
+    await test('RSS Format Output', async () => {
+      const options = { ...defaultTestOptions, query: 'test', format: 'rss' as const };
+      const url = buildUrl(options);
+      const data = await fetchSearchResponse(url, options, 2);
+      const rss = formatRssOutput(data, options);
+      const validation = validateFormattedOutput('rss', rss);
+      assertSelfTest(validation.valid, validation.message);
     });
 
     await test('YAML Format Output', async () => {
@@ -2677,8 +2758,11 @@ export async function main(): Promise<void> {
           agentMode: options.agent,
           query: options.query,
           request: {
-            method: 'GET',
-            url: resolvedUrl.toString(),
+            method: (options.requestMethod ?? 'get').toUpperCase(),
+            url:
+              options.requestMethod === 'post'
+                ? new URL(resolvedUrl.pathname, resolvedUrl.origin).toString()
+                : resolvedUrl.toString(),
             params: toPlainParams(resolvedUrl.searchParams),
           },
           options: {
@@ -2697,6 +2781,7 @@ export async function main(): Promise<void> {
             validateOutput: options.validateOutput,
             dedup: options.dedup,
             searxngParams: options.searxngParams ?? {},
+            requestMethod: options.requestMethod ?? 'get',
           },
         },
         2

@@ -68,6 +68,12 @@ const startMockSearxngServer = async (): Promise<{ url: string; close: () => Pro
       return;
     }
 
+    if (reqUrl.pathname === '/metrics') {
+      res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4' });
+      res.end('# HELP searxng_searches_total Searches\nsearxng_searches_total 1\n');
+      return;
+    }
+
     if (reqUrl.pathname === '/opensearch.xml') {
       res.writeHead(200, { 'Content-Type': 'application/opensearchdescription+xml' });
       res.end('<OpenSearchDescription/>');
@@ -93,27 +99,39 @@ const startMockSearxngServer = async (): Promise<{ url: string; close: () => Pro
     }
 
     if (reqUrl.pathname === '/search') {
-      const query = reqUrl.searchParams.get('q') ?? '';
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(
-        JSON.stringify({
-          query,
-          results: [
-            {
-              title: `Mock result for ${query}`,
-              url: 'https://example.com/mock-result',
-              content: 'Mock content',
-              engine: 'mock',
-              score: 1,
-            },
-          ],
-          suggestions: [],
-          answers: [],
-          corrections: [],
-          infoboxes: [],
-          number_of_results: 1,
-        })
-      );
+      const respond = (params: URLSearchParams): void => {
+        const query = params.get('q') ?? '';
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            query,
+            results: [
+              {
+                title: `Mock result for ${query}`,
+                url: 'https://example.com/mock-result',
+                content: 'Mock content',
+                engine: 'mock',
+                score: 1,
+              },
+            ],
+            suggestions: [],
+            answers: [],
+            corrections: [],
+            infoboxes: [],
+            number_of_results: 1,
+          })
+        );
+      };
+      if (req.method === 'POST') {
+        let body = '';
+        req.setEncoding('utf8');
+        req.on('data', (chunk: string) => {
+          body += chunk;
+        });
+        req.on('end', () => respond(new URLSearchParams(body)));
+        return;
+      }
+      respond(reqUrl.searchParams);
       return;
     }
 
@@ -951,6 +969,7 @@ describe('E2E CLI Tests', () => {
         ['stats', '/stats/errors'],
         ['errors', '/stats/errors'],
         ['manifest', '/manifest.json'],
+        ['metrics', '/metrics'],
       ];
       for (const [resource, endpoint] of resources) {
         const data = await runAndParseJson(['instance', resource, '--json']);
@@ -972,6 +991,31 @@ describe('E2E CLI Tests', () => {
       );
       expect(await runCLIStdout(['instance', 'robots', '--raw'])).toContain('User-agent');
       expect(await runCLIStdout(['instance', 'stats-page', '--raw'])).toContain('<html');
+    },
+    E2E_TIMEOUT
+  );
+
+  it(
+    'should search with POST, emit validated RSS, and expose command contracts',
+    async () => {
+      const rss = await runCLIStdout([
+        'search',
+        '--post',
+        '--rss',
+        '--validate-output',
+        'post transport',
+      ]);
+      expect(rss).toContain('<rss version="2.0">');
+      expect(rss).toContain('Mock result for post transport');
+
+      const commandsToon = decodeToon(await runCLIStdout(['commands'])) as Record<string, unknown>;
+      expect(commandsToon.format).toBe('cli-contracts');
+      const commandsJson = await runAndParseJson(['commands', '--json']);
+      expect(commandsJson.defaults).toMatchObject({
+        output: 'toon',
+        searchMethod: 'get',
+        cacheLimit: 'unlimited',
+      });
     },
     E2E_TIMEOUT
   );

@@ -1,4 +1,6 @@
 import * as fs from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   parseArgs,
@@ -114,6 +116,15 @@ describe('CLI Module', () => {
   });
 
   describe('parseArgs', () => {
+    it('parses official search transport and RSS shortcuts', () => {
+      expect(parseArgs(['--post', '--rss', 'query'])).toMatchObject({
+        requestMethod: 'post',
+        format: 'rss',
+      });
+      expect(parseArgs(['--get', 'query']).requestMethod).toBe('get');
+      expect(parseArgs(['--method=post', 'query']).requestMethod).toBe('post');
+      expect(() => parseArgs(['--method', 'patch', 'query'])).toThrow('process.exit');
+    });
     describe('query parsing', () => {
       it('should parse simple query', () => {
         const options = parseArgs(['search', 'query']);
@@ -267,7 +278,7 @@ describe('CLI Module', () => {
       });
 
       it('should parse --params-file JSON object', () => {
-        const tempFile = `/tmp/searxng-cli-params-${Date.now()}.json`;
+        const tempFile = join(tmpdir(), `searxng-cli-params-${Date.now()}.json`);
         fs.writeFileSync(tempFile, '{"theme":"simple","language":"en-US"}');
         try {
           const options = parseArgs(['--params-file', tempFile, 'query']);

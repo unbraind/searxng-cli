@@ -30,6 +30,15 @@ function escapeYamlScalar(value: string | number | boolean | null | undefined): 
   return `'${normalized.replace(/'/g, "''")}'`;
 }
 
+function escapeXmlText(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
 /**
  *
  * @param result
@@ -197,6 +206,31 @@ export function formatCsvOutput(data: SearchResponse, options: SearchOptions): s
   });
 
   return lines.join('\n');
+}
+
+/**
+ * Render normalized results as an RSS 2.0 feed compatible with SearXNG API consumers.
+ * @param data Typed normalized response produced by either upstream transport path.
+ * @param options Effective query and result-limit options for the channel.
+ */
+export function formatRssOutput(data: SearchResponse, options: SearchOptions): string {
+  const results = data.results ?? [];
+  const limit = options.limit === 0 ? results.length : Math.min(options.limit, results.length);
+  const generatedAt = new Date().toUTCString();
+  const source = getSearxngUrl();
+  const items = results.slice(0, limit).map((result) => {
+    const url = result.url ? result.url : (result.link ?? '');
+    const description = stripHtml(
+      unescapeHtml(result.content ?? result.abstract ?? result.snippet ?? '')
+    );
+    const publishedDate = result.publishedDate ? new Date(result.publishedDate) : undefined;
+    const published =
+      publishedDate && !Number.isNaN(publishedDate.valueOf())
+        ? `\n      <pubDate>${escapeXmlText(publishedDate.toUTCString())}</pubDate>`
+        : '';
+    return `    <item>\n      <title>${escapeXmlText(stripHtml(unescapeHtml(result.title ?? '')))}</title>\n      <link>${escapeXmlText(url)}</link>\n      <guid isPermaLink="true">${escapeXmlText(url)}</guid>\n      <description>${escapeXmlText(description)}</description>${published}\n    </item>`;
+  });
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0">\n  <channel>\n    <title>${escapeXmlText(options.query)}</title>\n    <link>${escapeXmlText(source)}</link>\n    <description>SearXNG search results for ${escapeXmlText(options.query)}</description>\n    <lastBuildDate>${generatedAt}</lastBuildDate>\n${items.join('\n')}\n  </channel>\n</rss>`;
 }
 
 /**

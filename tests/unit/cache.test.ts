@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as nodefs from 'fs';
 import * as zlib from 'zlib';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import {
   getCacheKey,
   getCacheStats,
@@ -241,7 +243,7 @@ describe('Cache Module', () => {
     });
 
     it('reports bounded, disabled, uncompressed, finite-age, and stat-error profiles', () => {
-      const path = `/tmp/cache-stats-${process.pid}`;
+      const path = join(tmpdir(), `cache-stats-${process.pid}`);
       nodefs.writeFileSync(path, 'data');
       expect(
         getCacheStats({
@@ -628,7 +630,7 @@ describe('Cache Module', () => {
   });
 
   describe('exportCache and importCache', () => {
-    const tmpExportFile = '/tmp/test-cache-export-' + Date.now() + '.json';
+    const tmpExportFile = join(tmpdir(), `test-cache-export-${Date.now()}.json`);
 
     afterEach(() => {
       try {
@@ -669,7 +671,7 @@ describe('Cache Module', () => {
     });
 
     it('should fail to import non-existent file', () => {
-      const result = importCache('/tmp/nonexistent-file-xyz-' + Date.now() + '.json');
+      const result = importCache(join(tmpdir(), `nonexistent-file-xyz-${Date.now()}.json`));
       expect(result.success).toBe(false);
       expect(result.error).toBe('File not found');
     });
@@ -728,7 +730,7 @@ describe('Cache Module', () => {
     });
 
     it('supports disabled, plain, compressed-fallback, expiry, unlimited size, and errors', () => {
-      const base = `/tmp/searxng-cache-${process.pid}-${Date.now()}`;
+      const base = join(tmpdir(), `searxng-cache-${process.pid}-${Date.now()}`);
       const data = {
         key: { timestamp: Date.now(), data: createMockResponse() },
         old: { timestamp: Date.now() - 10_000, data: createMockResponse() },

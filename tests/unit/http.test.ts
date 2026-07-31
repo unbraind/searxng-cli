@@ -379,6 +379,25 @@ describe('HTTP Module', () => {
       expect(result.ok).toBe(true);
     });
 
+    it('sends POST searches as form data without query parameters in the URL', async () => {
+      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValueOnce({ ok: true } as Response);
+      await fetchWithRetry(
+        new URL('http://localhost:8080/search?q=private+query&format=json&pageno=2'),
+        createMockOptions({ requestMethod: 'post' }),
+        0
+      );
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:8080/search',
+        expect.objectContaining({
+          method: 'POST',
+          body: 'q=private+query&format=json&pageno=2',
+          headers: expect.objectContaining({
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+          }),
+        })
+      );
+    });
+
     it('should throw when no retries left and fetch fails', async () => {
       const error = new Error('Connection failed');
       vi.spyOn(global, 'fetch').mockRejectedValue(error);

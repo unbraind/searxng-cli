@@ -131,6 +131,23 @@ describe('Output Validation', () => {
     expect(result.valid).toBe(true);
   });
 
+  it('validates RSS output and rejects every required structural violation', () => {
+    const rss = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>q</title><link>https://example.com</link><description>d</description><lastBuildDate>Thu, 31 Jul 2026 10:00:00 GMT</lastBuildDate><item><title>r</title><link>https://example.com/r</link><guid isPermaLink="true">https://example.com/r</guid></item></channel></rss>`;
+    expect(validateFormattedOutput('rss', rss)).toMatchObject({ valid: true });
+    for (const output of [
+      rss.replace('<?xml version="1.0" encoding="UTF-8"?>\n', ''),
+      rss.replace('<rss version="2.0">', '<rss>'),
+      rss.replace('<channel>', '<feed>'),
+      rss.replace(/<\/?channel>/g, ''),
+      rss.replace('<description>d</description>', ''),
+      rss.replace('<guid isPermaLink="true">https://example.com/r</guid>', ''),
+      rss.replace('</guid>', ''),
+      rss.replace('<title>r</title>', '<wrapper><title>r</title></wrapper>'),
+    ]) {
+      expect(validateFormattedOutput('rss', output).valid).toBe(false);
+    }
+  });
+
   it('validates TOON output', () => {
     const toon = encode({
       q: 'test',

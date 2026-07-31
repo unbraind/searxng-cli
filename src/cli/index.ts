@@ -216,6 +216,7 @@ export function createDefaultOptions(
     searxngParams: defaultSearxngParams,
     estimateTokens: false,
     maxTokens: null,
+    requestMethod: 'get',
   };
 }
 
@@ -414,6 +415,33 @@ export function parseArgs(args: string[], config: AppConfig = loadConfig()): Sea
     }
     if (arg === '--csv') {
       options.format = 'csv';
+      i++;
+      continue;
+    }
+    if (arg === '--rss') {
+      options.format = 'rss';
+      i++;
+      continue;
+    }
+    if (arg === '--post') {
+      options.requestMethod = 'post';
+      i++;
+      continue;
+    }
+    if (arg === '--get') {
+      options.requestMethod = 'get';
+      i++;
+      continue;
+    }
+    if (arg === '--method' || arg.startsWith('--method=')) {
+      parseValue(arg, '--method', (value) => {
+        const normalized = value.trim().toLowerCase();
+        if (normalized !== 'get' && normalized !== 'post') {
+          console.error(colorize('Error: --method must be get or post', 'red'));
+          process.exit(1);
+        }
+        options.requestMethod = normalized;
+      });
       i++;
       continue;
     }
@@ -1093,6 +1121,7 @@ export function showHelp(): void {
   console.log(
     `  instance             Show instance capabilities (instance json for machine output)`
   );
+  console.log(`  commands             Discover versioned CLI contracts (TOON default)`);
   console.log(`  doctor               Release-readiness diagnostics (--json supported)`);
   console.log(`  health               Connection health check`);
   console.log(`  history              Show search history`);
@@ -1117,8 +1146,10 @@ export function showHelp(): void {
   console.log(`  --                   Stop option parsing; treat remaining args as query text`);
   console.log();
   console.log(`Search:`);
-  console.log(`  -f, --format <fmt>   Output format: toon, json, csv, md, yaml, table, xml`);
+  console.log(`  -f, --format <fmt>   Output format: toon, json, csv, rss, md, yaml, table, xml`);
   console.log(`                      Also: jsonl/ndjson, text, simple, html-report, raw`);
+  console.log(`  --method <method>    SearXNG transport: get (default) or post`);
+  console.log(`  --get / --post       Search transport shortcuts`);
   console.log(`  -e, --engines <list> Comma-separated engines (google,bing,duckduckgo)`);
   console.log(`  --param <k=v>        Pass through raw SearXNG query params (repeatable)`);
   console.log(`  --sx <k=v>           Alias for --param (explicit SearXNG passthrough)`);
@@ -1152,6 +1183,7 @@ export function showHelp(): void {
   console.log(`  --toon               TOON format (default)`);
   console.log(`  --json               JSON format`);
   console.log(`  --csv                CSV format`);
+  console.log(`  --rss                RSS 2.0 format`);
   console.log(`  --yaml / --yml       YAML format`);
   console.log(`  --markdown / --md    Markdown format`);
   console.log(`  --xml                XML format`);

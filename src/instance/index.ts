@@ -20,6 +20,7 @@ export type InstanceResource =
   | 'health'
   | 'languages'
   | 'manifest'
+  | 'metrics'
   | 'opensearch'
   | 'plugins'
   | 'robots'
@@ -91,6 +92,11 @@ const HTTP_RESOURCES: Partial<
   },
   health: { endpoint: '/healthz', accept: 'text/plain', json: false },
   manifest: { endpoint: '/manifest.json', accept: 'application/json', json: true },
+  metrics: {
+    endpoint: '/metrics',
+    accept: 'application/openmetrics-text, text/plain',
+    json: false,
+  },
   opensearch: {
     endpoint: '/opensearch.xml',
     accept: 'application/opensearchdescription+xml, application/xml',
@@ -219,9 +225,16 @@ export async function fetchInstanceResource(
 
   if (httpResource) {
     endpoint = httpResource.endpoint;
+    const openMetricsPassword =
+      resource === 'metrics' ? process.env.SEARXNG_OPEN_METRICS_PASSWORD : undefined;
     const response = await rateLimitedFetch(`${baseUrl}${endpoint}`, {
       headers: {
         Accept: httpResource.accept,
+        ...(openMetricsPassword
+          ? {
+              Authorization: `Basic ${Buffer.from(`${process.env.SEARXNG_OPEN_METRICS_USERNAME ?? 'searxng-cli'}:${openMetricsPassword}`).toString('base64')}`,
+            }
+          : {}),
         'User-Agent': `searxng-cli/${VERSION}`,
       },
     });

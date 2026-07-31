@@ -383,6 +383,7 @@ export const VALID_FORMATS: string[] = [
   'ndjson',
   'html',
   'csv',
+  'rss',
   'markdown',
   'md',
   'raw',

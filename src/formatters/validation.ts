@@ -2,6 +2,7 @@
  * Runtime validators that verify emitted JSON, JSONL, TOON, YAML, XML, CSV, Markdown, HTML, and text contracts.
  */
 import { decode as decodeToon } from '@toon-format/toon';
+import { HTMLElement, parse, valid } from 'node-html-parser';
 
 /**
  *
@@ -292,6 +293,55 @@ function validateXml(output: string): OutputValidationResult {
   return { valid: true, message: 'XML output validated' };
 }
 
+function validateRss(output: string): OutputValidationResult {
+  if (!output.startsWith('<?xml version="1.0"')) {
+    return { valid: false, message: 'RSS XML declaration is missing' };
+  }
+  const parserOptions = {
+    parseNoneClosedTags: false,
+    preserveTagNesting: true,
+    voidTag: { tags: [] },
+  };
+  if (!valid(output, parserOptions)) {
+    return { valid: false, message: 'RSS 2.0 root element is missing or malformed' };
+  }
+  const document = parse(output, parserOptions);
+  const rss = document.childNodes.find(
+    (node): node is HTMLElement =>
+      node instanceof HTMLElement &&
+      node.rawTagName === 'rss' &&
+      node.getAttribute('version') === '2.0'
+  );
+  if (!rss || document.childNodes.filter((node) => node instanceof HTMLElement).length !== 1) {
+    return { valid: false, message: 'RSS 2.0 root element is missing or malformed' };
+  }
+  const channel = rss.childNodes.find(
+    (node): node is HTMLElement => node instanceof HTMLElement && node.rawTagName === 'channel'
+  );
+  if (!channel) {
+    return { valid: false, message: 'RSS channel element is missing or malformed' };
+  }
+  for (const element of ['title', 'link', 'description', 'lastBuildDate']) {
+    if (
+      !channel.childNodes.some((node) => node instanceof HTMLElement && node.rawTagName === element)
+    ) {
+      return { valid: false, message: `RSS channel is missing ${element}` };
+    }
+  }
+  const items = channel.childNodes.filter(
+    (node): node is HTMLElement => node instanceof HTMLElement && node.rawTagName === 'item'
+  );
+  for (const [index, item] of items.entries()) {
+    const directFields = item.childNodes
+      .filter((node): node is HTMLElement => node instanceof HTMLElement)
+      .map((node) => node.rawTagName);
+    if (!['title', 'link', 'guid'].every((element) => directFields.includes(element))) {
+      return { valid: false, message: `RSS item ${index + 1} is missing title/link/guid` };
+    }
+  }
+  return { valid: true, message: 'RSS output validated' };
+}
+
 function validateToon(output: string): OutputValidationResult {
   const parsed = decodeToon(output) as {
     q?: unknown;
@@ -456,6 +506,7 @@ export function validateFormattedOutput(format: string, output: string): OutputV
     if (format === 'csv') return validateCsv(output);
     if (format === 'yaml' || format === 'yml') return validateYaml(output);
     if (format === 'xml') return validateXml(output);
+    if (format === 'rss') return validateRss(output);
     if (format === 'toon') return validateToon(output);
     if (format === 'markdown' || format === 'md') return validateMarkdown(output);
     if (format === 'table') return validateTable(output);

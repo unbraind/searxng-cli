@@ -58,7 +58,9 @@ describe('release automation', () => {
     expect(scanner).toContain('192\\.168\\.1\\.183:38522');
     expect(scanner).toContain('10\\.0\\.0\\.1');
     expect(scanner).toContain('172\\.31\\.255\\.255');
-    expect(scanner).toContain('searxng-private-endpoint-findings-filtered.txt');
+    expect(scanner).toContain(
+      'FILTERED_ENDPOINT_FINDINGS="$TMP_HISTORY.filtered-endpoint-findings"'
+    );
   });
 
   it('runs coverage through Node even when Bun owns script execution', () => {

@@ -143,6 +143,7 @@ export interface SearchOptions {
   searxngParams?: Record<string, string>;
   estimateTokens?: boolean;
   maxTokens?: number | null;
+  requestMethod: SearchRequestMethod;
 }
 
 /**
@@ -154,6 +155,7 @@ export type OutputFormat =
   | 'jsonl'
   | 'html'
   | 'csv'
+  | 'rss'
   | 'markdown'
   | 'md'
   | 'raw'
@@ -174,6 +176,9 @@ export type SafeSearchLevel = 0 | 1 | 2;
  *
  */
 export type TimeRange = 'day' | 'week' | 'month' | 'year';
+
+/** HTTP transport supported by the official SearXNG search API. */
+export type SearchRequestMethod = 'get' | 'post';
 
 /**
  *

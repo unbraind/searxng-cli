@@ -14,7 +14,8 @@ A powerful TypeScript command-line search client for SearXNG instances with TOON
 - **Settings Bootstrap** - `~/.searxng-cli/settings.json` is auto-created with safe defaults
 - **Global Data Bootstrap** - all managed `~/.searxng-cli/*` files are auto-initialized
 - **Persistent Caching** - Unlimited local cache (no in-memory cap), disk persistence, and compression
-- **Multiple Output Formats** - JSON, CSV, Markdown, YAML, XML, HTML, table, text, and more
+- **Multiple Output Formats** - TOON, JSON, RSS, CSV, Markdown, YAML, XML, HTML, table, text, and more
+- **GET + POST Search** - Explicit `--get`, `--post`, and `--method` controls for both official API transports
 - **AI Agent Mode** - Optimized for AI/LLM consumption with structured metadata
 - **Local Agent Routing Guard** - Agent mode defaults to the governed local `http://192.168.1.183:38522` service (`forceLocalAgentRouting: true`)
 - **Agent CI Mode** - `--agent-ci` for strict, offline-first, validated TOON output
@@ -33,7 +34,7 @@ A powerful TypeScript command-line search client for SearXNG instances with TOON
 - **Advanced Filtering** - Domain, date, score, and image filters
 - **Autocomplete + Multi-Query** - Built-in `--autocomplete` and `--multi` workflows
 - **Complete Instance Resources** - Typed TOON-default capabilities, configuration, engine
-  descriptions, health, statistics, errors, OpenSearch metadata, manifest, and robots
+  descriptions, health, Prometheus metrics, statistics, errors, OpenSearch metadata, manifest, and robots
 - **Preset Workflows** - Save/load reusable search profiles with `--save-preset`, `--preset`, `--presets`
 - **Connection Resilience** - Circuit breaker, adaptive timeouts, request retries
 - **Built with Bun** - Fast development and runtime using Bun
@@ -44,6 +45,7 @@ A powerful TypeScript command-line search client for SearXNG instances with TOON
 - **Configured Agent Routing** - Agent and MCP searches stay pinned to the `searxngUrl` saved in global settings, including private-LAN services
 - **Global SearXNG Params** - Persist default passthrough params with single-key or bulk commands
 - **SearXNG Feature Parity** - Use `--param`, `--params-json`, and `--params-file` to pass any upstream SearXNG query parameter
+- **Agent Command Discovery** - `searxng commands` emits the complete versioned CLI contract in TOON; `--json` is available for tool builders
 
 ## Installation
 
@@ -81,6 +83,13 @@ searxng search "your search query"
 
 # JSON output
 searxng --format json "query"
+
+# Official POST transport with validated RSS 2.0 output
+searxng search --post --rss --validate-output "query"
+
+# Machine-readable command discovery for agents and completion generators
+searxng commands
+searxng commands --json | jq '.commands[] | {name, usage}'
 
 # Search with specific engines
 searxng --engines google,bing "query"
@@ -169,38 +178,39 @@ Common commands:
 - `set` - update global defaults (`searxng set <key> <value>`)
 - `cache` - cache operations (`searxng cache status|list|clear|...`)
 - `formats` - formatter verification/schema/validation
+- `commands` - complete machine-readable command contract in TOON or JSON
 - `doctor` / `health` / `instance` - diagnostics and complete read-only resource inspection
 - `autocomplete` - upstream suggestions in TOON or JSON
 
 ### Search Options
 
-| Option                 | Short | Description                                        |
-| ---------------------- | ----- | -------------------------------------------------- |
-| `--format <fmt>`       | `-f`  | Output format (default: toon)                      |
-| `--engines <list>`     | `-e`  | Comma-separated search engines                     |
-| `--lang <code>`        | `-l`  | Language code                                      |
-| `--page <n>`           | `-p`  | Page number                                        |
-| `--safe <level>`       | -     | Safe search: 0, 1, or 2                            |
-| `--time <range>`       | `-t`  | Time range: day, week, month, year                 |
-| `--category <cat>`     | `-c`  | Category: general, images, videos, news            |
-| `--limit <n>`          | `-n`  | Max results (default: 10)                          |
-| `--param <k=v>`        | -     | Pass through raw SearXNG query params (repeatable) |
-| `--sx <k=v>`           | -     | Alias for `--param` |
-| `--sx-query <k=v&...>` | -     | URL-style SearXNG passthrough params in one argument |
-| `--sx-theme <name>`    | -     | Set upstream SearXNG `theme` query parameter       |
-| `--sx-enabled-plugins <list>`  | -     | Set upstream `enabled_plugins` (comma-separated) |
-| `--sx-disabled-plugins <list>` | -     | Set upstream `disabled_plugins` (comma-separated) |
-| `--sx-enabled-engines <list>`  | -     | Set upstream `enabled_engines` (comma-separated) |
-| `--sx-disabled-engines <list>` | -     | Set upstream `disabled_engines` (comma-separated) |
-| `--sx-enabled-categories <list>`  | -  | Set upstream `enabled_categories` (comma-separated) |
-| `--sx-disabled-categories <list>` | -  | Set upstream `disabled_categories` (comma-separated) |
-| `--sx-image-proxy <bool>`      | -     | Set upstream `image_proxy` (`true`/`false`)      |
-| `--params-json <obj>`  | -     | Pass through SearXNG params as JSON object         |
-| `--params-file <path>` | -     | Load SearXNG params from JSON file                 |
-| `--multi <q1;q2>`      | -     | Run multiple queries sequentially                  |
-| `--autocomplete`       | -     | Return SearXNG autocomplete suggestions            |
-| `--offline-first`      | -     | Cache-only mode (exact+semantic cache, no network) |
-| `--strict` / `--fail-on-empty` | - | Exit code `2` when a search returns zero results |
+| Option                            | Short | Description                                          |
+| --------------------------------- | ----- | ---------------------------------------------------- |
+| `--format <fmt>`                  | `-f`  | Output format (default: toon)                        |
+| `--engines <list>`                | `-e`  | Comma-separated search engines                       |
+| `--lang <code>`                   | `-l`  | Language code                                        |
+| `--page <n>`                      | `-p`  | Page number                                          |
+| `--safe <level>`                  | -     | Safe search: 0, 1, or 2                              |
+| `--time <range>`                  | `-t`  | Time range: day, week, month, year                   |
+| `--category <cat>`                | `-c`  | Category: general, images, videos, news              |
+| `--limit <n>`                     | `-n`  | Max results (default: 10)                            |
+| `--param <k=v>`                   | -     | Pass through raw SearXNG query params (repeatable)   |
+| `--sx <k=v>`                      | -     | Alias for `--param`                                  |
+| `--sx-query <k=v&...>`            | -     | URL-style SearXNG passthrough params in one argument |
+| `--sx-theme <name>`               | -     | Set upstream SearXNG `theme` query parameter         |
+| `--sx-enabled-plugins <list>`     | -     | Set upstream `enabled_plugins` (comma-separated)     |
+| `--sx-disabled-plugins <list>`    | -     | Set upstream `disabled_plugins` (comma-separated)    |
+| `--sx-enabled-engines <list>`     | -     | Set upstream `enabled_engines` (comma-separated)     |
+| `--sx-disabled-engines <list>`    | -     | Set upstream `disabled_engines` (comma-separated)    |
+| `--sx-enabled-categories <list>`  | -     | Set upstream `enabled_categories` (comma-separated)  |
+| `--sx-disabled-categories <list>` | -     | Set upstream `disabled_categories` (comma-separated) |
+| `--sx-image-proxy <bool>`         | -     | Set upstream `image_proxy` (`true`/`false`)          |
+| `--params-json <obj>`             | -     | Pass through SearXNG params as JSON object           |
+| `--params-file <path>`            | -     | Load SearXNG params from JSON file                   |
+| `--multi <q1;q2>`                 | -     | Run multiple queries sequentially                    |
+| `--autocomplete`                  | -     | Return SearXNG autocomplete suggestions              |
+| `--offline-first`                 | -     | Cache-only mode (exact+semantic cache, no network)   |
+| `--strict` / `--fail-on-empty`    | -     | Exit code `2` when a search returns zero results     |
 
 ### Output Formats
 
@@ -209,7 +219,7 @@ Common commands:
 | `toon`                 | Token-Oriented Object Notation (default, LLM-optimized) |
 | `json`                 | JSON format                                             |
 | `jsonl`                | JSON Lines / NDJSON (one result object per line)        |
-| `ndjson`               | Alias for `jsonl`                                        |
+| `ndjson`               | Alias for `jsonl`                                       |
 | `csv`                  | Comma-separated values                                  |
 | `markdown` / `md`      | Markdown format                                         |
 | `yaml` / `yml`         | YAML format                                             |
@@ -274,6 +284,7 @@ searxng instance stats           # Capabilities + engine error metrics (TOON)
 searxng instance stats --json    # Same typed resource envelope for jq/CI
 searxng instance source-status   # Prove the configured service matches official upstream
 searxng instance errors --json   # Engine error metrics under .data
+searxng instance metrics --raw   # Exact Prometheus/OpenMetrics exposition
 searxng instance descriptions    # Engine metadata in TOON
 searxng instance config --json   # Complete upstream /config under .data
 searxng instance stats-page --raw # Exact upstream /stats HTML
@@ -317,6 +328,7 @@ searxng --verify-formats-json "query" | jq '.success'
 ```
 
 Machine outputs include reproducibility metadata:
+
 - JSON/JSONL/YAML/XML: `source`, `generatedAt`
 - TOON: `src`, `ts`
 

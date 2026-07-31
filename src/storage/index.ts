@@ -561,6 +561,7 @@ const VALID_SETTINGS_FORMATS = [
   'jsonl',
   'ndjson',
   'csv',
+  'rss',
   'markdown',
   'md',
   'raw',
