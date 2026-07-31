@@ -2,14 +2,14 @@ id: searx-b73v
 title: Ship current SearXNG API transport and agent contract discovery
 description: "Close the verified 2026.7.31 compatibility gaps by adding POST search transport, validated RSS output, Prometheus metrics resource access, exhaustive nested help, machine-readable CLI contract discovery, current dependencies, and exact live/package/release proof."
 type: Plan
-status: in_progress
+status: closed
 priority: 0
 tags[13]: agent,api,cli,contracts,documentation,metrics,pm-governance,release,rss,searxng,testing,toon,transport
 created_at: "2026-07-31T20:21:19.636Z"
-updated_at: "2026-07-31T21:31:46.276Z"
+updated_at: "2026-07-31T21:44:17.358Z"
 deadline: "2026-08-01T20:21:19.636Z"
-assignee: codex-searxng-20260731
-claim_principal: codex-searxng-20260731
+closed_at: "2026-07-31T21:44:16.391Z"
+completed_at: "2026-07-31T21:44:16.391Z"
 author: codex-searxng-20260731
 estimated_minutes: 480
 acceptance_criteria: "CLI supports official GET and application/x-www-form-urlencoded POST searches with equivalent normalized results and HTML fallback; RSS is a validated documented output format while TOON remains the default and JSON/JSONL/CSV/YAML/XML/Markdown/HTML/text contracts remain stable; instance metrics exposes /metrics in TOON, JSON, and exact raw form with truthful unavailable handling; every command and nested operation has detailed help plus a machine-readable TOON-default command contract for agents; all settings/cache/history/data remain under ~/.searxng-cli, cache limits remain zero/unlimited, and local routing remains http://192.168.1.183:38522; latest compatible pm-cli, pm-changelog, runtime dependencies, 100/100/100/100 coverage, docstrings, lint, duplication, security, live installed CLI, npm/Bun package, release, CI, and bot review gates pass"
@@ -25,6 +25,9 @@ risk: high
 confidence: 95
 sprint: 2026-07-current-api
 release: 2026.7.31
+resolution: "Official GET/POST transport, validated RSS, optional authenticated metrics, versioned command discovery, global-state/setup contracts, documentation, tests, reviews, and release gates shipped in PR #62."
+expected_result: "All acceptance criteria pass on exact reviewed head, merged master, local governed SearXNG service, and isolated consumers."
+actual_result: 962 tests at 100/100/100/100; 21 live diagnostics; 62 black-box E2E tests; all required GitHub checks green; zero unresolved review threads; merged SHA 4dc60d3c6f95f1fdfb1587daf61e0f6af57198da.
 dependencies[16]{id,kind,created_at,author,source_kind,author_source}:
   searx-7uik,related,"2026-07-31T20:21:19.636Z",codex-searxng-20260731,"cli:create:dep",detected
   searx-auto-release,related,"2026-07-31T20:21:19.636Z",codex-searxng-20260731,"cli:create:dep",detected
@@ -42,11 +45,12 @@ dependencies[16]{id,kind,created_at,author,source_kind,author_source}:
   searx-security-modernization,related,"2026-07-31T20:21:19.636Z",codex-searxng-20260731,"cli:create:dep",detected
   searx-tag-release-validation,related,"2026-07-31T20:21:19.636Z",codex-searxng-20260731,"cli:create:dep",detected
   searx-verification,related,"2026-07-31T20:21:19.636Z",codex-searxng-20260731,"cli:create:dep",detected
-comments[4]{created_at,author,text}:
+comments[5]{created_at,author,text}:
   "2026-07-31T20:21:19.636Z",codex-searxng-20260731,All-status duplicate searches found no metrics or RSS item. Closed predecessors cover earlier general parity but not the verified 2026.7.31 delta; this successor preserves canonical lineage rather than reopening or duplicating completed work.
   "2026-07-31T21:02:37.479Z",codex-searxng-20260731,"Security and package gates passed: Trivy reported zero HIGH/CRITICAL findings, history secret scan passed, and isolated npx/bunx package smoke resolved both executable aliases. Initial release acceptance then found stale instance-envelope assertions, now corrected to validate .data."
   "2026-07-31T21:03:51.110Z",codex-searxng-20260731,"Full release:check is green at 2026.7.31 after correcting typed resource assertions: 962 tests with exact 100/100/100/100, 21 live built-in diagnostics, forced-network POST RSS, optional metrics capability handling, global settings under ~/.searxng-cli, and isolated executable resolution."
   "2026-07-31T21:31:24.307Z",codex-searxng-20260731,"CodeRabbit exact-head review produced eleven inline threads. Corrected command catalog completeness, nested value-less help, RSS URL/date normalization, schema parity, parser-backed structural validation, metrics semantics, Markdown tables, E2E artifact placement, and explicitly reasserted PM claim ownership. The generated pm-changelog audit script is package-owned, outside the SearXNG runtime, and must not be hand-edited because extension refresh would overwrite it; that upstream-extension finding is dispositioned with scope evidence rather than copied into product code. Targeted correction coverage remains exact 100/100/100/100 across 962 tests."
+  "2026-07-31T21:44:14.380Z",codex-searxng-20260731,PR #62 exact implementation head 75ead0778e1ab218b0be8ccf47f872a778603022 passed all required GitHub checks. Fresh delayed inventory found zero unresolved threads after every bot review/comment received a usefulness reaction and individual disposition. GitHub squash-merged it as 4dc60d3c6f95f1fdfb1587daf61e0f6af57198da on master.
 notes[1]{created_at,author,text}:
   "2026-07-31T20:21:19.636Z",codex-searxng-20260731,Official master search API documents GET/POST and JSON/CSV/RSS. The live service reports 2026.7.31+057a77168. Preserve JSON-first/HTML fallback because instance JSON search may be disabled; POST must use form encoding and never leak params to logs.
 learnings[1]{created_at,author,text}:
@@ -92,7 +96,8 @@ docs[7]{path,scope,note}:
   docs/upstream-compatibility.md,project,current upstream and live compatibility evidence
   docs/usage.md,project,transport command discovery and optional metrics usage
   README.md,project,user and agent command overview
-plan_mode: approved
+close_reason: Merged and verified complete SearXNG API transport and agent discovery delivery
+plan_mode: completed
 plan_scope: Current SearXNG search/API parity and agent-native self-discovery
 plan_harness: codex
 plan_validation[2]{text,command,expected}:
@@ -104,44 +109,10 @@ plan_decisions[2]{ts,author,decision,rationale,evidence}:
 plan_discoveries[2]{ts,author,text}:
   "2026-07-31T20:55:35.562Z",codex-searxng-20260731,The live 2026.7.31 service returns HTTP 404 for /metrics because SearXNG general.open_metrics is disabled by default; official current docs require a configured secret and HTTP Basic authentication when enabled.
   "2026-07-31T21:02:36.682Z",codex-searxng-20260731,The release gate parsed typed instance stats/errors as legacy top-level fields even though the CLI contract has always wrapped resource data under .data; live release acceptance exposed and corrected those assertions.
-plan_steps[5]:
-  - id: plan-step-001
-    order: 1
-    title: "Model official GET/POST, RSS, metrics, and command-discovery contracts"
-    status: completed
-    created_at: "2026-07-31T20:21:19.630Z"
-    updated_at: "2026-07-31T20:21:45.450Z"
-    evidence: "Compared official master 6bfd827, current indexed docs, live 2026.7.31+057a77168 /healthz and /config, every PM item/history/graph, local source/help/format schemas, and registry packages. Confirmed missing POST, RSS, /metrics, and agent command discovery without duplicate PM coverage."
-    completed_at: "2026-07-31T20:21:45.450Z"
-  - id: plan-step-002
-    order: 2
-    title: "Implement typed transport, formats, resources, help, and dependency upgrades"
-    status: completed
-    created_at: "2026-07-31T20:21:19.630Z"
-    updated_at: "2026-07-31T20:55:37.612Z"
-    evidence: "Implemented typed GET/POST transport, validated RSS 2.0, optional authenticated OpenMetrics, versioned TOON/JSON command discovery, nested command help, current dependencies, portable acceptance artifacts, and 100% typed tests."
-    completed_at: "2026-07-31T20:55:37.612Z"
-  - id: plan-step-003
-    order: 3
-    title: "Document settings, agent, API, output, and release behavior through PM and docs"
-    status: completed
-    created_at: "2026-07-31T20:21:19.630Z"
-    updated_at: "2026-07-31T20:55:38.210Z"
-    evidence: "Updated README plus usage, formats, agent mode, upstream compatibility, and E2E documentation; recorded security and optional-capability decisions in PM."
-    completed_at: "2026-07-31T20:55:38.210Z"
-  - id: plan-step-004
-    order: 4
-    title: "Run full unit, E2E, live installed, package, security, PM, and release acceptance"
-    status: completed
-    created_at: "2026-07-31T20:21:19.630Z"
-    updated_at: "2026-07-31T21:03:49.502Z"
-    evidence: "Passed strict types/lint/format/docstrings/duplication/ShellCheck, 962 tests at exact 100/100/100/100, 62 compiled black-box E2E tests, isolated installed live GET/POST/RSS/resource/contract acceptance, 21 built-in live diagnostics, Trivy, history secret scan, npx/bunx package smoke, PM graph/metadata/history/storage validation, and full release:check."
-    completed_at: "2026-07-31T21:03:49.502Z"
-  - id: plan-step-005
-    order: 5
-    title: "Publish PR, converge all current-head checks/reviews, merge, release, and verify"
-    status: in_progress
-    created_at: "2026-07-31T20:21:19.630Z"
-    updated_at: "2026-07-31T21:03:50.257Z"
-    evidence: Preparing exact implementation head for publication and review.
+plan_steps[5]{id,order,title,status,created_at,updated_at,evidence,completed_at}:
+  plan-step-001,1,"Model official GET/POST, RSS, metrics, and command-discovery contracts",completed,"2026-07-31T20:21:19.630Z","2026-07-31T20:21:45.450Z","Compared official master 6bfd827, current indexed docs, live 2026.7.31+057a77168 /healthz and /config, every PM item/history/graph, local source/help/format schemas, and registry packages. Confirmed missing POST, RSS, /metrics, and agent command discovery without duplicate PM coverage.","2026-07-31T20:21:45.450Z"
+  plan-step-002,2,"Implement typed transport, formats, resources, help, and dependency upgrades",completed,"2026-07-31T20:21:19.630Z","2026-07-31T20:55:37.612Z","Implemented typed GET/POST transport, validated RSS 2.0, optional authenticated OpenMetrics, versioned TOON/JSON command discovery, nested command help, current dependencies, portable acceptance artifacts, and 100% typed tests.","2026-07-31T20:55:37.612Z"
+  plan-step-003,3,"Document settings, agent, API, output, and release behavior through PM and docs",completed,"2026-07-31T20:21:19.630Z","2026-07-31T20:55:38.210Z","Updated README plus usage, formats, agent mode, upstream compatibility, and E2E documentation; recorded security and optional-capability decisions in PM.","2026-07-31T20:55:38.210Z"
+  plan-step-004,4,"Run full unit, E2E, live installed, package, security, PM, and release acceptance",completed,"2026-07-31T20:21:19.630Z","2026-07-31T21:03:49.502Z","Passed strict types/lint/format/docstrings/duplication/ShellCheck, 962 tests at exact 100/100/100/100, 62 compiled black-box E2E tests, isolated installed live GET/POST/RSS/resource/contract acceptance, 21 built-in live diagnostics, Trivy, history secret scan, npx/bunx package smoke, PM graph/metadata/history/storage validation, and full release:check.","2026-07-31T21:03:49.502Z"
+  plan-step-005,5,"Publish PR, converge all current-head checks/reviews, merge, release, and verify",completed,"2026-07-31T20:21:19.630Z","2026-07-31T21:44:15.301Z",PR #62 exact head 75ead077 passed Node/Bun/package/Gitleaks/CodeQL/title checks; eleven CodeRabbit threads were corrected or evidence-dispositioned with zero unresolved; retriggers were acknowledged; squash merge 4dc60d3 landed on master.,"2026-07-31T21:44:15.301Z"
 body: "## Current delta\\n\\nOfficial SearXNG master and the governed 2026.7.31 service expose supported behavior absent from the current CLI: POST form search transport, RSS search output, and /metrics. Agent workflows also need a self-describing command contract and precise nested help without source inspection.\\n\\n## Delivery\\n\\nImplement these as one typed compatibility bundle while preserving TOON default output, the configured LAN service, global ~/.searxng-cli state, unlimited cache, JSON-first HTML fallback, exact output schemas, and automated daily release behavior.\\n\\n## Evidence policy\\n\\nLink every changed file/doc/test; validate direct source, installed package, local service, npm/Bun consumers, exact PR head, review threads, merged head, and immutable release state without recording private payloads."

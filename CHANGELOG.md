@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Verify published consumers outside the source checkout ([searx-published-consumer-isolation](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/issues/searx-published-consumer-isolation.toon))
 
+### Other
+
+- Ship current SearXNG API transport and agent contract discovery ([searx-b73v](https://github.com/unbraind/searxng-cli/blob/master/.agents/pm/plans/searx-b73v.toon))
+
 ## 2026.7.27 - 2026-07-27
 
 ### Other
