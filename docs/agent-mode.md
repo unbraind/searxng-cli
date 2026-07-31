@@ -38,10 +38,10 @@ The SearXNG CLI is highly optimized for integration into AI agents, Language Mod
     SearXNG returns HTTP 403 when its administrator disables JSON API output. Agent searches automatically retry as HTML and normalize the response into the same typed TOON/JSON contract, including upstream engine timeout evidence.
 
 11. **Machine-Readable Command Discovery**
-    `searxng commands` returns the versioned CLI surface in TOON without reading private user
-    settings. `searxng commands --json` provides the same catalog for tool generation and `jq`.
-    The envelope declares TOON output, GET transport, the managed state root, and unlimited cache
-    as defaults; every command includes usage, aliases, subcommands, and flags.
+    `searxng commands` returns the versioned CLI surface in TOON without including private setting
+    values in its output. `searxng commands --json` provides the same catalog for tool generation
+    and `jq`. The envelope declares TOON output, GET transport, the managed state root, and unlimited
+    cache as defaults; every command includes usage, aliases, subcommands, and flags.
 
 12. **Explicit Transport Planning**
     Agents can select official form-encoded POST with `--post` or `--method post`. Use it with
