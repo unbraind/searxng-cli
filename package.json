@@ -103,7 +103,7 @@
     "@vitest/coverage-v8": "4.1.10",
     "esbuild": "0.28.1",
     "eslint": "10.8.0",
-    "eslint-plugin-jsdoc": "63.2.2",
+    "eslint-plugin-jsdoc": "63.3.2",
     "jscpd": "5.0.12",
     "prettier": "3.9.6",
     "typescript": "6.0.3",
