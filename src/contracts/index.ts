@@ -68,6 +68,7 @@ export const CLI_COMMANDS: CliCommandContract[] = [
       '--safe <0|1|2>',
       '--time <day|week|month|year>',
       '--limit <number>',
+      '--request-json',
       '--validate-output',
     ],
   },
@@ -154,6 +155,7 @@ export const CLI_COMMANDS: CliCommandContract[] = [
     usage: 'searxng instance <resource> [--format <toon|json|raw>]',
     subcommands: [
       'info',
+      'json',
       'capabilities',
       'engines',
       'categories',

@@ -1501,8 +1501,14 @@ describe('Main function', () => {
   it('renders nested operation help from command contracts', () => {
     showCommandHelp('instance', 'metrics');
     showCommandHelp('set', 'format');
+    showCommandHelp('set', 'local-url');
+    showCommandHelp('set', 'clear-params');
     expect(logSpy.mock.calls.flat().join('\n')).toContain('Selected operation: metrics');
     expect(logSpy.mock.calls.flat().join('\n')).toContain('searxng set format <value>');
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('searxng set local-url [global flags]');
+    expect(logSpy.mock.calls.flat().join('\n')).toContain(
+      'searxng set clear-params [global flags]'
+    );
   });
 
   it('routes instance resources through every global output flag form', async () => {

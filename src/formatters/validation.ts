@@ -2,6 +2,7 @@
  * Runtime validators that verify emitted JSON, JSONL, TOON, YAML, XML, CSV, Markdown, HTML, and text contracts.
  */
 import { decode as decodeToon } from '@toon-format/toon';
+import { HTMLElement, parse, valid } from 'node-html-parser';
 
 /**
  *
@@ -296,20 +297,45 @@ function validateRss(output: string): OutputValidationResult {
   if (!output.startsWith('<?xml version="1.0"')) {
     return { valid: false, message: 'RSS XML declaration is missing' };
   }
-  if (!output.includes('<rss version="2.0">') || !output.includes('</rss>')) {
+  const parserOptions = {
+    parseNoneClosedTags: false,
+    preserveTagNesting: true,
+    voidTag: { tags: [] },
+  };
+  if (!valid(output, parserOptions)) {
     return { valid: false, message: 'RSS 2.0 root element is missing or malformed' };
   }
-  if (!output.includes('<channel>') || !output.includes('</channel>')) {
+  const document = parse(output, parserOptions);
+  const rss = document.childNodes.find(
+    (node): node is HTMLElement =>
+      node instanceof HTMLElement &&
+      node.rawTagName === 'rss' &&
+      node.getAttribute('version') === '2.0'
+  );
+  if (!rss || document.childNodes.filter((node) => node instanceof HTMLElement).length !== 1) {
+    return { valid: false, message: 'RSS 2.0 root element is missing or malformed' };
+  }
+  const channel = rss.childNodes.find(
+    (node): node is HTMLElement => node instanceof HTMLElement && node.rawTagName === 'channel'
+  );
+  if (!channel) {
     return { valid: false, message: 'RSS channel element is missing or malformed' };
   }
   for (const element of ['title', 'link', 'description', 'lastBuildDate']) {
-    if (!output.includes(`<${element}>`) || !output.includes(`</${element}>`)) {
+    if (
+      !channel.childNodes.some((node) => node instanceof HTMLElement && node.rawTagName === element)
+    ) {
       return { valid: false, message: `RSS channel is missing ${element}` };
     }
   }
-  const items = output.match(/<item>[\s\S]*?<\/item>/g) ?? [];
+  const items = channel.childNodes.filter(
+    (node): node is HTMLElement => node instanceof HTMLElement && node.rawTagName === 'item'
+  );
   for (const [index, item] of items.entries()) {
-    if (!item.includes('<title>') || !item.includes('<link>') || !item.includes('<guid ')) {
+    const directFields = item.childNodes
+      .filter((node): node is HTMLElement => node instanceof HTMLElement)
+      .map((node) => node.rawTagName);
+    if (!['title', 'link', 'guid'].every((element) => directFields.includes(element))) {
       return { valid: false, message: `RSS item ${index + 1} is missing title/link/guid` };
     }
   }

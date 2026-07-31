@@ -138,8 +138,11 @@ describe('Output Validation', () => {
       rss.replace('<?xml version="1.0" encoding="UTF-8"?>\n', ''),
       rss.replace('<rss version="2.0">', '<rss>'),
       rss.replace('<channel>', '<feed>'),
+      rss.replace(/<\/?channel>/g, ''),
       rss.replace('<description>d</description>', ''),
       rss.replace('<guid isPermaLink="true">https://example.com/r</guid>', ''),
+      rss.replace('</guid>', ''),
+      rss.replace('<title>r</title>', '<wrapper><title>r</title></wrapper>'),
     ]) {
       expect(validateFormattedOutput('rss', output).valid).toBe(false);
     }

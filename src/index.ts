@@ -167,7 +167,7 @@ export function showCommandHelp(command: string, subcommand = ''): void {
   const operation = subcommand.trim().toLowerCase();
   const contract = getCliCommandContract(cmd);
   if (contract && operation && !operation.startsWith('-')) {
-    const takesValue = cmd === 'set';
+    const takesValue = cmd === 'set' && operation !== 'local-url' && operation !== 'clear-params';
     console.log(
       `Usage: searxng ${contract.name} ${operation}${takesValue ? ' <value>' : ''} [global flags]`
     );

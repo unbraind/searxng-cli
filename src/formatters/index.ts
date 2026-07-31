@@ -219,13 +219,15 @@ export function formatRssOutput(data: SearchResponse, options: SearchOptions): s
   const generatedAt = new Date().toUTCString();
   const source = getSearxngUrl();
   const items = results.slice(0, limit).map((result) => {
-    const url = result.url ?? result.link ?? '';
+    const url = result.url ? result.url : (result.link ?? '');
     const description = stripHtml(
       unescapeHtml(result.content ?? result.abstract ?? result.snippet ?? '')
     );
-    const published = result.publishedDate
-      ? `\n      <pubDate>${escapeXmlText(new Date(result.publishedDate).toUTCString())}</pubDate>`
-      : '';
+    const publishedDate = result.publishedDate ? new Date(result.publishedDate) : undefined;
+    const published =
+      publishedDate && !Number.isNaN(publishedDate.valueOf())
+        ? `\n      <pubDate>${escapeXmlText(publishedDate.toUTCString())}</pubDate>`
+        : '';
     return `    <item>\n      <title>${escapeXmlText(stripHtml(unescapeHtml(result.title ?? '')))}</title>\n      <link>${escapeXmlText(url)}</link>\n      <guid isPermaLink="true">${escapeXmlText(url)}</guid>\n      <description>${escapeXmlText(description)}</description>${published}\n    </item>`;
   });
   return `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0">\n  <channel>\n    <title>${escapeXmlText(options.query)}</title>\n    <link>${escapeXmlText(source)}</link>\n    <description>SearXNG search results for ${escapeXmlText(options.query)}</description>\n    <lastBuildDate>${generatedAt}</lastBuildDate>\n${items.join('\n')}\n  </channel>\n</rss>`;

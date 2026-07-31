@@ -416,7 +416,12 @@ describe('Formatters Module', () => {
             content: '<b>Useful & safe</b>',
             publishedDate: '2026-07-31T10:00:00.000Z',
           },
-          { title: 'Second', url: '', link: 'https://example.com/second' },
+          {
+            title: 'Second',
+            url: '',
+            link: 'https://example.com/second',
+            publishedDate: 'not-a-date',
+          },
         ],
       });
       const output = formatRssOutput(data, createMockOptions({ query: 'A & B', limit: 1 }));
@@ -447,6 +452,9 @@ describe('Formatters Module', () => {
       expect(unlimited).toContain('<description>S</description>');
       expect(unlimited).toContain('<title></title>');
       expect(unlimited).not.toContain('<pubDate>');
+      const normalized = formatRssOutput(data, createMockOptions({ query: 'fallbacks', limit: 0 }));
+      expect(normalized).toContain('<link>https://example.com/second</link>');
+      expect(normalized.match(/<pubDate>/g)).toHaveLength(1);
       expect(
         formatRssOutput({ query: 'empty' } as unknown as SearchResponse, createMockOptions())
       ).toContain('<channel>');

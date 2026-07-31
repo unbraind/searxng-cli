@@ -55,7 +55,7 @@ if run "searxng instance metrics --raw >\"${ARTIFACT_DIR}/searxng-e2e-metrics.tx
 else
   METRICS_AVAILABLE=false
 fi
-SOURCE_STATUS_FILE="$INSTALL_DIR/source-status.json"
+SOURCE_STATUS_FILE="${ARTIFACT_DIR}/source-status.json"
 if ! run "searxng instance source-status --json >\"$SOURCE_STATUS_FILE\""; then
   : # A stale or rate-limited upstream comparison is a valid, typed source-status result.
 fi

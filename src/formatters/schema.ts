@@ -208,6 +208,7 @@ const FORMAT_SCHEMAS: FormatterSchemaRecord[] = [
         '<title>',
         '<link>',
         '<description>',
+        '<lastBuildDate>',
         '</channel>',
         '</rss>',
       ],

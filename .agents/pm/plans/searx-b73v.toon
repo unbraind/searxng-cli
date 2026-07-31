@@ -6,9 +6,10 @@ status: in_progress
 priority: 0
 tags[13]: agent,api,cli,contracts,documentation,metrics,pm-governance,release,rss,searxng,testing,toon,transport
 created_at: "2026-07-31T20:21:19.636Z"
-updated_at: "2026-07-31T21:03:51.111Z"
+updated_at: "2026-07-31T21:31:46.276Z"
 deadline: "2026-08-01T20:21:19.636Z"
 assignee: codex-searxng-20260731
+claim_principal: codex-searxng-20260731
 author: codex-searxng-20260731
 estimated_minutes: 480
 acceptance_criteria: "CLI supports official GET and application/x-www-form-urlencoded POST searches with equivalent normalized results and HTML fallback; RSS is a validated documented output format while TOON remains the default and JSON/JSONL/CSV/YAML/XML/Markdown/HTML/text contracts remain stable; instance metrics exposes /metrics in TOON, JSON, and exact raw form with truthful unavailable handling; every command and nested operation has detailed help plus a machine-readable TOON-default command contract for agents; all settings/cache/history/data remain under ~/.searxng-cli, cache limits remain zero/unlimited, and local routing remains http://192.168.1.183:38522; latest compatible pm-cli, pm-changelog, runtime dependencies, 100/100/100/100 coverage, docstrings, lint, duplication, security, live installed CLI, npm/Bun package, release, CI, and bot review gates pass"
@@ -41,15 +42,16 @@ dependencies[16]{id,kind,created_at,author,source_kind,author_source}:
   searx-security-modernization,related,"2026-07-31T20:21:19.636Z",codex-searxng-20260731,"cli:create:dep",detected
   searx-tag-release-validation,related,"2026-07-31T20:21:19.636Z",codex-searxng-20260731,"cli:create:dep",detected
   searx-verification,related,"2026-07-31T20:21:19.636Z",codex-searxng-20260731,"cli:create:dep",detected
-comments[3]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-07-31T20:21:19.636Z",codex-searxng-20260731,All-status duplicate searches found no metrics or RSS item. Closed predecessors cover earlier general parity but not the verified 2026.7.31 delta; this successor preserves canonical lineage rather than reopening or duplicating completed work.
   "2026-07-31T21:02:37.479Z",codex-searxng-20260731,"Security and package gates passed: Trivy reported zero HIGH/CRITICAL findings, history secret scan passed, and isolated npx/bunx package smoke resolved both executable aliases. Initial release acceptance then found stale instance-envelope assertions, now corrected to validate .data."
   "2026-07-31T21:03:51.110Z",codex-searxng-20260731,"Full release:check is green at 2026.7.31 after correcting typed resource assertions: 962 tests with exact 100/100/100/100, 21 live built-in diagnostics, forced-network POST RSS, optional metrics capability handling, global settings under ~/.searxng-cli, and isolated executable resolution."
+  "2026-07-31T21:31:24.307Z",codex-searxng-20260731,"CodeRabbit exact-head review produced eleven inline threads. Corrected command catalog completeness, nested value-less help, RSS URL/date normalization, schema parity, parser-backed structural validation, metrics semantics, Markdown tables, E2E artifact placement, and explicitly reasserted PM claim ownership. The generated pm-changelog audit script is package-owned, outside the SearXNG runtime, and must not be hand-edited because extension refresh would overwrite it; that upstream-extension finding is dispositioned with scope evidence rather than copied into product code. Targeted correction coverage remains exact 100/100/100/100 across 962 tests."
 notes[1]{created_at,author,text}:
   "2026-07-31T20:21:19.636Z",codex-searxng-20260731,Official master search API documents GET/POST and JSON/CSV/RSS. The live service reports 2026.7.31+057a77168. Preserve JSON-first/HTML fallback because instance JSON search may be disabled; POST must use form encoding and never leak params to logs.
 learnings[1]{created_at,author,text}:
   "2026-07-31T20:21:19.636Z",codex-searxng-20260731,"Completeness claims must be refreshed against current source and live routes: the prior stable resource list omitted /metrics and the local format set omitted RSS."
-files[15]{path,scope,note}:
+files[18]{path,scope,note}:
   bun.lock,project,locked dependency graph
   package.json,project,current governed dependencies
   scripts/e2e-searxng.sh,project,isolated installed live acceptance
@@ -65,6 +67,9 @@ files[15]{path,scope,note}:
   src/search/index.ts,project,GET and POST request construction
   src/types/index.ts,project,typed public contracts
   tests/unit/contracts.test.ts,project,command-discovery contract coverage
+  tests/unit/formatters.test.ts,project,RSS metadata review regression
+  tests/unit/validation.test.ts,project,parser-backed RSS review regression
+  tests/unit/main.test.ts,project,nested help review regression
 tests[4]:
   - command: "bun run lint && bun run lint:docs && bun run lint:duplicates && bun run lint:shell"
     scope: project

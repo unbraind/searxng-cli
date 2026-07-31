@@ -31,39 +31,39 @@ All commands support `--help` and global flags such as `--verbose`, `--silent`, 
 
 ## Search Options
 
-| Option                            | Short  | Description                                                      |
-| --------------------------------- | ------ | ---------------------------------------------------------------- |
-| `--format <fmt>`                  | `-f`   | Output format (default: toon)                                    |
-| `--method <get                    | post>` | -                                                                | Official SearXNG search transport (default: get) |
-| `--get` / `--post`                | -      | Select GET or form-encoded POST transport                        |
-| `--engines <list>`                | `-e`   | Comma-separated search engines                                   |
-| `--lang <code>`                   | `-l`   | Language code (en, de, fr, etc.)                                 |
-| `--page <n>`                      | `-p`   | Page number (default: 1)                                         |
-| `--safe <level>`                  | -      | Safe search: 0=off, 1=moderate, 2=strict                         |
-| `--time <range>`                  | `-t`   | Time range: day, week, month, year                               |
-| `--category <cat>`                | `-c`   | Category: general, images, videos, news, etc.                    |
-| `--limit <n>`                     | `-n`   | Max results (default: 10, 0=all)                                 |
-| `--param <k=v>`                   | -      | Pass through raw SearXNG query parameters (repeatable)           |
-| `--sx <k=v>`                      | -      | Alias for `--param`                                              |
-| `--sx-query <k=v&...>`            | -      | URL-style SearXNG passthrough params in one argument             |
-| `--sx-theme <name>`               | -      | Set upstream SearXNG `theme` query parameter                     |
-| `--sx-enabled-plugins <list>`     | -      | Set upstream `enabled_plugins` (comma-separated)                 |
-| `--sx-disabled-plugins <list>`    | -      | Set upstream `disabled_plugins` (comma-separated)                |
-| `--sx-enabled-engines <list>`     | -      | Set upstream `enabled_engines` (comma-separated)                 |
-| `--sx-disabled-engines <list>`    | -      | Set upstream `disabled_engines` (comma-separated)                |
-| `--sx-enabled-categories <list>`  | -      | Set upstream `enabled_categories` (comma-separated)              |
-| `--sx-disabled-categories <list>` | -      | Set upstream `disabled_categories` (comma-separated)             |
-| `--sx-image-proxy <bool>`         | -      | Set upstream `image_proxy` (`true`/`false`)                      |
-| `--params-json <obj>`             | -      | Pass through SearXNG params as JSON object                       |
-| `--params-file <path>`            | -      | Load SearXNG params from JSON file                               |
-| `--multi <q1;q2>`                 | -      | Run multiple queries sequentially (separator: `;`/`              |                                                  | `)  |
-| `--autocomplete`                  | -      | Fetch autocomplete suggestions from the SearXNG instance         |
-| `--engines-refresh`               | -      | Refresh local engines/categories cache from instance             |
-| `--offline-first`                 | -      | Cache-only mode (exact + semantic cache, no network)             |
-| `--agent-json`                    | -      | Agent mode with compact validated JSON output                    |
-| `--agent-ci`                      | -      | `--agent` + `--strict` + `--offline-first` + `--validate-output` |
-| `--request-json`                  | -      | Print the resolved request envelope (URL + params) as JSON       |
-| `--rss`                           | -      | Validated RSS 2.0 output                                         |
+| Option                            | Short | Description                                                      |
+| --------------------------------- | ----- | ---------------------------------------------------------------- |
+| `--format <fmt>`                  | `-f`  | Output format (default: toon)                                    |
+| `--method <get\|post>`            | -     | Official SearXNG search transport (default: get)                 |
+| `--get` / `--post`                | -     | Select GET or form-encoded POST transport                        |
+| `--engines <list>`                | `-e`  | Comma-separated search engines                                   |
+| `--lang <code>`                   | `-l`  | Language code (en, de, fr, etc.)                                 |
+| `--page <n>`                      | `-p`  | Page number (default: 1)                                         |
+| `--safe <level>`                  | -     | Safe search: 0=off, 1=moderate, 2=strict                         |
+| `--time <range>`                  | `-t`  | Time range: day, week, month, year                               |
+| `--category <cat>`                | `-c`  | Category: general, images, videos, news, etc.                    |
+| `--limit <n>`                     | `-n`  | Max results (default: 10, 0=all)                                 |
+| `--param <k=v>`                   | -     | Pass through raw SearXNG query parameters (repeatable)           |
+| `--sx <k=v>`                      | -     | Alias for `--param`                                              |
+| `--sx-query <k=v&...>`            | -     | URL-style SearXNG passthrough params in one argument             |
+| `--sx-theme <name>`               | -     | Set upstream SearXNG `theme` query parameter                     |
+| `--sx-enabled-plugins <list>`     | -     | Set upstream `enabled_plugins` (comma-separated)                 |
+| `--sx-disabled-plugins <list>`    | -     | Set upstream `disabled_plugins` (comma-separated)                |
+| `--sx-enabled-engines <list>`     | -     | Set upstream `enabled_engines` (comma-separated)                 |
+| `--sx-disabled-engines <list>`    | -     | Set upstream `disabled_engines` (comma-separated)                |
+| `--sx-enabled-categories <list>`  | -     | Set upstream `enabled_categories` (comma-separated)              |
+| `--sx-disabled-categories <list>` | -     | Set upstream `disabled_categories` (comma-separated)             |
+| `--sx-image-proxy <bool>`         | -     | Set upstream `image_proxy` (`true`/`false`)                      |
+| `--params-json <obj>`             | -     | Pass through SearXNG params as JSON object                       |
+| `--params-file <path>`            | -     | Load SearXNG params from JSON file                               |
+| `--multi <q1;q2>`                 | -     | Run multiple queries sequentially (separator: `;`/`\|`)          |
+| `--autocomplete`                  | -     | Fetch autocomplete suggestions from the SearXNG instance         |
+| `--engines-refresh`               | -     | Refresh local engines/categories cache from instance             |
+| `--offline-first`                 | -     | Cache-only mode (exact + semantic cache, no network)             |
+| `--agent-json`                    | -     | Agent mode with compact validated JSON output                    |
+| `--agent-ci`                      | -     | `--agent` + `--strict` + `--offline-first` + `--validate-output` |
+| `--request-json`                  | -     | Print the resolved request envelope (URL + params) as JSON       |
+| `--rss`                           | -     | Validated RSS 2.0 output                                         |
 
 ## Output Options
 

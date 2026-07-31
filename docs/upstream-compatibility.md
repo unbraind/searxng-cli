@@ -53,8 +53,9 @@ timestamp, source, endpoint, content type, and data.
 SearXNG disables `/metrics` by default unless its administrator configures `general.open_metrics`.
 For an enabled endpoint, supply the secret through `SEARXNG_OPEN_METRICS_PASSWORD` and optionally
 set `SEARXNG_OPEN_METRICS_USERNAME` (default: `searxng-cli`). The CLI sends HTTP Basic
-authentication without persisting the secret or printing it in request diagnostics. HTTP 401 or
-404 therefore means the configured instance has not exposed that optional administrative API.
+authentication without persisting the secret or printing it in request diagnostics. HTTP 401 means
+the endpoint rejected missing or invalid credentials; HTTP 404 means the optional administrative
+route is unavailable on the configured instance.
 
 TOON output uses `@toon-format/toon` and is advertised as the provisional `text/toon` media type.
 The current contract is TOON 4.1, including strict byte-order-mark, trailing-space, declared-length,
