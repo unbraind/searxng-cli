@@ -102,7 +102,7 @@
     "@unbrained/pm-cli": "2026.7.31",
     "@vitest/coverage-v8": "4.1.10",
     "esbuild": "0.28.1",
-    "eslint": "10.8.0",
+    "eslint": "10.8.1",
     "eslint-plugin-jsdoc": "63.3.2",
     "jscpd": "5.0.14",
     "prettier": "3.9.6",
