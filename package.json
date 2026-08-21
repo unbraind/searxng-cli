@@ -99,7 +99,7 @@
     "@eslint/js": "10.0.1",
     "@types/node": "26.1.2",
     "@typescript/native": "npm:typescript@7.0.2",
-    "@unbrained/pm-cli": "2026.7.31",
+    "@unbrained/pm-cli": "2026.8.18",
     "@vitest/coverage-v8": "4.1.10",
     "esbuild": "0.28.1",
     "eslint": "10.8.0",
