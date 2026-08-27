@@ -106,7 +106,7 @@
     "eslint-plugin-jsdoc": "63.3.2",
     "jscpd": "5.0.14",
     "prettier": "3.9.6",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "typescript-eslint": "8.65.0",
     "vitest": "4.1.10"
   },
